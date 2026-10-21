@@ -152,9 +152,18 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
 
 <div class="pv" id="app">
   <header class="top">
-    <div class="brand"><img class="logo" src="/_blob/9f6e015d297b39a793b64492134420c1" alt="Vannucci" width="141" height="40"><span class="divider" aria-hidden="true"></span><h1 class="titulo">Sistema Joyería</h1></div>
+    <div class="brand"><img class="logo" src="assets/logo-vannucci.png" alt="Vannucci" width="141" height="40"><span class="divider" aria-hidden="true"></span><h1 class="titulo">Sistema Joyería</h1></div>
     <div class="who" id="who"><span class="role">Cargando…</span></div>
   </header>
+
+  <section id="login" class="card" hidden style="max-width:28rem">
+    <h2>Ingresar al portal</h2>
+    <p class="note">Escribe tu correo y te enviaremos un enlace para entrar. Solo pueden ingresar personas invitadas por el Supervisor de Taller.</p>
+    <form id="f-login" class="pieza" novalidate>
+      <label class="field">Correo<input type="email" id="l-email" autocomplete="email" required placeholder="nombre@correo.cl"></label>
+      <div class="actions"><button type="submit" class="btn primary" id="b-login">Enviar enlace</button><span class="msg" id="m-login" role="status"></span></div>
+    </form>
+  </section>
 
   <nav class="tabs" aria-label="Secciones">
     <button type="button" id="t-panel" data-tab="panel">Indicadores</button>
@@ -341,6 +350,18 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <button type="button" data-sub="parametros">Parámetros</button>
       <button type="button" data-sub="modelos">Modelos</button>
       <button type="button" data-sub="productos">Productos y precios</button>
+      <button type="button" data-sub="usuarios">Usuarios</button>
+    </div>
+
+    <div id="sub-usuarios" class="msub" hidden style="display:grid;gap:14px">
+      <div class="card">
+        <h2>Usuarios y roles</h2>
+        <p class="note">Cada persona que entra al portal aparece aquí como Lector. Asígnale su rol: un Orfebre debe quedar vinculado a su nombre del taller, y sus piezas se registran siempre a ese nombre. Para sumar a alguien nuevo, invítalo desde el panel de Supabase (Authentication → Users → Invite user).</p>
+        <span class="msg" id="m-us" role="status"></span>
+        <div class="tbl free"><table id="tb-us"><thead><tr>
+          <th>Nombre</th><th>Correo</th><th>Rol</th><th>Orfebre vinculado</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
     </div>
 
     <div id="sub-parametros" class="msub" style="display:grid;gap:14px">
@@ -441,10 +462,12 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="card">
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
-        <li><b>Supervisor de Taller</b>: persona con permiso de <b>Editor</b> en este portal (menú Compartir). Ve y aprueba las piezas de todos. Solo los editores pueden escribir registros definitivos.</li>
-        <li><b>Orfebre</b>: persona con permiso de <b>Colaborador</b> (Contributor). Registra sus piezas y ve solo las suyas.</li>
-        <li><b>Lector</b>: permiso de <b>Lector</b> (Viewer). Ve la productividad, no registra.</li>
+        <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas invitadas; cada una parte como Lector y el Supervisor le asigna su rol en Maestros → Usuarios.</li>
+        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos, administra los maestros, los usuarios y las ventas.</li>
+        <li><b>Orfebre</b>: vinculado a su nombre del taller. Registra sus piezas y ve solo las suyas, además de la productividad.</li>
+        <li><b>Lector</b>: ve la productividad, no registra.</li>
         <li><b>Maestros</b>: solo el Supervisor ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
+        <li><b>Seguridad</b>: los permisos los aplica la base de datos (Supabase), no la página. Un orfebre no puede aprobar ni registrar a nombre de otro.</li>
       </ul>
     </div>
     <div class="card">
@@ -461,6 +484,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -489,14 +513,19 @@ const SERIES = ['--s1', '--s2', '--s3', '--s4'];
 const IVA = 0.19;
 const CODIGO_OK = /^[A-Za-z0-9_\-.~:@+]{1,80}$/;
 
+// Supabase: la clave publicable es pública por diseño; los permisos los aplica RLS en la base de datos.
+const SB_URL = 'https://qrjeknshzeqrodrnnfhv.supabase.co';
+const SB_KEY = 'sb_publishable_RNJ5BRUKGhLyGD_gsEPrkw_-zoj_CV7';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
 const S = {
   param: { tonos: toItems(DEFAULT_PARAM.tonos), piedras: toItems(DEFAULT_PARAM.piedras), tipos: toItems(DEFAULT_PARAM.tipos), categorias: toItems(DEFAULT_PARAM.categorias), extras: [] },
   orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
-  ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prodBase: [], prodBaseStatus: 'loading', prodOv: new Map(),
+  ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
-  db: null, user: null, me: null, uid: null, isSup: false, canWrite: false,
-  historico: [], histStatus: 'loading', aprobadas: [], mis: [], perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
-  pend: {}, perfiles: {}, editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
+  me: null, uid: null, isSup: false, canWrite: false,
+  definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
+  pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
   persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
 };
 
@@ -536,20 +565,112 @@ const calidadDe = (pct) => pct == null ? 'incompleta' : (pct >= -5 && pct <= 25 
 const colorDe = (p) => { const todos = S.orfItems.map((x) => x.nombre), i = todos.indexOf(p); return css(SERIES[(i < 0 ? todos.length : i) % SERIES.length]); };
 const nuevoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-// ---------- datos combinados ----------
-function filasDefinitivas() {
-  const ap = S.aprobadas.map((a) => ({
-    id: 'p-' + a._id, persona: a.orfebre, fecha: a.fecha, mes: (a.fecha || '').slice(0, 7), tono: a.tono, modelo: a.modelo, cotizacion: a.cotizacion,
-    peso_obj: a.peso_obj, oro_trabajo: a.oro_trabajo, peso_final: a.peso_final, oro_devuelto: a.oro_devuelto, merma_g: a.merma_g, merma_pct: a.merma_pct,
-    tipo: a.tipo, garantia: !!a.garantia, calidad: calidadDe(a.merma_pct), observaciones: a.observaciones, origen: 'Portal',
-  })).filter((r) => r.mes.length === 7);
-  return S.historico.concat(ap);
+// ---------- datos de Supabase ----------
+const n2 = (v) => v == null ? null : Number(v);
+// PostgREST devuelve como máximo 1.000 filas por consulta: se pide por tramos.
+async function todas(consulta) {
+  const out = [];
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await consulta().range(desde, desde + 999);
+    if (error) throw error;
+    out.push(...data);
+    if (data.length < 1000) return out;
+  }
 }
+const nombreOrfebre = (id) => (S.orfItems.find((o) => o.id === id) || {}).nombre || 'Sin orfebre';
+// Pieza de la base de datos al formato que usa la página.
+function pieza(r) {
+  return {
+    _id: r.id, id: r.id, persona: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre_id: r.orfebre_id, autor: r.autor,
+    fecha: r.fecha, mes: (r.fecha || '').slice(0, 7), tono: r.tono, modelo: r.modelo, cotizacion: r.cotizacion, codigo_producto: r.codigo_producto, tipo: r.tipo,
+    peso_obj: n2(r.peso_obj), oro_trabajo: n2(r.oro_trabajo), peso_final: n2(r.peso_final), oro_devuelto: n2(r.oro_devuelto), merma_g: n2(r.merma_g), merma_pct: n2(r.merma_pct),
+    garantia: !!r.garantia, observaciones: r.observaciones, calidad: r.calidad || calidadDe(n2(r.merma_pct)), origen: r.origen === 'portal' ? 'Portal' : 'Planilla',
+    estado: r.estado, comentario: r.comentario, corregida: r.corregida, revisado_por: r.revisado_por, revisado_en: r.revisado_en, creado_en: r.creado_en,
+  };
+}
+function avisoError(texto) { const av = $('aviso'); av.hidden = false; av.textContent = texto; }
+
+async function cargarDefinitivas() {
+  try {
+    const rows = await todas(() => sb.from('piezas_definitivas').select('*').order('fecha').order('id'));
+    S.definitivas = rows.map(pieza); S.histStatus = 'ok';
+  } catch (e) { S.histStatus = 'error'; }
+  S.defVer++; modelosDatalist(); renderPanel();
+}
+async function cargarOrfebres() {
+  const { data, error } = await sb.from('orfebres').select('*').order('id');
+  if (error) return;
+  S.orfItems = data.map((o) => ({ id: o.id, nombre: o.nombre, sigla: '', activo: o.activo }));
+  S.orfebres = activos(S.orfItems); S.defVer++;
+}
+async function cargarParametros() {
+  const [g, p] = await Promise.all([sb.from('grupos_parametro').select('*').order('orden'), sb.from('parametros').select('*').order('orden').order('id')]);
+  if (g.error || p.error) return;
+  const items = (gid) => p.data.filter((x) => x.grupo_id === gid).map((x) => ({ id: x.id, nombre: x.nombre, sigla: x.sigla || '', activo: x.activo }));
+  S.param = {
+    tonos: items('tonos'), piedras: items('piedras'), tipos: items('tipos'), categorias: items('categorias'),
+    extras: g.data.filter((x) => !x.es_base).map((x) => ({ id: x.id, nombre: x.nombre, sigla: x.usa_sigla, items: items(x.id) })),
+  };
+  opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+}
+async function cargarModelos() {
+  const { data, error } = await sb.from('modelos').select('*').order('nombre');
+  if (error) return;
+  S.modelos = data.map((m) => ({ ...m, _id: m.id, peso_objetivo: n2(m.peso_objetivo) }));
+  modelosDatalist(); opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+}
+async function cargarProductos() {
+  try {
+    const rows = await todas(() => sb.from('productos').select('*').order('codigo'));
+    S.prods = rows; S.prodStatus = 'ok';
+  } catch (e) { S.prodStatus = 'error'; }
+  prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+}
+async function cargarMis() {
+  if (!S.uid) return;
+  const { data, error } = await sb.from('piezas').select('*').eq('autor', S.uid).order('creado_en', { ascending: false }).limit(500);
+  if (!error) S.mis = data.map(pieza);
+  renderMis();
+}
+async function cargarPendientes() {
+  if (!S.isSup) return;
+  const { data, error } = await sb.from('piezas').select('*').eq('estado', 'pendiente').order('creado_en');
+  if (!error) S.pend = { todas: data.map(pieza) };
+  renderRevision(); if (S.tab === 'panel') renderPanel();
+}
+async function cargarAprobadasPortal() {
+  if (!S.isSup) return;
+  const { data, error } = await sb.from('piezas').select('*').eq('estado', 'aprobada').eq('origen', 'portal').order('revisado_en', { ascending: false }).limit(25);
+  if (!error) S.aprobadas = data.map(pieza);
+  renderRevision();
+}
+async function cargarPerfiles() {
+  const q = S.isSup ? sb.from('perfiles').select('*').order('creado_en') : sb.from('perfiles').select('*').eq('user_id', S.uid);
+  const { data, error } = await q;
+  if (error) return;
+  S.perfiles = data;
+  S.perfil = data.find((p) => p.user_id === S.uid) || null;
+  if (S.tab === 'maestros') renderMaestros();
+}
+async function cargarVentas() {
+  if (!S.isSup) return;
+  try {
+    const [cfg, rows] = await Promise.all([sb.from('config').select('valor').eq('clave', 'ventas').maybeSingle(), todas(() => sb.from('ventas').select('doc_id,fecha,sucursal,clase,codigo,grupo,modelo,tono,piedra,cantidad,neto').order('fecha').order('id'))]);
+    const c = cfg.data?.valor || {};
+    S.ventasDesde = c.desde || null; S.ventasHasta = c.hasta || null; S.ventasFuente = c.fuente || null;
+    S.ventas = rows.map((r) => ({ ...r, mes: r.fecha.slice(0, 7), cantidad: Number(r.cantidad) || 0, neto: Number(r.neto) || 0 }));
+    S.ventasStatus = rows.length ? 'ok' : 'none';
+  } catch (e) { S.ventasStatus = 'error'; }
+  ventasKey = null; if (S.tab === 'ventas') renderVentas();
+}
+
+// ---------- datos combinados ----------
+function filasDefinitivas() { return S.definitivas; }
 
 let cacheKey = null, cacheAgg = null;
 function agregados() {
   const rows = filasDefinitivas();
-  const key = rows.length + '|' + S.aprobadas.map((a) => a._v).join(',');
+  const key = rows.length + '|' + S.defVer;
   if (key === cacheKey) return cacheAgg;
   const grupos = new Map();
   for (const r of rows) for (const p of [r.persona, 'Todos']) for (const m of [r.mes, r.mes.slice(0, 4), 'Todos']) {
@@ -769,15 +890,16 @@ function renderPerfil() {
   const box = $('perfil-box');
   box.replaceChildren();
   if (!S.uid) return;
-  const sel = h('select', { id: 'i-orfebre' }, new Option('Elige tu nombre…', ''), ...S.orfebres.map((o) => new Option(o, o)));
-  sel.value = S.perfil?.orfebre || '';
-  sel.addEventListener('change', async () => {
-    try { await S.db.doc(`envios/${S.uid}`).set({ orfebre: sel.value, actualizado_en: new Date().toISOString() }); }
-    catch (e) { msg('m-form', 'No se pudo guardar tu nombre: ' + (e.code || e.message), 'bad'); }
-  });
-  box.append(h('label', { class: 'field' }, h('span', {}, S.isSup ? 'Registrar a nombre de' : 'Orfebre (tú)', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
+  if (!S.isSup) {
+    // El orfebre siempre registra a su propio nombre; la base de datos lo fija aunque se cambie la página.
+    const sel = h('select', { id: 'i-orfebre', disabled: true }, new Option(nombreOrfebre(S.perfil?.orfebre_id), String(S.perfil?.orfebre_id || '')));
+    box.append(h('label', { class: 'field' }, 'Orfebre (tú)', sel));
+    return;
+  }
+  const sel = h('select', { id: 'i-orfebre' }, new Option('Elige el orfebre…', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id))));
+  box.append(h('label', { class: 'field' }, h('span', {}, 'Registrar a nombre de', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
   sel.addEventListener('change', () => errorCampo('i-orfebre', ''));
-  if (S.isSup) box.append(h('p', { class: 'note', style: 'align-self:end' }, 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.'));
+  box.append(h('p', { class: 'note', style: 'align-self:end' }, 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.'));
 }
 function leerForm() {
   const ot = num($('i-ot').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
@@ -824,7 +946,7 @@ function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo'
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
 async function enviar(ev) {
   ev.preventDefault();
-  if (!S.db || !S.uid) { msg('m-form', 'Necesitas iniciar sesión para registrar piezas.', 'bad'); return; }
+  if (!S.uid) { msg('m-form', 'Necesitas iniciar sesión para registrar piezas.', 'bad'); return; }
   const orf = $('i-orfebre')?.value;
   const p = leerForm();
   limpiarErrores();
@@ -836,17 +958,19 @@ async function enviar(ev) {
   if (p.peso_final == null) errs.push(['i-pf', 'Ingresa el peso final.']);
   if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
   const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Enviando…');
-  const ahora = new Date().toISOString();
   try {
-    if (S.perfil?.orfebre !== orf) await S.db.doc(`envios/${S.uid}`).set({ orfebre: orf, actualizado_en: ahora });
-    const id = S.editando || nuevoId();
-    const prev = S.editando ? S.mis.find((x) => x._id === id) : null;
-    await S.db.doc(`envios/${S.uid}/piezas/${id}`).set({ ...p, orfebre: orf, autor: S.uid, estado: 'pendiente', creado_en: prev?.creado_en || ahora, actualizado_en: ahora, comentario: null, revisado_por: null, revisado_en: null });
+    const { merma_g, merma_pct, ...campos } = p;
+    const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null, estado: 'pendiente', comentario: null };
+    const r = S.editando
+      ? await sb.from('piezas').update(body).eq('id', S.editando)
+      : await sb.from('piezas').insert({ ...body, autor: S.uid });
+    if (r.error) throw r.error;
     msg('m-form', S.editando ? 'Cambios enviados a aprobación.' : 'Pieza enviada a aprobación.', 'ok');
+    cargarMis(); cargarPendientes();
     S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación';
     const fecha = p.fecha; llenarForm(null); $('i-fecha').value = fecha;
   } catch (e) {
-    msg('m-form', e.code === 'invalid_argument' ? 'No tienes permiso para registrar. Pide al supervisor acceso de Colaborador.' : 'No se pudo enviar (' + (e.code || e.message) + '). Intenta de nuevo.', 'bad');
+    msg('m-form', e.code === '42501' ? 'No tienes permiso para registrar. Pide al supervisor que te asigne el rol de Orfebre.' : 'No se pudo enviar (' + (e.message || e.code) + '). Intenta de nuevo.', 'bad');
   } finally { b.disabled = false; }
 }
 function renderMis() {
@@ -879,36 +1003,38 @@ const confirmando = new Set();
 async function eliminar(p) {
   if (!confirmando.has(p._id)) { confirmando.add(p._id); renderMis(); setTimeout(() => { confirmando.delete(p._id); renderMis(); }, 6000); return; }
   confirmando.delete(p._id);
-  try { await S.db.doc(`envios/${S.uid}/piezas/${p._id}`).delete(); msg('m-form', 'Pieza eliminada.', 'ok'); if (S.editando === p._id) cancelarEdicion(); }
-  catch (e) { msg('m-form', 'No se pudo eliminar (' + (e.code || e.message) + ').', 'bad'); }
+  try {
+    const { error } = await sb.from('piezas').delete().eq('id', p._id);
+    if (error) throw error;
+    msg('m-form', 'Pieza eliminada.', 'ok'); if (S.editando === p._id) cancelarEdicion(); cargarMis(); cargarPendientes();
+  } catch (e) { msg('m-form', 'No se pudo eliminar (' + (e.message || e.code) + ').', 'bad'); }
 }
 function cancelarEdicion() { S.editando = null; llenarForm(null); $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación'; msg('m-form', ''); }
 
 // ---------- revisión (supervisor) ----------
-function listaPend() { return Object.entries(S.pend).flatMap(([uid, l]) => l.map((p) => ({ ...p, _uid: uid }))).sort((a, b) => (a.creado_en || '').localeCompare(b.creado_en || '')); }
+function listaPend() { return Object.values(S.pend).flat().map((p) => ({ ...p, _uid: p.autor })).sort((a, b) => (a.creado_en || '').localeCompare(b.creado_en || '')); }
+const claveRev = (p) => String(p._id);
 async function renderRevision() {
   const lista = listaPend();
   const n = $('n-pend'); n.hidden = !lista.length; n.textContent = String(lista.length);
   if (!S.isSup) return;
-  for (const k of [...S.sel]) if (!lista.some((p) => p._uid + '/' + p._id === k)) S.sel.delete(k);
+  for (const k of [...S.sel]) if (!lista.some((p) => claveRev(p) === k)) S.sel.delete(k);
   $('b-aprobar-sel').disabled = !S.sel.size;
   $('b-aprobar-sel').textContent = S.sel.size ? `Aprobar seleccionadas (${S.sel.size})` : 'Aprobar seleccionadas';
   $('sel-all').checked = lista.length > 0 && S.sel.size === lista.length;
-  const ids = [...new Set([...lista.map((p) => p._uid), ...S.aprobadas.slice(0, 40).flatMap((a) => [a.aprobado_por, a.autor])].filter(Boolean))];
-  const ps = S.user && ids.length ? await S.user.profiles(ids) : {};
-  const nombre = (id) => (ps[id] && ps[id].name) || 'Alguien';
+  const nombre = (id) => { const p = S.perfiles.find((x) => x.user_id === id); return p ? (p.nombre || p.email || 'Alguien') : 'Alguien'; };
   const cola = $('cola');
   if (!lista.length) cola.replaceChildren(h('p', { class: 'empty' }, 'No hay piezas pendientes. Cuando un orfebre registre una, aparecerá aquí.'));
   else cola.replaceChildren(...lista.map((p) => itemRevision(p, nombre)));
-  const hist = S.aprobadas.slice().sort((a, b) => (b.aprobado_en || '').localeCompare(a.aprobado_en || '')).slice(0, 25);
+  const hist = S.aprobadas.slice().sort((a, b) => (b.revisado_en || '').localeCompare(a.revisado_en || '')).slice(0, 25);
   $('tb-hist').tBodies[0].replaceChildren(...(hist.length ? hist.map((a) => h('tr', {},
-    h('td', {}, a.aprobado_en ? new Date(a.aprobado_en).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : ''), h('td', {}, nombre(a.aprobado_por)),
+    h('td', {}, a.revisado_en ? new Date(a.revisado_en).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : ''), h('td', {}, nombre(a.revisado_por)),
     h('td', {}, a.orfebre), h('td', {}, fFecha(a.fecha)), h('td', {}, a.modelo), h('td', { class: 'n' }, g2(a.oro_trabajo)),
     h('td', { class: 'n' }, a.merma_pct == null ? '' : fDec.format(a.merma_pct) + '%'),
     h('td', {}, h('button', { type: 'button', class: 'btn link' + (anulando.has(a._id) ? ' armado' : ''), onclick: () => anular(a) }, anulando.has(a._id) ? 'Confirmar anulación' : 'Anular')))) : [h('tr', {}, h('td', { colspan: 8, class: 'note' }, 'Todavía no hay aprobaciones en el portal.'))]));
 }
 function itemRevision(p, nombre) {
-  const key = p._uid + '/' + p._id, flags = flagsDe(p);
+  const key = claveRev(p), flags = flagsDe(p);
   const el = h('div', { class: 'item' + (flags.length ? ' flag' : '') });
   const chk = h('input', { type: 'checkbox', 'aria-label': 'Seleccionar ' + p.modelo });
   chk.checked = S.sel.has(key);
@@ -957,36 +1083,37 @@ async function aprobar(lista, corregido = false) {
   msg('m-rev', `Aprobando ${lista.length === 1 ? 'pieza' : lista.length + ' piezas'}…`);
   let ok = 0;
   for (const p of lista) {
-    const ahora = new Date().toISOString(), aid = `${p._uid}__${p._id}`;
-    const campos = ['fecha', 'tono', 'modelo', 'cotizacion', 'codigo_producto', 'tipo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto', 'merma_g', 'merma_pct', 'garantia', 'observaciones', 'orfebre'];
-    const body = Object.fromEntries(campos.map((k) => [k, p[k] ?? null]));
+    const campos = ['fecha', 'modelo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto'];
+    const body = corregido ? { ...Object.fromEntries(campos.map((k) => [k, p[k] ?? null])), modelo_id: modeloDe(p.modelo)?._id ?? null, corregida: true } : {};
     try {
-      await S.db.doc(`aprobadas/${aid}`).set({ ...body, autor: p._uid, envio: `envios/${p._uid}/piezas/${p._id}`, aprobado_por: S.uid, aprobado_en: ahora, corregido });
-      await S.db.doc(`envios/${p._uid}/piezas/${p._id}`).update({ ...(corregido ? body : {}), estado: 'aprobada', revisado_por: S.uid, revisado_en: ahora, comentario: corregido ? 'Aprobada con correcciones del supervisor.' : null });
-      ok++; S.sel.delete(p._uid + '/' + p._id);
-    } catch (e) { msg('m-rev', `No se pudo aprobar ${p.modelo} (${e.code || e.message}).`, 'bad'); }
+      const { error } = await sb.from('piezas').update({ ...body, estado: 'aprobada', comentario: corregido ? 'Aprobada con correcciones del supervisor.' : null }).eq('id', p._id);
+      if (error) throw error;
+      ok++; S.sel.delete(claveRev(p));
+    } catch (e) { msg('m-rev', `No se pudo aprobar ${p.modelo} (${e.message || e.code}).`, 'bad'); }
   }
   S.corrigiendo = null;
   if (ok) msg('m-rev', ok === 1 ? 'Pieza aprobada. Ya cuenta en la productividad.' : `${ok} piezas aprobadas.`, 'ok');
-  renderRevision();
+  cargarPendientes(); cargarAprobadasPortal(); cargarDefinitivas();
 }
 async function rechazar(p, motivo) {
   motivo = (motivo || '').trim();
   if (!motivo) { msg('m-rev', 'Escribe el motivo del rechazo para que el orfebre sepa qué corregir.', 'bad'); return; }
   try {
-    await S.db.doc(`envios/${p._uid}/piezas/${p._id}`).update({ estado: 'rechazada', comentario: motivo, revisado_por: S.uid, revisado_en: new Date().toISOString() });
-    S.rechazando = null; msg('m-rev', 'Pieza rechazada. El orfebre verá el motivo.', 'ok'); renderRevision();
-  } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.code || e.message) + ').', 'bad'); }
+    const { error } = await sb.from('piezas').update({ estado: 'rechazada', comentario: motivo }).eq('id', p._id);
+    if (error) throw error;
+    S.rechazando = null; msg('m-rev', 'Pieza rechazada. El orfebre verá el motivo.', 'ok'); cargarPendientes();
+  } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.message || e.code) + ').', 'bad'); }
 }
 const anulando = new Set();
 async function anular(a) {
   if (!anulando.has(a._id)) { anulando.add(a._id); renderRevision(); setTimeout(() => { anulando.delete(a._id); renderRevision(); }, 6000); return; }
   anulando.delete(a._id);
   try {
-    if (a.envio) { try { await S.db.doc(a.envio).update({ estado: 'pendiente', comentario: 'Aprobación anulada por el supervisor.', revisado_por: S.uid, revisado_en: new Date().toISOString() }); } catch (e) { /* el envío pudo haberse borrado */ } }
-    await S.db.doc(`aprobadas/${a._id}`).delete();
+    const { error } = await sb.from('piezas').update({ estado: 'pendiente', comentario: 'Aprobación anulada por el supervisor.' }).eq('id', a._id);
+    if (error) throw error;
     msg('m-rev', 'Aprobación anulada; la pieza volvió a pendientes.', 'ok');
-  } catch (e) { msg('m-rev', 'No se pudo anular (' + (e.code || e.message) + ').', 'bad'); }
+    cargarPendientes(); cargarAprobadasPortal(); cargarDefinitivas();
+  } catch (e) { msg('m-rev', 'No se pudo anular (' + (e.message || e.code) + ').', 'bad'); }
 }
 
 // ---------- maestros ----------
@@ -997,11 +1124,13 @@ const siglaDe = (lista, nombre) => (lista.find((x) => clave(x.nombre) === clave(
 
 let prodKey = null, prodCache = [];
 function productos() {
-  const k = S.prodBase.length + '|' + [...S.prodOv.values()].map((o) => o._v).join(',');
+  const k = S.prods.length + '|' + S.modelos.length + '|' + S.prods.reduce((s, p) => s + (p.editado_en || ''), '').length;
   if (k === prodKey) return prodCache;
-  const base = new Map(S.prodBase.map((p) => [p.codigo, p]));
-  const out = S.prodBase.map((p) => S.prodOv.has(p.codigo) ? { ...p, ...S.prodOv.get(p.codigo), origen: 'Editado' } : { ...p, activo: true, origen: 'Bsale' });
-  for (const [cod, o] of S.prodOv) if (!base.has(cod)) out.push({ ...o, codigo: cod, origen: 'Nuevo' });
+  const mod = new Map(S.modelos.map((m) => [m.id, m.nombre]));
+  const out = S.prods.map((p) => ({
+    ...p, modelo: mod.get(p.modelo_id) || null, central_ct: n2(p.central_ct), deBsale: p.origen === 'bsale',
+    origen: p.origen === 'portal' ? 'Nuevo' : p.editado_por ? 'Editado' : 'Bsale',
+  }));
   out.sort((a, b) => a.codigo.localeCompare(b.codigo, 'es', { numeric: true }));
   prodKey = k; prodCache = out;
   return out;
@@ -1015,10 +1144,32 @@ function modeloDe(nombre) {
 function renderMaestros() {
   if (!S.isSup) return;
   document.querySelectorAll('#m-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === S.msub)));
-  for (const s of ['parametros', 'modelos', 'productos']) $('sub-' + s).hidden = S.msub !== s;
+  for (const s of ['parametros', 'modelos', 'productos', 'usuarios']) $('sub-' + s).hidden = S.msub !== s;
   if (S.msub === 'parametros') renderParam();
   if (S.msub === 'modelos') renderModelos();
   if (S.msub === 'productos') renderProductos();
+  if (S.msub === 'usuarios') renderUsuarios();
+}
+// --- usuarios: rol y orfebre vinculado ---
+function renderUsuarios() {
+  const tb = $('tb-us').tBodies[0];
+  if (!S.perfiles.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 5, class: 'note' }, 'Todavía no hay usuarios.'))); return; }
+  tb.replaceChildren(...S.perfiles.map((u) => {
+    const rol = h('select', { 'aria-label': 'Rol de ' + (u.nombre || u.email) }, ...[['lector', 'Lector'], ['orfebre', 'Orfebre'], ['supervisor', 'Supervisor de Taller']].map(([v, t]) => new Option(t, v)));
+    rol.value = u.rol;
+    const orf = h('select', { 'aria-label': 'Orfebre vinculado' }, new Option('—', ''), ...S.orfItems.map((o) => new Option(o.nombre, String(o.id))));
+    orf.value = u.orfebre_id ? String(u.orfebre_id) : '';
+    const guardar = h('button', { type: 'button', class: 'btn', onclick: () => guardarUsuario(u, rol.value, orf.value) }, 'Guardar');
+    return h('tr', {}, h('td', {}, u.nombre || '—', u.user_id === S.uid ? h('span', { class: 'note' }, ' (tú)') : null), h('td', {}, u.email || ''), h('td', {}, rol), h('td', {}, orf), h('td', {}, guardar));
+  }));
+}
+async function guardarUsuario(u, rol, orfebreId) {
+  if (rol === 'orfebre' && !orfebreId) { msg('m-us', 'Un orfebre debe quedar vinculado a su nombre del taller.', 'bad'); return; }
+  if (u.user_id === S.uid && rol !== 'supervisor') { msg('m-us', 'No puedes quitarte el rol de supervisor a ti mismo; pídeselo a otro supervisor.', 'bad'); return; }
+  const { error } = await sb.from('perfiles').update({ rol, orfebre_id: orfebreId ? Number(orfebreId) : null }).eq('user_id', u.user_id);
+  if (error) { msg('m-us', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
+  msg('m-us', `Rol de ${u.nombre || u.email} actualizado.`, 'ok');
+  cargarPerfiles();
 }
 // --- parámetros: cada grupo es una lista de valores {nombre, sigla, activo} ---
 function grupos() {
@@ -1040,19 +1191,27 @@ function usosDe(gid) {
   else prods.forEach((p) => add(p.atributos?.[gid]));
   return c;
 }
-async function guardarParametros(texto) {
-  const body = { tonos: S.param.tonos, piedras: S.param.piedras, tipos: S.param.tipos, categorias: S.param.categorias, extras: S.param.extras || [], actualizado_por: S.uid, actualizado_en: new Date().toISOString() };
-  try { await S.db.doc('maestro/parametros').set(body); msg('m-param', texto, 'ok'); return true; }
-  catch (e) { msg('m-param', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); return false; }
-}
+// Guarda la lista completa de un grupo: actualiza los que tienen id, inserta los nuevos y borra los quitados.
 async function guardarGrupo(gid, items, texto) {
-  if (gid === 'orfebres') {
-    try { await S.db.doc('config/catalogo').set({ orfebres: activos(items), orfebres_todos: items, actualizado_en: new Date().toISOString() }); msg('m-param', texto, 'ok'); return true; }
-    catch (e) { msg('m-param', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); return false; }
+  const tabla = gid === 'orfebres' ? 'orfebres' : 'parametros';
+  const antes = itemsDe(gid).filter((x) => x.id);
+  const quedan = new Set(items.filter((x) => x.id).map((x) => x.id));
+  const fila = (x, i) => gid === 'orfebres' ? { nombre: x.nombre, activo: x.activo !== false } : { grupo_id: gid, nombre: x.nombre, sigla: x.sigla || null, activo: x.activo !== false, orden: i + 1 };
+  try {
+    const borrar = antes.filter((x) => !quedan.has(x.id)).map((x) => x.id);
+    if (borrar.length) { const r = await sb.from(tabla).delete().in('id', borrar); if (r.error) throw r.error; }
+    for (const [i, x] of items.entries()) {
+      const r = x.id ? await sb.from(tabla).update(fila(x, i)).eq('id', x.id) : await sb.from(tabla).insert(fila(x, i));
+      if (r.error) throw r.error;
+    }
+    msg('m-param', texto, 'ok');
+  } catch (e) {
+    msg('m-param', e.code === '23503' ? 'No se puede eliminar: hay registros que lo usan. Desactívalo en su lugar.' : 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad');
+    return false;
+  } finally {
+    if (gid === 'orfebres') { await cargarOrfebres(); renderPerfil(); renderPanel(); } else await cargarParametros();
   }
-  if (S.param[gid]) S.param[gid] = items;
-  else S.param.extras = (S.param.extras || []).map((g) => g.id === gid ? { ...g, items } : g);
-  return guardarParametros(texto);
+  return true;
 }
 function validarItem(g, items, nombre, sigla, idx) {
   if (!nombre) return 'Escribe un nombre.';
@@ -1161,15 +1320,18 @@ async function crearGrupo() {
   if (grupos().some((g) => clave(g.nombre) === clave(nombre))) { msg('m-grupo', 'Ya existe un grupo con ese nombre.', 'bad'); return; }
   let id = 'g_' + (clave(nombre).slice(0, 30) || 'grupo');
   while (grupos().some((g) => g.id === id)) id += '_';
-  S.param.extras = [...(S.param.extras || []), { id, nombre, sigla: $('g-sigla').checked, items: [] }];
-  if (await guardarParametros(`Grupo "${nombre}" creado. Agrega sus valores abajo.`)) { $('g-nombre').value = ''; $('g-sigla').checked = false; msg('m-grupo', ''); renderParam(); $('pg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  const { error } = await sb.from('grupos_parametro').insert({ id, nombre, usa_sigla: $('g-sigla').checked, orden: 10 + (S.param.extras || []).length });
+  if (error) { msg('m-grupo', 'No se pudo crear (' + (error.message || error.code) + ').', 'bad'); return; }
+  $('g-nombre').value = ''; $('g-sigla').checked = false; msg('m-grupo', ''); msg('m-param', `Grupo "${nombre}" creado. Agrega sus valores abajo.`, 'ok');
+  await cargarParametros(); renderParam(); $('pg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 async function renombrarGrupo(g, nombre) {
   if (!nombre) { msg('m-param', 'Escribe el nombre del grupo.', 'bad'); return; }
   if (grupos().some((x) => x.id !== g.id && clave(x.nombre) === clave(nombre))) { msg('m-param', 'Ya existe un grupo con ese nombre.', 'bad'); return; }
-  S.param.extras = S.param.extras.map((x) => x.id === g.id ? { ...x, nombre } : x);
   S.pEdit = null;
-  if (await guardarParametros('Nombre del grupo actualizado.')) renderParam();
+  const { error } = await sb.from('grupos_parametro').update({ nombre }).eq('id', g.id);
+  if (error) { msg('m-param', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
+  msg('m-param', 'Nombre del grupo actualizado.', 'ok'); await cargarParametros(); renderParam();
 }
 async function eliminarGrupo(g) {
   const k = 'grupo|' + g.id, enUso = [...usosDe(g.id).values()].reduce((s, n) => s + n, 0);
@@ -1179,8 +1341,9 @@ async function eliminarGrupo(g) {
     return;
   }
   paramConfirm.delete(k);
-  S.param.extras = S.param.extras.filter((x) => x.id !== g.id);
-  if (await guardarParametros(`Grupo "${g.nombre}" eliminado.`)) renderParam();
+  const { error } = await sb.from('grupos_parametro').delete().eq('id', g.id);
+  if (error) { msg('m-param', 'No se pudo eliminar (' + (error.message || error.code) + ').', 'bad'); return; }
+  msg('m-param', `Grupo "${g.nombre}" eliminado.`, 'ok'); await cargarParametros(); renderParam();
 }
 
 function renderModelos() {
@@ -1214,17 +1377,15 @@ function abrirModelo(m) {
 async function guardarModelo() {
   const nombre = $('mo-nombre').value.trim();
   if (!nombre) { msg('m-mo', 'El modelo necesita un nombre.', 'bad'); return; }
-  const id = S.moEdit === '__nuevo' ? clave(nombre) : S.moEdit;
-  if (!id) { msg('m-mo', 'El nombre debe tener letras o números.', 'bad'); return; }
-  const otro = S.modelos.find((m) => m._id !== id && clave(m.nombre) === clave(nombre));
-  if (otro || (S.moEdit === '__nuevo' && S.modelos.some((m) => m._id === id))) { msg('m-mo', 'Ya existe un modelo con ese nombre.', 'bad'); return; }
-  const prev = S.modelos.find((m) => m._id === id) || {};
-  const body = { ...prev, nombre, categoria: $('mo-cat').value, codigo_base: $('mo-base').value.trim().toUpperCase() || null, peso_objetivo: num($('mo-peso').value),
+  if (!clave(nombre)) { msg('m-mo', 'El nombre debe tener letras o números.', 'bad'); return; }
+  const nuevo = S.moEdit === '__nuevo';
+  if (S.modelos.some((m) => (nuevo || m._id !== S.moEdit) && clave(m.nombre) === clave(nombre))) { msg('m-mo', 'Ya existe un modelo con ese nombre.', 'bad'); return; }
+  const body = { nombre, categoria: $('mo-cat').value, codigo_base: $('mo-base').value.trim().toUpperCase() || null, peso_objetivo: num($('mo-peso').value),
     alias: lineas($('mo-alias').value.replace(/,/g, '\n')).filter((a) => clave(a) !== clave(nombre)), notas: $('mo-notas').value.trim() || null, activo: $('mo-activo').checked,
     actualizado_por: S.uid, actualizado_en: new Date().toISOString() };
-  delete body._id;
-  try { await S.db.doc(`maestro/catalogo/modelos/${id}`).set(body); S.moEdit = null; $('c-modelo-form').hidden = true; msg('m-mo', ''); }
-  catch (e) { msg('m-mo', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); }
+  const { error } = nuevo ? await sb.from('modelos').insert(body) : await sb.from('modelos').update(body).eq('id', S.moEdit);
+  if (error) { msg('m-mo', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
+  S.moEdit = null; $('c-modelo-form').hidden = true; msg('m-mo', ''); cargarModelos();
 }
 
 function prodFiltrados() {
@@ -1244,7 +1405,7 @@ function renderProductos() {
   $('pf-estado').value = S.pr.estado;
   const rs = prodFiltrados(), shown = rs.slice(0, 300);
   const nEd = all.filter((p) => p.origen !== 'Bsale').length;
-  $('n-pr').textContent = S.prodBaseStatus === 'loading' ? 'Cargando catálogo…' :
+  $('n-pr').textContent = S.prodStatus === 'loading' ? 'Cargando catálogo…' :
     `${fNum.format(all.length)} productos (${fNum.format(nEd)} editados o nuevos en el portal). ${fNum.format(rs.length)} coinciden con el filtro${rs.length > shown.length ? `; se muestran los primeros ${shown.length}` : ''}. Precios de la lista "Precio detalle" de Bsale.`;
   $('tb-pr').tBodies[0].replaceChildren(...(shown.length ? shown.map((p) => h('tr', { class: p.activo === false ? 'note' : null },
     h('td', { class: 'mono' }, p.codigo), h('td', { class: 'wrap' }, p.nombre || ''), h('td', {}, p.modelo || ''), h('td', {}, p.categoria || ''), h('td', {}, p.tono || ''),
@@ -1272,9 +1433,9 @@ function abrirProducto(p) {
   $('pr-modelo').value = p?.modelo || ''; $('pr-cat').value = p?.categoria || CATS()[0]; $('pr-tono').value = p?.tono || ''; $('pr-piedra').value = p?.piedra || '';
   $('pr-ct').value = p?.central_ct ?? ''; $('pr-var').value = p?.variante || ''; $('pr-codigo').value = p?.codigo || ''; $('pr-nombre').value = p?.nombre || '';
   $('pr-precio').value = p?.precio || ''; $('pr-activo').checked = p ? p.activo !== false : true;
-  const deBsale = p && S.prodBase.some((b) => b.codigo === p.codigo);
+  const deBsale = p && p.deBsale;
   $('pr-codigo').readOnly = !!deBsale; $('b-pr-sugerir').hidden = !!deBsale;
-  $('b-pr-restaurar').hidden = !(deBsale && S.prodOv.has(p.codigo));
+  $('b-pr-restaurar').hidden = !(deBsale && p.origen === 'Editado');
   $('b-pr-restaurar').textContent = 'Volver a los valores de Bsale';
   if (p && !deBsale) { $('b-pr-restaurar').hidden = false; $('b-pr-restaurar').textContent = 'Eliminar producto'; }
   calcNeto(); msg('m-pr', deBsale ? 'Producto de Bsale: el código no se puede cambiar. Tus cambios quedan en el portal; Bsale no se modifica.' : '');
@@ -1306,19 +1467,20 @@ async function guardarProducto() {
   const esNuevo = S.prEdit === '__nuevo';
   if ((esNuevo || codigo !== S.prEdit) && productos().some((p) => p.codigo === codigo)) { msg('m-pr', 'Ya existe un producto con ese código.', 'bad'); return; }
   if (precio != null && precio < 0) { msg('m-pr', 'El precio no puede ser negativo.', 'bad'); return; }
-  const base = S.prodBase.find((b) => b.codigo === codigo);
-  const body = { ...(base || {}), codigo, nombre: $('pr-nombre').value.trim() || nombreAuto() || codigo, modelo: $('pr-modelo').value || null, categoria: $('pr-cat').value || null,
+  const body = { codigo, nombre: $('pr-nombre').value.trim() || nombreAuto() || codigo, modelo_id: modeloDe($('pr-modelo').value)?._id ?? null, categoria: $('pr-cat').value || null,
     tono: $('pr-tono').value || null, piedra: $('pr-piedra').value || null, central_ct: num($('pr-ct').value), variante: $('pr-var').value.trim() || null,
-    precio: precio || 0, precio_neto: precio ? Math.round(precio / (1 + IVA)) : 0, activo: $('pr-activo').checked, editado_por: S.uid, editado_en: new Date().toISOString() };
+    precio: precio || 0, activo: $('pr-activo').checked, editado_por: S.uid, editado_en: new Date().toISOString() };
   const prev = productos().find((x) => x.codigo === S.prEdit);
   const atributos = { ...(prev?.atributos || {}) };
   for (const sel of $('pr-extras').querySelectorAll('select')) { if (sel.value) atributos[sel.dataset.g] = sel.value; else delete atributos[sel.dataset.g]; }
   body.atributos = atributos;
   try {
-    await S.db.doc(`maestro/catalogo/productos/${codigo}`).set(body);
-    if (!esNuevo && S.prEdit !== codigo && !S.prodBase.some((b) => b.codigo === S.prEdit)) await S.db.doc(`maestro/catalogo/productos/${S.prEdit}`).delete();
-    S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', '');
-  } catch (e) { msg('m-pr', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); }
+    // Un producto nuevo del portal puede cambiar de código; uno de Bsale no.
+    const r = esNuevo || S.prEdit !== codigo ? await sb.from('productos').insert(body) : await sb.from('productos').update(body).eq('codigo', codigo);
+    if (r.error) throw r.error;
+    if (!esNuevo && S.prEdit !== codigo) { const d = await sb.from('productos').delete().eq('codigo', S.prEdit); if (d.error) throw d.error; }
+    S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', ''); cargarProductos();
+  } catch (e) { msg('m-pr', 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad'); }
 }
 const borrando = new Set();
 async function restaurarProducto() {
@@ -1328,8 +1490,18 @@ async function restaurarProducto() {
   if (!borrando.has(cod)) { borrando.add(cod); b.textContent = 'Confirmar: ' + txt.charAt(0).toLowerCase() + txt.slice(1); b.classList.add('armado'); setTimeout(() => { borrando.delete(cod); b.textContent = txt; b.classList.remove('armado'); }, 6000); return; }
   b.classList.remove('armado');
   borrando.delete(cod);
-  try { await S.db.doc(`maestro/catalogo/productos/${cod}`).delete(); S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', ''); }
-  catch (e) { msg('m-pr', 'No se pudo (' + (e.code || e.message) + ').', 'bad'); }
+  const p = S.prods.find((x) => x.codigo === cod);
+  try {
+    let r;
+    if (p && p.origen === 'bsale' && p.bsale_original) {
+      // Volver a la fila importada desde Bsale.
+      const o = p.bsale_original;
+      r = await sb.from('productos').update({ nombre: o.nombre, modelo_id: modeloDe(o.modelo)?._id ?? null, categoria: o.categoria, tono: o.tono, piedra: o.piedra,
+        central_ct: o.central_ct, variante: o.variante, precio: Math.round(o.precio || 0), activo: true, atributos: {}, editado_por: null, editado_en: new Date().toISOString() }).eq('codigo', cod);
+    } else r = await sb.from('productos').delete().eq('codigo', cod);
+    if (r.error) throw r.error;
+    S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', ''); cargarProductos();
+  } catch (e) { msg('m-pr', 'No se pudo (' + (e.message || e.code) + ').', 'bad'); }
 }
 let ajusteArmado = false;
 async function ajustarPrecios() {
@@ -1340,24 +1512,21 @@ async function ajustarPrecios() {
   if (rs.length > 400) { msg('m-aj', `El filtro tiene ${fNum.format(rs.length)} productos; acótalo a 400 o menos.`, 'bad'); return; }
   if (!ajusteArmado) { ajusteArmado = true; $('b-aj').textContent = 'Confirmar ajuste'; $('b-aj').classList.add('armado'); setTimeout(() => { $('b-aj').textContent = 'Aplicar'; $('b-aj').classList.remove('armado'); }, 8000); msg('m-aj', `Se cambiará el precio de ${fNum.format(rs.length)} productos en ${fDec.format(pct)}%. Pulsa "Confirmar ajuste" para aplicarlo.`); setTimeout(() => { ajusteArmado = false; }, 8000); return; }
   ajusteArmado = false; $('b-aj').textContent = 'Aplicar'; $('b-aj').classList.remove('armado');
-  const red = $('aj-red').checked; let ok = 0;
-  for (const p of rs) {
-    let v = p.precio * (1 + pct / 100); v = red ? Math.round(v / 1000) * 1000 : Math.round(v);
-    const { origen, _v, ...resto } = p;
-    try { await S.db.doc(`maestro/catalogo/productos/${p.codigo}`).set({ ...resto, precio: v, precio_neto: Math.round(v / (1 + IVA)), editado_por: S.uid, editado_en: new Date().toISOString() }); ok++; }
-    catch (e) { msg('m-aj', `Se detuvo en ${p.codigo} (${e.code || e.message}). ${ok} precios actualizados.`, 'bad'); return; }
-    if (ok % 20 === 0) msg('m-aj', `Actualizando… ${ok} de ${rs.length}`);
-  }
-  msg('m-aj', `${fNum.format(ok)} precios actualizados.`, 'ok');
+  const red = $('aj-red').checked, ahora = new Date().toISOString();
+  // Un solo upsert: solo cambia precio y auditoría de las filas existentes.
+  const filas = rs.map((p) => { let v = p.precio * (1 + pct / 100); v = red ? Math.round(v / 1000) * 1000 : Math.round(v); return { codigo: p.codigo, nombre: p.nombre, precio: Math.max(0, v), editado_por: S.uid, editado_en: ahora }; });
+  const { error } = await sb.from('productos').upsert(filas, { onConflict: 'codigo' });
+  if (error) { msg('m-aj', 'No se pudo aplicar el ajuste (' + (error.message || error.code) + '). No se cambió ningún precio.', 'bad'); return; }
+  msg('m-aj', `${fNum.format(filas.length)} precios actualizados.`, 'ok');
+  cargarProductos();
 }
-async function descargarCSV() {
-  const dl = await claude.use('downloads');
-  if (!dl) { msg('m-pr', 'La descarga no está disponible en esta vista.', 'bad'); return; }
+function descargarCSV() {
   const cols = ['codigo', 'nombre', 'modelo', 'categoria', 'tono', 'piedra', 'central_ct', 'variante', 'precio', 'precio_neto', 'activo', 'origen'];
   const esc = (v) => { const s = v == null ? '' : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const rows = prodFiltrados().map((p) => cols.map((c) => c === 'activo' ? (p.activo === false ? 'no' : 'si') : esc(p[c])).join(';'));
-  try { await dl.save({ filename: `productos-vannucci-${hoy()}.csv`, data: '﻿' + ['codigo;nombre;modelo;categoria;tono;piedra;central_ct;variante;precio_con_iva;precio_neto;activo;origen', ...rows].join('\n') }); }
-  catch (e) { if (e.code !== 'declined') msg('m-pr', 'No se pudo descargar (' + (e.code || e.message) + ').', 'bad'); }
+  const blob = new Blob(['﻿' + ['codigo;nombre;modelo;categoria;tono;piedra;central_ct;variante;precio_con_iva;precio_neto;activo;origen', ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = h('a', { href: URL.createObjectURL(blob), download: `productos-vannucci-${hoy()}.csv` });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 // ---------- maestros en el formulario ----------
@@ -1384,11 +1553,6 @@ function alCambiarProducto() {
   if (p.modelo) $('i-modelo').value = p.modelo;
   if (p.tono && TONOS().includes(p.tono)) $('i-tono').value = p.tono;
   alCambiarModelo();
-}
-async function cargarCatalogoBase(url) {
-  try { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); S.prodBase = await r.json(); S.prodBaseStatus = 'ok'; }
-  catch (e) { S.prodBaseStatus = 'error'; }
-  prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
 }
 
 // ---------- ventas (Bsale) ----------
@@ -1519,12 +1683,6 @@ function renderVentas() {
     [h('tr', {}, h('td', { colspan: 4, class: 'note' }, 'Sin ventas de catálogo en este período. La venta de catálogo con modelo empieza en 2026.'))]));
   $('v-fuente').textContent = `Fuente: Bsale, ${S.ventasFuente || 'documentos de venta y notas de crédito'}. Datos del ${fFecha(S.ventasDesde)} al ${fFecha(S.ventasHasta)}; es una copia que se actualiza cuando se pide. Venta neta = venta bruta − notas de crédito, sin IVA.`;
 }
-async function cargarVentas(cfg) {
-  S.ventasDesde = cfg.desde; S.ventasHasta = cfg.hasta; S.ventasFuente = cfg.fuente;
-  try { const r = await fetch(cfg.url); if (!r.ok) throw new Error('HTTP ' + r.status); S.ventas = await r.json(); S.ventasStatus = 'ok'; }
-  catch (e) { S.ventasStatus = 'error'; }
-  ventasKey = null; if (S.tab === 'ventas') renderVentas();
-}
 
 // ---------- pestañas ----------
 function setTab(t) {
@@ -1576,8 +1734,9 @@ function wire() {
   for (const id of ['i-fecha', 'i-modelo', 'i-ot', 'i-pf']) $(id).addEventListener('input', () => errorCampo(id, ''));
   $('form').addEventListener('submit', enviar);
   $('b-cancelar').addEventListener('click', cancelarEdicion);
-  $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map((p) => p._uid + '/' + p._id) : []); renderRevision(); });
-  $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(p._uid + '/' + p._id))));
+  $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map(claveRev) : []); renderRevision(); });
+  $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(claveRev(p)))));
+  $('f-login').addEventListener('submit', enviarEnlace);
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'panel') renderPanel(); if (S.tab === 'ventas') renderVentas(); }, 150); });
   llenarForm(null);
 }
@@ -1587,96 +1746,66 @@ function modelosDatalist() {
   $('modelos').replaceChildren(...ms.map((m) => h('option', { value: m })));
 }
 
-async function cargarHistorico(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    S.historico = data.map((x) => ({ ...x, origen: 'Planilla' }));
-    S.histStatus = 'ok';
-  } catch (e) { S.histStatus = 'error'; }
-  cacheKey = null; modelosDatalist(); renderPanel();
+// ---------- sesión ----------
+async function enviarEnlace(ev) {
+  ev.preventDefault();
+  const email = $('l-email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg('m-login', 'Escribe un correo válido.', 'bad'); return; }
+  const b = $('b-login'); b.disabled = true; msg('m-login', 'Enviando…');
+  // shouldCreateUser: false → solo entran las personas que el supervisor invitó.
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } });
+  b.disabled = false;
+  if (error) msg('m-login', /signups not allowed|not found/i.test(error.message) ? 'Ese correo no está invitado al portal. Pídele acceso al Supervisor de Taller.' : 'No se pudo enviar el enlace (' + error.message + ').', 'bad');
+  else msg('m-login', 'Listo. Revisa tu correo y abre el enlace desde este mismo navegador.', 'ok');
+}
+function mostrarLogin(ver) {
+  $('login').hidden = !ver;
+  document.querySelector('nav.tabs').hidden = ver;
+  for (const sec of document.querySelectorAll('.pv-tab')) if (ver) sec.hidden = true;
+  if (ver) { $('ind-sub').hidden = true; $('who').replaceChildren(h('span', { class: 'role' }, 'Sin sesión')); }
+}
+async function salir() { await sb.auth.signOut(); location.hash = ''; location.reload(); }
+
+let iniciado = false;
+async function entrar(session) {
+  if (iniciado) return;
+  iniciado = true;
+  mostrarLogin(false);
+  S.uid = session.user.id; S.me = { id: S.uid, email: session.user.email };
+  await Promise.all([cargarOrfebres(), cargarParametros(), cargarModelos()]);
+  await cargarPerfiles();
+  const rol = S.perfil?.rol || null;
+  S.isSup = rol === 'supervisor'; S.canWrite = rol === 'supervisor' || rol === 'orfebre';
+  if (S.isSup) await cargarPerfiles();
+  $('who').replaceChildren(
+    h('span', {}, S.perfil?.nombre || S.me.email),
+    h('span', { class: 'role' + (S.isSup ? ' sup' : '') }, S.isSup ? 'Supervisor de Taller' : rol === 'orfebre' ? 'Orfebre' : 'Lector'),
+    h('button', { type: 'button', class: 'btn link', onclick: salir }, 'Salir'));
+  if (!rol) avisoError('Tu usuario todavía no tiene perfil en el portal. Pide al Supervisor de Taller que te asigne un rol.');
+  else if (rol === 'orfebre' && !S.perfil.orfebre_id) avisoError('Tu usuario no está vinculado a un orfebre del taller. Pide al supervisor que lo vincule en Maestros → Usuarios.');
+  $('t-revision').hidden = !S.isSup;
+  $('t-maestros').hidden = !S.isSup;
+  $('t-registrar').hidden = !S.canWrite;
+  $('b-pr-csv').hidden = !S.isSup;
+  const ini = location.hash.slice(1);
+  const permitida = (t) => t === 'panel' || t === 'ayuda' || (t === 'registrar' && S.canWrite) || (['ventas', 'revision', 'maestros'].includes(t) && S.isSup);
+  setTab(permitida(ini) ? ini : 'panel');
+  renderPerfil();
+  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas()]);
+  // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { cargarMis(); cargarPendientes(); } });
 }
 
 async function start() {
   wire();
-  const ini = location.hash.slice(1);
-  setTab(['panel', 'ventas', 'registrar', 'revision', 'maestros', 'ayuda'].includes(ini) ? ini : 'panel');
-  const [user, db] = await Promise.all([claude.use('user'), claude.use('db')]);
-  S.user = user; S.db = db;
-  if (user) {
-    S.me = await user.me(); S.uid = S.me.id; S.isSup = await user.canEdit();
-    const cw = await user.can('data.write'); S.canWrite = cw !== false;
-  }
-  const who = $('who');
-  who.replaceChildren(
-    S.me && S.me.id ? h('img', { src: S.me.avatarUrl, alt: '' }) : null,
-    h('span', {}, (S.me && S.me.name) || (S.me && S.me.id ? 'Tú' : 'Sin sesión')),
-    h('span', { class: 'role' + (S.isSup ? ' sup' : '') }, S.isSup ? 'Supervisor de Taller' : S.uid && S.canWrite ? 'Orfebre' : 'Lector'));
-  $('t-revision').hidden = !S.isSup;
-  $('t-maestros').hidden = !S.isSup;
-  if (ini === 'ventas' && S.isSup) setTab('ventas');
-  else if (S.tab === 'panel') setTab('panel');
-  if (!S.uid || !S.canWrite) $('t-registrar').hidden = true;
-  if (ini === 'revision' && S.isSup) setTab('revision');
-  if (ini === 'maestros' && S.isSup) setTab('maestros');
-  if (S.isSup) claude.use('downloads').then((dl) => { $('b-pr-csv').hidden = !dl; });
-  if (ini === 'registrar' && !$('t-registrar').hidden) setTab('registrar');
-  if (!db) {
-    const av = $('aviso'); av.hidden = false; av.textContent = 'No se pudo conectar con la base de datos del portal. Inicia sesión en claude.ai con tu cuenta de la empresa y recarga.';
-    S.histStatus = 'error'; renderPanel(); return;
-  }
-  const fallo = () => { const av = $('aviso'); av.hidden = false; av.textContent = 'Se perdió la conexión con la base de datos. Recarga la página.'; };
-  db.doc('config/historico').onSnapshot((s) => { const u = s.exists && s.data().url; if (u) cargarHistorico(u); else { S.histStatus = 'ok'; renderPanel(); } }, fallo);
-  db.doc('config/catalogo').onSnapshot((s) => {
-    const d = s.exists ? s.data() : {};
-    const it = toItems(Array.isArray(d.orfebres_todos) && d.orfebres_todos.length ? d.orfebres_todos : d.orfebres);
-    S.orfItems = it.length ? it : toItems(DEFAULT_ORFEBRES); S.orfebres = activos(S.orfItems); cacheKey = null; renderPerfil(); renderPanel(); if (S.isSup) renderRevision(); if (S.tab === 'maestros') renderMaestros(); }, fallo);
-  if (S.isSup) db.doc('config/ventas').onSnapshot((s) => {
-    const c = s.exists ? s.data() : null;
-    if (c && c.url) cargarVentas(c); else { S.ventasStatus = 'none'; if (S.tab === 'ventas') renderVentas(); }
-  }, fallo);
-  db.doc('maestro/parametros').onSnapshot((s) => {
-    const d = s.exists ? s.data() : {};
-    const lista = (k) => { const it = toItems(d[k]); return it.length ? it : toItems(DEFAULT_PARAM[k]); };
-    S.param = {
-      tonos: lista('tonos'), piedras: lista('piedras'), tipos: lista('tipos'), categorias: lista('categorias'),
-      extras: (Array.isArray(d.extras) ? d.extras : []).filter((g) => g && g.id && g.nombre).map((g) => ({ id: g.id, nombre: g.nombre, sigla: !!g.sigla, items: toItems(g.items) })),
-    };
-    cacheKey = null;
-    opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
-  }, fallo);
-  db.doc('maestro/catalogo').onSnapshot((s) => { const u = s.exists && s.data().base_url; if (u) cargarCatalogoBase(u); else { S.prodBaseStatus = 'ok'; if (S.tab === 'maestros') renderMaestros(); } }, fallo);
-  db.collection('maestro/catalogo/modelos').onSnapshot((snap) => {
-    S.modelos = snap.docs.map((d) => ({ ...d.data(), _id: d.id })); modelosDatalist(); opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
-  }, fallo);
-  db.collection('maestro/catalogo/productos').onSnapshot((snap) => {
-    S.prodOv = new Map(snap.docs.map((d) => [d.id, { ...d.data(), _v: d.id + (d.data().editado_en || '') }])); prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
-  }, fallo);
-  db.collection('aprobadas').onSnapshot((snap) => {
-    S.aprobadas = snap.docs.map((d) => ({ ...d.data(), _id: d.id, _v: d.id + (d.data().aprobado_en || '') }));
-    cacheKey = null; modelosDatalist(); renderPanel(); if (S.isSup) renderRevision();
-  }, fallo);
-  if (S.uid && S.canWrite) {
-    db.doc(`envios/${S.uid}`).onSnapshot((s) => { S.perfil = s.exists ? s.data() : null; renderPerfil(); }, () => {});
-    db.collection(`envios/${S.uid}/piezas`).orderBy('creado_en', 'desc').limit(500).onSnapshot((snap) => {
-      S.mis = snap.docs.map((d) => ({ ...d.data(), _id: d.id })); renderMis();
-    }, () => {});
-    renderPerfil(); renderMis();
-  }
-  if (S.isSup) {
-    const subs = new Map();
-    db.collection('envios').onSnapshot((snap) => {
-      const uids = new Set(snap.docs.map((d) => d.id));
-      for (const [u, un] of subs) if (!uids.has(u)) { un(); subs.delete(u); delete S.pend[u]; }
-      for (const u of uids) if (!subs.has(u) && subs.size < 60) {
-        subs.set(u, db.collection(`envios/${u}/piezas`).where('estado', '==', 'pendiente').onSnapshot((ps) => {
-          S.pend[u] = ps.docs.map((d) => ({ ...d.data(), _id: d.id })); renderRevision(); if (S.tab === 'panel') renderPanel();
-        }, () => {}));
-      }
-      renderRevision();
-    }, fallo);
-  }
+  S.histStatus = 'loading';
+  const { data } = await sb.auth.getSession();
+  if (data.session) entrar(data.session);
+  else mostrarLogin(true);
+  sb.auth.onAuthStateChange((evento, session) => {
+    if (session && !iniciado) entrar(session);
+    if (evento === 'SIGNED_OUT') mostrarLogin(true);
+  });
 }
 start();
 })();
