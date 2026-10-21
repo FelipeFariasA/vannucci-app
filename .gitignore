@@ -1,0 +1,16 @@
+# Sistema operativo y editores
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+*.tmp
+~$*
+
+# Datos exportados (no subir datos de negocio)
+*.csv
+*.xlsx
+*.xls
+
+# Configuración local
+.env
+.env.*

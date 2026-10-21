@@ -1,0 +1,1685 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Portal Vannucci</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: barra superior con marca y pestañas, contenido en columna de 72rem; tarjetas solo para gráficos, tablas y la cola de revisión. */
+:root {
+  /* Paleta de vannucci.cl: negro, blanco y grises, con acentos bronce #897358, dorado #AA8961 y champaña #EAD7BA */
+  --bg: #faf8f5; --panel: #ffffff; --ink: #0a0a0a; --muted: #6f6f6f; --line: #e8e3dc; --soft: #f4eee6;
+  --gold: #897358; --gold-ink: #6b5841; --gold-soft: #f3e9da; --ok: #2f6a42; --ok-soft: #e4efe6; --warn: #80560f; --warn-soft: #f6ead6; --bad: #a8402f; --bad-soft: #f6e2dd;
+  --s1: #aa8961; --s2: #262626; --s3: #767676; --s4: #5e4b36; --grid: #eeeae4; --ref: #a39a8e; --logo-filter: none;
+  --f-display: "Cormorant Garamond", Cormorant, Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 10px; --shadow: 0 8px 24px rgb(29 27 22 / .12);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0a0a0a; --panel: #151413; --ink: #f2eee8; --muted: #a39f99; --line: #2d2a26; --soft: #1e1c19;
+  --gold: #c9ab80; --gold-ink: #c9ab80; --gold-soft: #2e271e; --ok: #7cc293; --ok-soft: #1c2c21; --warn: #e0b067; --warn-soft: #33291a; --bad: #e88b7c; --bad-soft: #36201c;
+  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0a0a0a; --panel: #151413; --ink: #f2eee8; --muted: #a39f99; --line: #2d2a26; --soft: #1e1c19;
+  --gold: #c9ab80; --gold-ink: #c9ab80; --gold-soft: #2e271e; --ok: #7cc293; --ok-soft: #1c2c21; --warn: #e0b067; --warn-soft: #33291a; --bad: #e88b7c; --bad-soft: #36201c;
+  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+.pv { max-width: 72rem; margin-inline: auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 22px; }
+.pv * { box-sizing: border-box; }
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.brand .logo { height: 40px; width: auto; display: block; filter: var(--logo-filter); }
+.brand .divider { width: 1px; height: 26px; background: var(--line); align-self: flex-end; }
+.brand h1.titulo { font-family: "Cormorant Garamond", Cormorant, Georgia, "Times New Roman", serif; font-weight: 500; font-size: 1.6rem; letter-spacing: .03em; line-height: 1; }
+.brand h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.7rem; letter-spacing: -.01em; margin: 0; }
+.brand .sub { color: var(--muted); font-size: .85rem; }
+.who { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); }
+.who img { width: 26px; height: 26px; border-radius: 50%; }
+.role { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); }
+.role.sup { background: var(--gold-soft); border-color: transparent; color: var(--gold-ink); }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button { font: inherit; font-weight: 500; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: 0; padding: 8px 12px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+nav.tabs button[aria-current="page"] { color: var(--ink); border-bottom-color: var(--gold); }
+.count { font-family: var(--f-mono); font-size: .72rem; background: var(--gold); color: var(--panel); border-radius: 999px; padding: 0 6px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h2 { font-family: var(--f-display); font-weight: 600; font-size: 1.4rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-size: .95rem; font-weight: 600; margin: 0; }
+.note { color: var(--muted); font-size: .875rem; margin: 0; max-width: 70ch; }
+.take { margin: 0; max-width: 72ch; color: var(--muted); }
+.take b { color: var(--ink); font-weight: 600; }
+.banner { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r); padding: 12px 14px; font-size: .88rem; }
+.banner.warn { background: var(--warn-soft); border-color: transparent; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { font: inherit; font-size: .875rem; border: 0; background: transparent; color: var(--muted); padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--soft); color: var(--ink); font-weight: 600; }
+.sw { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+select, input, textarea { font: inherit; font-size: .9rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; }
+.btn { font: inherit; font-size: .85rem; font-weight: 600; border-radius: 8px; padding: 7px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: var(--panel); }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: var(--panel); }
+.btn.danger { color: var(--bad); }
+.btn.link { border: 0; background: none; padding: 4px 6px; color: var(--muted); text-decoration: underline; font-weight: 500; }
+.btn:disabled { opacity: .5; cursor: default; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: 12px; }
+.tile { border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 2px; align-content: start; }
+.tile .k { font-size: .85rem; color: var(--muted); }
+.tile .v { font-family: var(--f-body); font-size: 1.75rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .d { font-size: .8rem; color: var(--muted); min-height: 1.1em; }
+.good { color: var(--ok) !important; } .bad { color: var(--bad) !important; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.wide { grid-column: 1 / -1; }
+.chart { position: relative; min-height: 220px; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 12px; font-family: var(--f-body); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .875rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 6px 10px; font-size: .85rem; white-space: nowrap; z-index: 3; }
+.tip .h { color: var(--muted); margin-bottom: 2px; }
+.tip .r { display: flex; gap: 6px; align-items: center; }
+.tbl { overflow: auto; max-height: 28rem; }
+.tbl.free { max-height: none; }
+table { width: 100%; border-collapse: collapse; font-size: .875rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 500; z-index: 1; }
+td.n, th.n { text-align: right; } td.mono, .mono { font-family: var(--f-mono); }
+textarea { width: 100%; resize: vertical; }
+#m-sub { justify-self: start; }
+tr.sel td { font-weight: 600; }
+td.wrap { white-space: normal; min-width: 12rem; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+.pill.pendiente { background: var(--warn-soft); color: var(--warn); }
+.pill.aprobada, .pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.rechazada, .pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.neutral { background: var(--soft); color: var(--muted); }
+.hbar { display: grid; gap: 6px; }
+.hbar .row { display: grid; grid-template-columns: minmax(6rem, 10rem) 1fr 3.5rem; gap: 8px; align-items: center; font-size: .875rem; }
+.hbar .track { height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; }
+.hbar .fill { display: block; height: 100%; border-radius: 5px; }
+.hbar .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .val { text-align: right; font-variant-numeric: tabular-nums; }
+form.pieza { display: grid; gap: 14px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; font-size: .875rem; color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; }
+.field.full { grid-column: 1 / -1; }
+.field .unit { font-family: var(--f-mono); }
+.calc { display: flex; flex-wrap: wrap; gap: 18px; align-items: baseline; padding: 10px 14px; border-radius: 8px; background: var(--soft); font-size: .88rem; }
+.calc b { font-family: var(--f-mono); font-weight: 500; font-size: 1.05rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.msg { font-size: .85rem; }
+.msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); }
+.queue { display: grid; gap: 10px; }
+.item { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; }
+.item.flag { border-left: 3px solid var(--warn); }
+.item .head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.item .head .who2 { color: var(--muted); font-size: .85rem; }
+.kv { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .9rem; }
+.kv span { color: var(--muted); }
+.kv b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.reject { display: grid; gap: 6px; }
+.empty { color: var(--muted); font-size: .88rem; padding: 18px; text-align: center; border: 1px dashed var(--line); border-radius: var(--r); }
+.skel { display: inline-block; min-width: 3ch; height: 1em; border-radius: 4px; background: var(--soft); color: transparent; }
+.defs { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; font-size: .875rem; color: var(--muted); }
+.defs b { color: var(--ink); font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 12px; }
+.step { border-top: 2px solid var(--gold); padding-top: 8px; font-size: .85rem; display: grid; gap: 4px; }
+.step .n { font-family: var(--f-mono); color: var(--gold); font-size: .78rem; }
+/* Áreas de toque y formularios */
+.btn, .seg button, nav.tabs button, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 36px; }
+.btn.link { min-height: 32px; padding: 6px 8px; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
+.btn, .seg button, nav.tabs button { transition: background-color .15s, color .15s, border-color .15s; }
+.btn:hover:not(:disabled) { border-color: var(--gold); }
+.btn.primary:hover:not(:disabled), .btn.ok:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.link:hover { color: var(--ink); }
+@media (pointer: coarse) {
+  .btn, .btn.link, .seg button, nav.tabs button, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+  input[type="checkbox"] { width: 22px; height: 22px; }
+}
+@media (max-width: 640px) { select, input, textarea { font-size: 16px; } }
+.req { color: var(--bad); margin-left: 2px; }
+.ferr { color: var(--bad); font-size: .85rem; font-weight: 600; }
+.field [aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.btn.danger.armado, .btn.link.armado { color: var(--panel); background: var(--bad); border-color: var(--bad); text-decoration: none; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { .btn, .seg button, nav.tabs button { transition: none; } }
+@media (prefers-reduced-motion: no-preference) { .item { transition: opacity .2s; } }
+</style>
+
+<div class="pv" id="app">
+  <header class="top">
+    <div class="brand"><img class="logo" src="/_blob/9f6e015d297b39a793b64492134420c1" alt="Vannucci" width="141" height="40"><span class="divider" aria-hidden="true"></span><h1 class="titulo">Sistema Joyería</h1></div>
+    <div class="who" id="who"><span class="role">Cargando…</span></div>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones">
+    <button type="button" id="t-panel" data-tab="panel">Indicadores</button>
+    <button type="button" id="t-registrar" data-tab="registrar">Registrar pieza</button>
+    <button type="button" id="t-revision" data-tab="revision" hidden>Aprobaciones <span class="count" id="n-pend" hidden>0</span></button>
+    <button type="button" id="t-maestros" data-tab="maestros" hidden>Maestros</button>
+    <button type="button" id="t-ayuda" data-tab="ayuda">Cómo funciona</button>
+  </nav>
+
+  <div id="aviso" class="banner warn" hidden></div>
+
+  <div class="seg" id="ind-sub" role="group" aria-label="Indicadores" hidden style="justify-self:start">
+    <button type="button" data-sub="panel">Productividad</button>
+    <button type="button" data-sub="ventas">Ventas</button>
+  </div>
+
+  <!-- PRODUCTIVIDAD -->
+  <section id="panel" class="pv-tab" style="display:grid;gap:20px">
+    <p class="take" id="take"><span class="skel">cargando</span></p>
+    <div class="filters">
+      <div class="seg" id="f-persona" role="group" aria-label="Orfebre"></div>
+      <select id="f-anio" aria-label="Año"></select>
+      <select id="f-mes" aria-label="Mes"></select>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="k">Piezas definitivas</span><span class="v" id="k-piezas">—</span><span class="d" id="d-piezas"></span></div>
+      <div class="tile"><span class="k">Piezas por jornada</span><span class="v" id="k-pj">—</span><span class="d" id="d-pj"></span></div>
+      <div class="tile"><span class="k">Oro trabajado</span><span class="v" id="k-oro">—</span><span class="d" id="d-oro"></span></div>
+      <div class="tile"><span class="k">Merma</span><span class="v" id="k-merma">—</span><span class="d" id="d-merma"></span></div>
+      <div class="tile"><span class="k">Piezas con merma ≤ 5%</span><span class="v" id="k-meta">—</span><span class="d" id="d-meta"></span></div>
+      <div class="tile"><span class="k">Peso final a ±5% del objetivo</span><span class="v" id="k-prec">—</span><span class="d" id="d-prec"></span></div>
+    </div>
+    <div class="grid">
+      <div class="card wide" id="c-piezas">
+        <h2>Piezas por mes</h2>
+        <p class="note">Solo registros definitivos (histórico de la planilla y piezas aprobadas en el portal). Haz clic en un mes para verlo.</p>
+        <div class="legend" id="leg"></div>
+        <div class="chart" id="ch-piezas"></div>
+      </div>
+      <div class="card" id="c-merma">
+        <h2>Merma mensual</h2>
+        <p class="note">Gramos perdidos sobre oro trabajado, piezas válidas. Línea punteada: meta de 5%.</p>
+        <div class="chart" id="ch-merma"></div>
+      </div>
+      <div class="card" id="c-ritmo">
+        <h2>Piezas por jornada</h2>
+        <p class="note">Piezas divididas por los días con registros de cada orfebre.</p>
+        <div class="chart" id="ch-ritmo"></div>
+      </div>
+      <div class="card wide" id="c-comp">
+        <h2 id="h-comp">Comparativo por orfebre</h2>
+        <div class="tbl free"><table id="tb-comp"><thead><tr>
+          <th>Orfebre</th><th class="n">Piezas</th><th class="n">Jornadas</th><th class="n">Piezas/jornada</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma (g)</th><th class="n">Merma %</th><th class="n">≤ 5%</th><th class="n">Precisión</th><th class="n">Atípicas</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card" id="c-tipo"><h2>Tipo de trabajo</h2><div class="hbar" id="hb-tipo"></div></div>
+      <div class="card" id="c-tono"><h2>Tono del oro</h2><div class="hbar" id="hb-tono"></div></div>
+      <div class="card wide" id="c-reg">
+        <h2>Registros definitivos</h2>
+        <p class="note" id="n-reg"></p>
+        <input type="search" id="q" placeholder="Buscar modelo, tono o cotización" aria-label="Buscar registros" style="max-width:20rem">
+        <div class="tbl"><table id="tb-reg"><thead><tr>
+          <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>Tono</th><th>Cotización</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Devuelto (g)</th><th class="n">Merma %</th><th>Trabajo</th><th>Origen</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VENTAS -->
+  <section id="ventas" class="pv-tab" hidden style="display:grid;gap:20px">
+    <p class="take" id="v-take"><span class="skel">cargando</span></p>
+    <div class="filters">
+      <div class="seg" id="vf-suc" role="group" aria-label="Sucursal"></div>
+      <select id="vf-anio" aria-label="Año"></select>
+      <select id="vf-mes" aria-label="Mes"></select>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="k">Venta neta</span><span class="v" id="vk-neta">—</span><span class="d" id="vd-neta"></span></div>
+      <div class="tile"><span class="k">Venta bruta</span><span class="v" id="vk-bruta">—</span><span class="d" id="vd-bruta"></span></div>
+      <div class="tile"><span class="k">Notas de crédito</span><span class="v" id="vk-nc">—</span><span class="d" id="vd-nc"></span></div>
+      <div class="tile"><span class="k">Documentos de venta</span><span class="v" id="vk-docs">—</span><span class="d" id="vd-docs"></span></div>
+      <div class="tile"><span class="k">Ticket promedio</span><span class="v" id="vk-ticket">—</span><span class="d" id="vd-ticket"></span></div>
+      <div class="tile"><span class="k">Unidades vendidas</span><span class="v" id="vk-unidades">—</span><span class="d" id="vd-unidades"></span></div>
+    </div>
+    <div class="grid">
+      <div class="card wide">
+        <h2>Venta neta por mes</h2>
+        <p class="note">Ventas menos notas de crédito, sin IVA, por sucursal. Haz clic en un mes para verlo en detalle.</p>
+        <div class="legend" id="v-leg"></div>
+        <div class="chart" id="vch-mes"></div>
+      </div>
+      <div class="card"><h2>Ticket promedio</h2><p class="note">Venta bruta dividida por documentos de venta.</p><div class="chart" id="vch-ticket"></div></div>
+      <div class="card"><h2>Documentos de venta</h2><p class="note">Boletas, facturas y comprobantes por mes.</p><div class="chart" id="vch-docs"></div></div>
+      <div class="card wide">
+        <h2 id="vh-suc">Resumen por sucursal</h2>
+        <div class="tbl free"><table id="vtb-suc"><thead><tr>
+          <th>Sucursal</th><th class="n">Documentos</th><th class="n">Venta bruta</th><th class="n">Notas de crédito</th><th class="n">Venta neta</th><th class="n">Ticket promedio</th><th class="n">Unidades</th><th class="n">% del total</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card"><h2>Tipo de producto</h2><p class="note">"Sin código" es venta registrada sin producto de catálogo.</p><div class="hbar" id="vhb-grupo"></div></div>
+      <div class="card"><h2>Catálogo por tono</h2><p class="note">Venta neta de productos de catálogo.</p><div class="hbar" id="vhb-tono"></div></div>
+      <div class="card"><h2>Catálogo por piedra</h2><p class="note">Venta neta de productos de catálogo.</p><div class="hbar" id="vhb-piedra"></div></div>
+      <div class="card wide">
+        <h2>Modelos de catálogo más vendidos</h2>
+        <p class="note">Los 15 modelos con más venta neta en el período. "Fabricadas" son las piezas definitivas del taller del mismo modelo en el período.</p>
+        <div class="tbl"><table id="vtb-mod"><thead><tr><th>Modelo</th><th class="n">Unidades</th><th class="n">Venta neta</th><th class="n">Fabricadas</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+    <p class="note" id="v-fuente"></p>
+  </section>
+
+  <!-- REGISTRAR -->
+  <section id="registrar" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div class="card" id="c-form">
+      <div style="display:grid;gap:4px">
+        <h2 id="h-form">Nueva pieza</h2>
+        <p class="note">Lo que registres queda pendiente hasta que el Supervisor de Taller lo apruebe. Solo entonces cuenta en la productividad.</p>
+      </div>
+      <div id="perfil-box" class="fields"></div>
+      <form class="pieza" id="form" novalidate>
+        <div class="fields">
+          <label class="field">Fecha<span class="req" aria-hidden="true">*</span><input type="date" id="i-fecha" required></label>
+          <label class="field">Tono<select id="i-tono"></select></label>
+          <label class="field">Modelo<span class="req" aria-hidden="true">*</span><input id="i-modelo" list="modelos" required autocomplete="off" placeholder="Ej. Rapa Nui"></label>
+          <label class="field">Código de producto <span class="unit">(opcional)</span><input id="i-prod" list="codigos" autocomplete="off" class="mono" placeholder="Ej. P05-DL-C0.30-BL"></label>
+          <label class="field">N° de cotización<input id="i-cot" inputmode="numeric" placeholder="Ej. 4633"></label>
+          <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
+          <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field"><span>Oro trabajado <span class="unit">(g)</span><span class="req" aria-hidden="true">*</span></span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal" required></label>
+          <label class="field"><span>Peso final <span class="unit">(g)</span><span class="req" aria-hidden="true">*</span></span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal" required></label>
+          <label class="field">Oro devuelto <span class="unit">(g)</span><input id="i-od" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
+          <label class="field full">Observaciones<textarea id="i-obs" rows="2" placeholder="Ej. Engaste, garantía, ajuste de talla"></textarea></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="i-gar" style="width:auto"> Trabajo por garantía</label>
+        </div>
+        <datalist id="modelos"></datalist>
+        <datalist id="codigos"></datalist>
+        <p class="note" id="hint-modelo"></p>
+        <div class="calc" id="calc" aria-live="polite"></div>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="b-enviar">Enviar a aprobación</button>
+          <button type="button" class="btn" id="b-cancelar" hidden>Cancelar edición</button>
+          <span class="msg" id="m-form" role="status"></span>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Mis registros</h2>
+      <p class="note">Puedes editar o eliminar las piezas pendientes o rechazadas. Las aprobadas ya son definitivas.</p>
+      <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
+      <div class="tbl"><table id="tb-mis"><thead><tr>
+        <th>Fecha</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- REVISIÓN -->
+  <section id="revision" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div style="display:grid;gap:6px">
+      <h2>Piezas por aprobar</h2>
+      <p class="note">Revisa los pesos antes de aprobar. Al aprobar, la pieza se copia a los registros definitivos y el orfebre ya no puede cambiarla. Puedes corregir valores antes de aprobar.</p>
+    </div>
+    <div class="actions" id="bulk">
+      <label style="display:inline-flex;gap:6px;align-items:center;font-size:.85rem"><input type="checkbox" id="sel-all"> Seleccionar todas</label>
+      <button type="button" class="btn ok" id="b-aprobar-sel" disabled>Aprobar seleccionadas</button>
+      <span class="msg" id="m-rev" role="status"></span>
+    </div>
+    <div class="queue" id="cola"></div>
+    <div class="card">
+      <h2>Últimas aprobaciones</h2>
+      <p class="note">Si aprobaste algo por error, anúlalo: la pieza vuelve a quedar pendiente.</p>
+      <div class="tbl"><table id="tb-hist"><thead><tr>
+        <th>Aprobada</th><th>Por</th><th>Orfebre</th><th>Fecha</th><th>Modelo</th><th class="n">Oro (g)</th><th class="n">Merma %</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- MAESTROS -->
+  <section id="maestros" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div style="display:grid;gap:6px">
+      <h2>Maestros</h2>
+      <p class="note">Datos base del taller: parámetros, modelos y productos con su código y precio. Solo el Supervisor de Taller los cambia; los orfebres los usan en el formulario de registro.</p>
+    </div>
+    <div class="seg" id="m-sub" role="group" aria-label="Maestro">
+      <button type="button" data-sub="parametros">Parámetros</button>
+      <button type="button" data-sub="modelos">Modelos</button>
+      <button type="button" data-sub="productos">Productos y precios</button>
+    </div>
+
+    <div id="sub-parametros" class="msub" style="display:grid;gap:14px">
+      <p class="note">Cada cambio se guarda al momento. Cambiar el nombre de un valor no modifica las piezas ni los productos ya registrados con el nombre anterior. Si un valor ya no se usa, desactívalo: deja de aparecer en los formularios y conserva el historial.</p>
+      <span class="msg" id="m-param" role="status"></span>
+      <div class="grid" id="param-grid"></div>
+      <div class="card" id="c-grupo-nuevo">
+        <h2>Nuevo grupo de parámetros</h2>
+        <p class="note">Por ejemplo Tallas, Largo de cadena o Terminación. Los grupos nuevos aparecen como campos en la ficha de cada producto.</p>
+        <div class="fields">
+          <label class="field">Nombre del grupo<input id="g-nombre" autocomplete="off" placeholder="Ej. Tallas"></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end"><input type="checkbox" id="g-sigla" style="width:auto"> Cada valor lleva sigla</label>
+        </div>
+        <div class="actions"><button type="button" class="btn primary" id="b-grupo">Crear grupo</button><span class="msg" id="m-grupo" role="status"></span></div>
+      </div>
+    </div>
+
+    <div id="sub-modelos" class="msub" hidden style="display:grid;gap:14px">
+      <div class="card" id="c-modelo-form" hidden>
+        <h2 id="h-modelo">Nuevo modelo</h2>
+        <div class="fields">
+          <label class="field">Nombre<input id="mo-nombre" autocomplete="off"></label>
+          <label class="field">Categoría<select id="mo-cat"></select></label>
+          <label class="field">Código base<input id="mo-base" placeholder="Ej. P05" autocomplete="off"></label>
+          <label class="field">Peso objetivo <span class="unit">(g)</span><input id="mo-peso" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field full">Otros nombres usados en el taller<input id="mo-alias" placeholder="Separados por coma. Ej. Rapa nui, Rapanui"></label>
+          <label class="field full">Notas<textarea id="mo-notas" rows="2"></textarea></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="mo-activo" style="width:auto" checked> Activo</label>
+        </div>
+        <div class="actions"><button type="button" class="btn primary" id="b-mo-guardar">Guardar modelo</button><button type="button" class="btn link" id="b-mo-cancelar">Cancelar</button><span class="msg" id="m-mo" role="status"></span></div>
+      </div>
+      <div class="card">
+        <div class="actions" style="justify-content:space-between">
+          <h2>Modelos</h2>
+          <div class="actions"><input type="search" id="mo-q" placeholder="Buscar modelo" aria-label="Buscar modelo"><button type="button" class="btn" id="b-mo-nuevo">Nuevo modelo</button></div>
+        </div>
+        <p class="note" id="n-mo"></p>
+        <div class="tbl"><table id="tb-mo"><thead><tr>
+          <th>Modelo</th><th>Categoría</th><th>Código base</th><th class="n">Peso objetivo (g)</th><th class="n">Productos</th><th class="n">Precio desde</th><th class="n">Piezas en taller</th><th>Estado</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="sub-productos" class="msub" hidden style="display:grid;gap:14px">
+      <div class="card" id="c-prod-form" hidden>
+        <h2 id="h-prod">Nuevo producto</h2>
+        <div class="fields">
+          <label class="field">Modelo<select id="pr-modelo"></select></label>
+          <label class="field">Categoría<select id="pr-cat"></select></label>
+          <label class="field">Tono<select id="pr-tono"></select></label>
+          <label class="field">Piedra<select id="pr-piedra"></select></label>
+          <label class="field">Piedra central <span class="unit">(ct)</span><input id="pr-ct" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Variante<input id="pr-var" placeholder="Ej. Talla 7" autocomplete="off"></label>
+          <label class="field">Código<span style="display:flex;gap:6px"><input id="pr-codigo" autocomplete="off" class="mono" style="flex:1"><button type="button" class="btn" id="b-pr-sugerir" title="Arma el código con el código base del modelo, la piedra, los quilates y el tono">Sugerir</button></span></label>
+          <label class="field full">Nombre<input id="pr-nombre" autocomplete="off" placeholder="Se arma solo si lo dejas vacío"></label>
+          <div id="pr-extras" style="display:contents"></div>
+          <label class="field">Precio con IVA <span class="unit">($)</span><input id="pr-precio" type="number" step="1000" min="0" inputmode="numeric"></label>
+          <label class="field">Precio neto <span class="unit">($)</span><input id="pr-neto" type="number" readonly tabindex="-1"></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="pr-activo" style="width:auto" checked> Activo</label>
+        </div>
+        <div class="actions"><button type="button" class="btn primary" id="b-pr-guardar">Guardar producto</button><button type="button" class="btn link" id="b-pr-cancelar">Cancelar</button><button type="button" class="btn danger" id="b-pr-restaurar" hidden>Volver a los valores de Bsale</button><span class="msg" id="m-pr" role="status"></span></div>
+      </div>
+      <div class="card">
+        <div class="actions" style="justify-content:space-between">
+          <h2>Productos y precios</h2>
+          <div class="actions"><button type="button" class="btn" id="b-pr-csv" hidden>Descargar CSV</button><button type="button" class="btn" id="b-pr-nuevo">Nuevo producto</button></div>
+        </div>
+        <p class="note" id="n-pr"></p>
+        <div class="filters">
+          <input type="search" id="pr-q" placeholder="Buscar código o nombre" aria-label="Buscar producto">
+          <select id="pf-cat" aria-label="Filtrar por categoría"></select>
+          <select id="pf-modelo" aria-label="Filtrar por modelo"></select>
+          <select id="pf-tono" aria-label="Filtrar por tono"></select>
+          <select id="pf-piedra" aria-label="Filtrar por piedra"></select>
+          <select id="pf-estado" aria-label="Filtrar por estado"><option value="activos">Activos</option><option value="todos">Todos</option><option value="inactivos">Inactivos</option><option value="editados">Editados o nuevos</option><option value="sinprecio">Sin precio</option></select>
+        </div>
+        <div class="tbl"><table id="tb-pr"><thead><tr>
+          <th>Código</th><th>Nombre</th><th>Modelo</th><th>Categoría</th><th>Tono</th><th>Piedra</th><th class="n">Ct</th><th>Variante</th><th class="n">Precio con IVA</th><th class="n">Neto</th><th>Origen</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="calc" id="ajuste" style="gap:10px">
+          <span>Ajustar precio de los productos filtrados</span>
+          <input id="aj-pct" type="number" step="0.5" style="width:6rem" aria-label="Porcentaje de ajuste" placeholder="%">
+          <label style="display:inline-flex;gap:6px;align-items:center;font-size:.85rem"><input type="checkbox" id="aj-red" checked> Redondear a $1.000</label>
+          <button type="button" class="btn" id="b-aj">Aplicar</button>
+          <span class="msg" id="m-aj" role="status"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AYUDA -->
+  <section id="ayuda" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div class="steps">
+      <div class="step"><span class="n">1 · Orfebre</span><b>Registra la pieza</b><span>Fecha, modelo, tono, pesos y observaciones. El portal calcula la merma al instante.</span></div>
+      <div class="step"><span class="n">2 · Supervisor</span><b>Revisa y aprueba</b><span>Ve las pendientes de todos, con alertas de merma atípica o peso fuera de objetivo. Aprueba, corrige o rechaza con un motivo.</span></div>
+      <div class="step"><span class="n">3 · Registro definitivo</span><b>Cuenta en la productividad</b><span>Solo lo aprobado entra a los indicadores. Una pieza rechazada vuelve al orfebre para corregirla.</span></div>
+    </div>
+    <div class="card">
+      <h2>Quién puede hacer qué</h2>
+      <ul class="defs">
+        <li><b>Supervisor de Taller</b>: persona con permiso de <b>Editor</b> en este portal (menú Compartir). Ve y aprueba las piezas de todos. Solo los editores pueden escribir registros definitivos.</li>
+        <li><b>Orfebre</b>: persona con permiso de <b>Colaborador</b> (Contributor). Registra sus piezas y ve solo las suyas.</li>
+        <li><b>Lector</b>: permiso de <b>Lector</b> (Viewer). Ve la productividad, no registra.</li>
+        <li><b>Maestros</b>: solo el Supervisor ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Cómo se calcula</h2>
+      <ul class="defs">
+        <li><b>Merma</b>: oro trabajado − peso final − oro devuelto. El % es merma dividida por oro trabajado.</li>
+        <li><b>Pieza válida</b>: con peso final y merma entre −5% y 25%. Fuera de ese rango es atípica y no entra al cálculo de merma.</li>
+        <li><b>Jornada</b>: un día en que el orfebre tiene al menos una pieza.</li>
+        <li><b>Precisión</b>: de las piezas con peso objetivo, la parte cuyo peso final quedó a ±5% del objetivo.</li>
+        <li><b>Histórico</b>: las hojas JOSE LUIS, ANTONY, Milena y RUBEN de la planilla FABRICACION TALLER MARY (marzo 2025 a octubre 2026) se cargaron como registros ya aprobados.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(() => {
+'use strict';
+const META = 5;
+const DEFAULT_ORFEBRES = ['José Luis', 'Antony', 'Milena', 'Rubén'];
+const DEFAULT_PARAM = {
+  tonos: [{ nombre: 'Blanco', sigla: 'BL' }, { nombre: 'Miel', sigla: 'MI' }, { nombre: 'Amarillo', sigla: 'AM' }, { nombre: 'Rosado', sigla: 'RO' }, { nombre: 'Rojo', sigla: '' }, { nombre: 'Platino', sigla: '' }, { nombre: 'Bicolor', sigla: '' }, { nombre: 'Plata', sigla: '' }],
+  piedras: [{ nombre: 'Diamante de laboratorio', sigla: 'DL' }, { nombre: 'Diamante natural', sigla: 'DN' }, { nombre: 'Moissanita', sigla: 'MO' }],
+  tipos: ['Fabricación', 'Engaste', 'Fabricación y engaste', 'Ajuste', 'Terminación', 'Reparación'],
+  categorias: ['Anillo', 'Aros', 'Cadena', 'Colgante', 'Pulsera', 'Collar', 'Piercing', 'Especial', 'Otro'],
+};
+const toItems = (arr) => (Array.isArray(arr) ? arr : []).map((x) => typeof x === 'string' ? { nombre: x, sigla: '', activo: true } : { nombre: String(x?.nombre || '').trim(), sigla: x?.sigla || '', activo: x?.activo !== false }).filter((x) => x.nombre);
+const activos = (items) => (items || []).filter((i) => i.activo !== false).map((i) => i.nombre);
+const TONOS = () => activos(S.param.tonos);
+const TIPOS = () => activos(S.param.tipos);
+const CATS = () => activos(S.param.categorias);
+const PIEDRAS = () => activos(S.param.piedras);
+const GRUPOS_BASE = [
+  { id: 'tonos', nombre: 'Tonos de oro', sigla: true, nota: 'La sigla arma los códigos de producto (ej. MI para Miel).', minimo: true },
+  { id: 'piedras', nombre: 'Piedras', sigla: true, nota: 'La sigla arma los códigos de producto (ej. MO para Moissanita).' },
+  { id: 'tipos', nombre: 'Tipos de trabajo', sigla: false, nota: 'Opciones del campo "Tipo de trabajo" al registrar una pieza.', minimo: true },
+  { id: 'categorias', nombre: 'Categorías de producto', sigla: false, nota: 'Se usan en modelos y productos.', minimo: true },
+  { id: 'orfebres', nombre: 'Orfebres del taller', sigla: false, nota: 'Nombres que se eligen al registrar. Un orfebre inactivo deja de aparecer, pero su historial sigue contando.', minimo: true },
+];
+const SERIES = ['--s1', '--s2', '--s3', '--s4'];
+const IVA = 0.19;
+const CODIGO_OK = /^[A-Za-z0-9_\-.~:@+]{1,80}$/;
+
+const S = {
+  param: { tonos: toItems(DEFAULT_PARAM.tonos), piedras: toItems(DEFAULT_PARAM.piedras), tipos: toItems(DEFAULT_PARAM.tipos), categorias: toItems(DEFAULT_PARAM.categorias), extras: [] },
+  orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
+  ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prodBase: [], prodBaseStatus: 'loading', prodOv: new Map(),
+  msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
+  db: null, user: null, me: null, uid: null, isSup: false, canWrite: false,
+  historico: [], histStatus: 'loading', aprobadas: [], mis: [], perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
+  pend: {}, perfiles: {}, editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
+  persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
+};
+
+// ---------- utilidades ----------
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fNum = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 0 });
+const fDec = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fDec2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fPct = (x) => x == null || !isFinite(x) ? '—' : fDec.format(x * 100) + '%';
+const g2 = (v) => v == null || v === '' ? '' : fDec2.format(v);
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const MESESL = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const fMes = (m, largo) => {
+  if (m === 'Todos') return 'todo el período';
+  if (m.length === 4) return largo ? `el año ${m}` : m;
+  const [y, mm] = m.split('-');
+  return largo ? `${MESESL[+mm - 1]} ${y}` : `${MESES[+mm - 1]} ${y.slice(2)}`;
+};
+const fFecha = (f) => f ? f.split('-').reverse().join('/') : '';
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const num = (v) => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return isFinite(n) ? n : null; };
+const mermaDe = (ot, pf, od) => ot > 0 && pf != null ? { g: Math.round((ot - pf - (od || 0)) * 1000) / 1000, pct: Math.round((ot - pf - (od || 0)) / ot * 10000) / 100 } : { g: null, pct: null };
+const calidadDe = (pct) => pct == null ? 'incompleta' : (pct >= -5 && pct <= 25 ? 'válida' : 'atípica');
+const colorDe = (p) => { const todos = S.orfItems.map((x) => x.nombre), i = todos.indexOf(p); return css(SERIES[(i < 0 ? todos.length : i) % SERIES.length]); };
+const nuevoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+// ---------- datos combinados ----------
+function filasDefinitivas() {
+  const ap = S.aprobadas.map((a) => ({
+    id: 'p-' + a._id, persona: a.orfebre, fecha: a.fecha, mes: (a.fecha || '').slice(0, 7), tono: a.tono, modelo: a.modelo, cotizacion: a.cotizacion,
+    peso_obj: a.peso_obj, oro_trabajo: a.oro_trabajo, peso_final: a.peso_final, oro_devuelto: a.oro_devuelto, merma_g: a.merma_g, merma_pct: a.merma_pct,
+    tipo: a.tipo, garantia: !!a.garantia, calidad: calidadDe(a.merma_pct), observaciones: a.observaciones, origen: 'Portal',
+  })).filter((r) => r.mes.length === 7);
+  return S.historico.concat(ap);
+}
+
+let cacheKey = null, cacheAgg = null;
+function agregados() {
+  const rows = filasDefinitivas();
+  const key = rows.length + '|' + S.aprobadas.map((a) => a._v).join(',');
+  if (key === cacheKey) return cacheAgg;
+  const grupos = new Map();
+  for (const r of rows) for (const p of [r.persona, 'Todos']) for (const m of [r.mes, r.mes.slice(0, 4), 'Todos']) {
+    const k = p + '|' + m;
+    if (!grupos.has(k)) grupos.set(k, { persona: p, mes: m, rs: [] });
+    grupos.get(k).rs.push(r);
+  }
+  const suma = (rs, f) => rs.reduce((s, r) => s + (Number(r[f]) || 0), 0);
+  const out = new Map();
+  for (const [k, g] of grupos) {
+    const rs = g.rs, ok = rs.filter((r) => r.calidad === 'válida');
+    const obj = rs.filter((r) => r.peso_obj > 0 && r.peso_final != null);
+    const jornadas = new Set(rs.map((r) => r.persona + r.fecha)).size;
+    const oroOk = suma(ok, 'oro_trabajo');
+    const cuenta = (f) => { const c = new Map(); for (const r of rs) c.set(r[f] || 'Sin dato', (c.get(r[f] || 'Sin dato') || 0) + 1); return [...c].map(([valor, n]) => ({ valor, n })); };
+    out.set(k, {
+      persona: g.persona, mes: g.mes, piezas: rs.length, jornadas, piezas_jornada: rs.length / jornadas,
+      oro_g: suma(rs, 'oro_trabajo'), final_g: suma(rs, 'peso_final'), merma_g: suma(ok, 'merma_g'),
+      merma_pct: oroOk ? suma(ok, 'merma_g') / oroOk : null,
+      en_meta: ok.length ? ok.filter((r) => r.merma_pct <= META).length / ok.length : null,
+      precision: obj.length ? obj.filter((r) => Math.abs(r.peso_final / r.peso_obj - 1) <= 0.05).length / obj.length : null,
+      obj_n: obj.length, atipicas: rs.filter((r) => r.calidad === 'atípica').length, tipos: cuenta('tipo'), tonos: cuenta('tono'),
+    });
+  }
+  const anterior = (mes) => { if (mes.length === 4) return String(+mes - 1); const [y, m] = mes.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
+  for (const r of out.values()) {
+    const p = r.mes === 'Todos' ? null : out.get(r.persona + '|' + anterior(r.mes));
+    for (const f of ['piezas', 'piezas_jornada', 'oro_g', 'merma_pct', 'en_meta']) r['d_' + f] = p && p[f] != null && r[f] != null ? r[f] - p[f] : null;
+  }
+  const personas = [...new Set(rows.map((r) => r.persona))];
+  const todos = S.orfItems.map((x) => x.nombre);
+  const orden = [...todos.filter((p) => personas.includes(p)), ...personas.filter((p) => !todos.includes(p))];
+  cacheKey = key; cacheAgg = { rows, map: out, personas: orden, meses: [...new Set(rows.map((r) => r.mes))].sort() };
+  return cacheAgg;
+}
+
+// ---------- gráficos ----------
+function tip(box) {
+  let el = box.querySelector('.tip');
+  if (!el) { el = h('div', { class: 'tip', hidden: true }); box.append(el); }
+  return {
+    show(ev, head, lines) {
+      el.replaceChildren(h('div', { class: 'h' }, head), ...lines.map(([c, n, v]) => h('div', { class: 'r' }, c ? h('span', { class: 'sw', style: `background:${c}` }) : null, `${n}: ${v}`)));
+      el.hidden = false;
+      const b = box.getBoundingClientRect();
+      let x = ev.clientX - b.left + 12, y = ev.clientY - b.top - el.offsetHeight - 8;
+      if (x + el.offsetWidth > b.width) x = ev.clientX - b.left - el.offsetWidth - 12;
+      el.style.left = Math.max(0, x) + 'px'; el.style.top = Math.max(0, y) + 'px';
+    },
+    hide() { el.hidden = true; },
+  };
+}
+function ejes(svg, y, W, m, H, meses, x, fmtY, center) {
+  svg.append('g').selectAll('line').data(y.ticks(4)).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y).attr('stroke', css('--grid'));
+  svg.append('g').selectAll('text').data(y.ticks(4)).join('text').attr('x', m.l - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(fmtY);
+  const every = Math.ceil(meses.length / Math.max(1, Math.floor((W - m.l) / 48)));
+  svg.append('g').selectAll('text').data(meses.filter((_, i) => i % every === 0)).join('text').attr('x', (d) => x(d) + center).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => fMes(d));
+}
+const DASH = ['', '7 4', '2 4', '11 4 2 4'];
+function etiquetasFinales(svg, items, H, m) {
+  items.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < 14) items[i].y = items[i - 1].y + 14;
+  const sobra = items.length ? items[items.length - 1].y - (H - m.b) : 0;
+  if (sobra > 0) items.forEach((it) => { it.y -= sobra; });
+  for (const it of items) svg.append('text').attr('x', it.x + 8).attr('y', it.y).attr('dy', '0.32em').style('fill', it.color).style('font-weight', 600).attr('opacity', it.op).text(it.text);
+}
+function drawStack(box, A, meses, sel) {  box.replaceChildren();
+  if (!meses.length) { box.append(h('p', { class: 'empty' }, 'Sin registros en este período.')); return; }
+  const K = A.personas, W = box.clientWidth || 600, H = 230, m = { t: 8, r: 8, b: 26, l: 36 };
+  const data = meses.map((mes) => { const o = { mes }; for (const p of K) o[p] = A.map.get(p + '|' + mes)?.piezas || 0; return o; });
+  const series = d3.stack().keys(K)(data);
+  const x = d3.scaleBand(meses, [m.l, W - m.r]).padding(0.22);
+  const y = d3.scaleLinear([0, d3.max(data, (d) => d3.sum(K, (p) => d[p])) || 1], [H - m.b, m.t]).nice();
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  ejes(svg, y, W, m, H, meses, x, (d) => fNum.format(d), x.bandwidth() / 2);
+  svg.append('g').selectAll('g').data(series).join('g').attr('fill', (s) => colorDe(s.key))
+    .selectAll('rect').data((s) => s).join('rect')
+    .attr('x', (d) => x(d.data.mes)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('stroke', css('--panel')).attr('stroke-width', 1)
+    .attr('opacity', (d) => sel === 'Todos' || d.data.mes.startsWith(sel) ? 1 : 0.35);
+  const t = tip(box);
+  svg.append('g').selectAll('rect').data(data).join('rect').attr('x', (d) => x(d.mes)).attr('width', x.bandwidth()).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'transparent').style('cursor', 'pointer')
+    .on('mousemove', (ev, d) => t.show(ev, fMes(d.mes, true), [...K.filter((p) => d[p]).map((p) => [colorDe(p), p, fNum.format(d[p])]), [null, 'Total', fNum.format(d3.sum(K, (p) => d[p]))]]))
+    .on('mouseleave', () => t.hide())
+    .on('click', (ev, d) => { S.mes = d.mes; S.anio = d.mes.slice(0, 4); renderPanel(); });
+}
+function drawLines(box, A, meses, campo, fmtY, ref, sel) {
+  box.replaceChildren();
+  if (!meses.length) { box.append(h('p', { class: 'empty' }, 'Sin registros en este período.')); return; }
+  const K = A.personas, W = box.clientWidth || 400, H = 200, conEtq = W >= 420, m = { t: 10, r: conEtq ? 84 : 10, b: 26, l: 42 };
+  const etq = [];
+  const x = d3.scalePoint(meses, [m.l, W - m.r]);
+  const vals = [];
+  for (const p of K) for (const mes of meses) { const r = A.map.get(p + '|' + mes); if (r && r[campo] != null) vals.push(r[campo]); }
+  const y = d3.scaleLinear([0, Math.max(d3.max(vals) || 0, ref || 0) * 1.08 || 1], [H - m.b, m.t]).nice();
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  ejes(svg, y, W, m, H, meses, x, fmtY, 0);
+  if (sel !== 'Todos' && x(sel) != null) svg.append('line').attr('x1', x(sel)).attr('x2', x(sel)).attr('y1', m.t).attr('y2', H - m.b).attr('stroke', css('--ref')).attr('stroke-dasharray', '2 3');
+  if (ref != null) svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(ref)).attr('y2', y(ref)).attr('stroke', css('--ref')).attr('stroke-dasharray', '5 4');
+  const line = d3.line().defined((d) => d.v != null).x((d) => x(d.mes)).y((d) => y(d.v));
+  for (const p of K) {
+    const s = meses.map((mes) => ({ mes, v: A.map.get(p + '|' + mes)?.[campo] ?? null }));
+    const op = S.persona === 'Todos' || S.persona === p ? 1 : 0.22;
+    svg.append('path').datum(s).attr('d', line).attr('fill', 'none').attr('stroke', colorDe(p)).attr('stroke-width', 2).attr('stroke-dasharray', DASH[K.indexOf(p) % DASH.length] || null).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').attr('opacity', op);
+    const pts = s.filter((d) => d.v != null);
+    if (conEtq && pts.length) { const u = pts[pts.length - 1]; etq.push({ x: x(u.mes), y: y(u.v), text: p, color: colorDe(p), op }); }
+    svg.append('g').selectAll('circle').data(pts.filter((d) => pts.length === 1 || d.mes === sel)).join('circle').attr('cx', (d) => x(d.mes)).attr('cy', (d) => y(d.v)).attr('r', 3.5).attr('fill', colorDe(p)).attr('opacity', op);
+  }
+  etiquetasFinales(svg, etq, H, m);
+  const t = tip(box);
+  const step = meses.length > 1 ? x(meses[1]) - x(meses[0]) : W;
+  svg.append('g').selectAll('rect').data(meses).join('rect').attr('x', (d) => x(d) - step / 2).attr('width', step).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'transparent')
+    .on('mousemove', (ev, mes) => t.show(ev, fMes(mes, true), K.map((p) => [p, A.map.get(p + '|' + mes)]).filter(([, r]) => r && r[campo] != null).map(([p, r]) => [colorDe(p), p, fmtY(r[campo])])))
+    .on('mouseleave', () => t.hide());
+}
+function hbars(box, items, color) {
+  box.replaceChildren();
+  if (!items.length) { box.append(h('p', { class: 'note' }, 'Sin registros en este período.')); return; }
+  const max = d3.max(items, (r) => r.n) || 1, tot = d3.sum(items, (r) => r.n) || 1;
+  for (const r of items.slice().sort((a, b) => b.n - a.n)) {
+    box.append(h('div', { class: 'row' }, h('span', { class: 'lab', title: r.valor }, r.valor),
+      h('span', { class: 'track' }, h('span', { class: 'fill', style: `width:${r.n / max * 100}%;background:${color}` })),
+      h('span', { class: 'val', title: fPct(r.n / tot) }, fNum.format(r.n))));
+  }
+}
+
+// ---------- panel de productividad ----------
+function delta(el, d, fmt, mejorSube, mes) {
+  el.className = 'd';
+  if (mes === 'Todos') { el.textContent = 'Todo el período'; return; }
+  if (d == null) { el.textContent = mes.length === 4 ? 'Sin año anterior' : 'Sin mes anterior'; return; }
+  el.textContent = `${d > 0 ? '+' : d < 0 ? '−' : '±'}${fmt(Math.abs(d))} ${mes.length === 4 ? 'vs año anterior' : 'vs mes anterior'}`;
+  if (d !== 0) el.classList.add((d > 0) === mejorSube ? 'good' : 'bad');
+}
+function renderPanel() {
+  const A = agregados();
+  const todos = A.meses;
+  const anios = [...new Set(todos.map((m) => m.slice(0, 4)))];
+  if (S.anio !== 'Todos' && !anios.includes(S.anio) && anios.length) S.anio = anios[anios.length - 1];
+  const meses = S.anio === 'Todos' ? todos : todos.filter((m) => m.startsWith(S.anio));
+  if (S.mes !== 'Todos' && !meses.includes(S.mes)) S.mes = 'Todos';
+  const per = S.mes !== 'Todos' ? S.mes : S.anio;
+
+  // filtros
+  const segP = $('f-persona');
+  segP.replaceChildren(...['Todos', ...A.personas].map((p) => h('button', { type: 'button', 'aria-pressed': String(S.persona === p), onclick: () => { S.persona = p; renderPanel(); } },
+    p !== 'Todos' ? h('span', { class: 'sw', style: `background:${colorDe(p)}` }) : null, p === 'Todos' ? 'Todo el taller' : p)));
+  const selA = $('f-anio'), selM = $('f-mes');
+  selA.replaceChildren(new Option('Todos los años', 'Todos'), ...anios.slice().reverse().map((a) => new Option(a, a)));
+  selA.value = S.anio;
+  selM.replaceChildren(new Option(S.anio === 'Todos' ? 'Todos los meses' : `Todo ${S.anio}`, 'Todos'), ...meses.slice().reverse().map((m) => new Option(fMes(m, true), m)));
+  selM.value = S.mes;
+
+  const cur = A.map.get(S.persona + '|' + per);
+  const T = [
+    ['piezas', (v) => fNum.format(v), (v) => fNum.format(v), true],
+    ['pj', (v) => fDec.format(v), (v) => fDec.format(v), true, 'piezas_jornada'],
+    ['oro', (v) => fNum.format(v) + ' g', (v) => fNum.format(v) + ' g', true, 'oro_g'],
+    ['merma', fPct, (v) => fDec.format(v * 100) + ' pp', false, 'merma_pct'],
+    ['meta', fPct, (v) => fDec.format(v * 100) + ' pp', true, 'en_meta'],
+  ];
+  const cargando = S.histStatus === 'loading' && !A.rows.length;
+  for (const [id, fmt, fmtD, good, campo] of T) {
+    const f = campo || id, v = $('k-' + id), d = $('d-' + id);
+    v.textContent = cargando ? '…' : cur && cur[f] != null ? fmt(cur[f]) : '—';
+    if (cur) delta(d, cur['d_' + f], fmtD, good, per); else d.textContent = '';
+  }
+  $('k-prec').textContent = cur && cur.precision != null ? fPct(cur.precision) : '—';
+  $('d-prec').textContent = cur ? `${fNum.format(cur.obj_n)} piezas con peso objetivo` : '';
+
+  const take = $('take');
+  take.replaceChildren();
+  if (cargando) take.append(h('span', { class: 'skel' }, 'cargando'));
+  else if (S.histStatus === 'error' && !A.rows.length) take.append('No se pudo cargar el histórico. Recarga la página.');
+  else if (cur) {
+    take.append(`${S.persona === 'Todos' ? 'El taller' : S.persona} tiene `, h('b', {}, fNum.format(cur.piezas) + ' piezas definitivas'), ` en ${fMes(per, true)}, con una merma de `, h('b', {}, fPct(cur.merma_pct)),
+      cur.merma_pct > META / 100 ? `, sobre la meta de ${META}%.` : `, dentro de la meta de ${META}%.`);
+    const nPend = Object.values(S.pend).reduce((s, l) => s + l.length, 0);
+    if (S.isSup && nPend) take.append(' ', h('b', {}, `${fNum.format(nPend)} piezas`), ' esperan tu aprobación.');
+  } else take.append(`Sin piezas definitivas en ${fMes(per, true)}.`);
+
+  $('leg').replaceChildren(...A.personas.map((p) => h('span', {}, h('i', { class: 'sw', style: `background:${colorDe(p)}` }), p)));
+  if (S.tab === 'panel') {
+    drawStack($('ch-piezas'), A, meses, per);
+    drawLines($('ch-merma'), A, meses, 'merma_pct', (v) => fDec.format(v * 100) + '%', META / 100, per);
+    drawLines($('ch-ritmo'), A, meses, 'piezas_jornada', (v) => fDec.format(v), null, per);
+  }
+
+  $('h-comp').textContent = `Comparativo por orfebre, ${fMes(per, true)}`;
+  $('tb-comp').tBodies[0].replaceChildren(...['Todos', ...A.personas].map((p) => A.map.get(p + '|' + per)).filter(Boolean).map((r) => {
+    const tr = h('tr', { class: r.persona === S.persona ? 'sel' : null });
+    const vals = [r.persona === 'Todos' ? 'Todo el taller' : r.persona, fNum.format(r.piezas), fNum.format(r.jornadas), fDec.format(r.piezas_jornada), fDec.format(r.oro_g), fDec.format(r.final_g), fDec.format(r.merma_g), null, fPct(r.en_meta), fPct(r.precision), fNum.format(r.atipicas)];
+    vals.forEach((v, i) => tr.append(i === 7 ? h('td', { class: 'n' }, r.merma_pct == null ? '—' : h('span', { class: 'pill ' + (r.merma_pct > META / 100 ? 'bad' : 'ok') }, fPct(r.merma_pct))) : h('td', { class: i ? 'n' : null }, v)));
+    return tr;
+  }));
+  const c = S.persona === 'Todos' ? css('--muted') : colorDe(S.persona);
+  hbars($('hb-tipo'), cur ? cur.tipos : [], c);
+  hbars($('hb-tono'), cur ? cur.tonos : [], c);
+  renderRegistros(A, per);
+}
+function renderRegistros(A, per) {
+  const q = S.q.trim().toLowerCase();
+  let rs = A.rows.filter((r) => (S.persona === 'Todos' || r.persona === S.persona) && (per === 'Todos' || r.mes.startsWith(per)));
+  if (q) rs = rs.filter((r) => [r.modelo, r.tono, r.cotizacion, r.persona, r.tipo, r.observaciones].some((v) => v && String(v).toLowerCase().includes(q)));
+  rs = rs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const shown = rs.slice(0, 400);
+  $('n-reg').textContent = `${fNum.format(rs.length)} piezas${rs.length > shown.length ? `; se muestran las ${shown.length} más recientes` : ''}. "Planilla" es el histórico; "Portal" son piezas aprobadas aquí.`;
+  $('tb-reg').tBodies[0].replaceChildren(...shown.map((r) => h('tr', {},
+    h('td', {}, fFecha(r.fecha)), h('td', {}, r.persona), h('td', {}, r.modelo), h('td', {}, r.tono || ''), h('td', {}, r.cotizacion || ''),
+    h('td', { class: 'n' }, g2(r.oro_trabajo)), h('td', { class: 'n' }, g2(r.peso_final)), h('td', { class: 'n' }, g2(r.oro_devuelto)),
+    h('td', { class: 'n' }, r.merma_pct == null ? '' : fDec.format(r.merma_pct) + '%'), h('td', {}, r.tipo + (r.garantia ? ' (garantía)' : '')),
+    h('td', {}, h('span', { class: 'pill ' + (r.origen === 'Portal' ? 'ok' : 'neutral') }, r.origen || 'Planilla')))));
+}
+
+// ---------- registrar ----------
+function setOptions(sel, values) { const cur = sel.value; sel.replaceChildren(...values.map((v) => new Option(v, v))); if (values.includes(cur)) sel.value = cur; }
+function renderPerfil() {
+  const box = $('perfil-box');
+  box.replaceChildren();
+  if (!S.uid) return;
+  const sel = h('select', { id: 'i-orfebre' }, new Option('Elige tu nombre…', ''), ...S.orfebres.map((o) => new Option(o, o)));
+  sel.value = S.perfil?.orfebre || '';
+  sel.addEventListener('change', async () => {
+    try { await S.db.doc(`envios/${S.uid}`).set({ orfebre: sel.value, actualizado_en: new Date().toISOString() }); }
+    catch (e) { msg('m-form', 'No se pudo guardar tu nombre: ' + (e.code || e.message), 'bad'); }
+  });
+  box.append(h('label', { class: 'field' }, h('span', {}, S.isSup ? 'Registrar a nombre de' : 'Orfebre (tú)', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
+  sel.addEventListener('change', () => errorCampo('i-orfebre', ''));
+  if (S.isSup) box.append(h('p', { class: 'note', style: 'align-self:end' }, 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.'));
+}
+function leerForm() {
+  const ot = num($('i-ot').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
+  const m = mermaDe(ot, pf, od);
+  return {
+    fecha: $('i-fecha').value, tono: $('i-tono').value, modelo: $('i-modelo').value.trim(), cotizacion: $('i-cot').value.trim() || null, codigo_producto: $('i-prod').value.trim() || null,
+    tipo: $('i-tipo').value, peso_obj: num($('i-po').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
+    merma_g: m.g, merma_pct: m.pct, garantia: $('i-gar').checked, observaciones: $('i-obs').value.trim() || null,
+  };
+}
+function llenarForm(p) {
+  $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
+  $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
+  $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
+  $('i-od').value = p?.oro_devuelto ?? ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
+  renderCalc();
+  if ($('i-orfebre')) limpiarErrores();
+}
+function flagsDe(p) {
+  const f = [];
+  if (p.merma_pct != null && (p.merma_pct < -5 || p.merma_pct > 25)) f.push(['bad', 'Merma atípica']);
+  else if (p.merma_pct != null && p.merma_pct > 8) f.push(['pendiente', 'Merma alta']);
+  if (p.peso_obj > 0 && p.peso_final != null && Math.abs(p.peso_final / p.peso_obj - 1) > 0.05) f.push(['pendiente', 'Peso final fuera de ±5% del objetivo']);
+  if (p.oro_devuelto > 0 && p.oro_trabajo > 0 && p.oro_devuelto / p.oro_trabajo > 0.3) f.push(['pendiente', 'Mucho oro devuelto']);
+  return f;
+}
+function renderCalc() {
+  const p = leerForm(), box = $('calc');
+  box.replaceChildren();
+  if (p.merma_g == null) { box.append(h('span', { class: 'note' }, 'Ingresa oro trabajado y peso final para ver la merma.')); return; }
+  box.append(h('span', {}, 'Merma ', h('b', {}, fDec2.format(p.merma_g) + ' g')), h('span', {}, 'Merma % ', h('b', {}, fDec.format(p.merma_pct) + '%')),
+    ...flagsDe(p).map(([c, t]) => h('span', { class: 'pill ' + c }, t)));
+  if (p.merma_pct != null && p.merma_pct <= META && p.merma_pct >= -5) box.append(h('span', { class: 'pill ok' }, 'Dentro de la meta'));
+}
+function errorCampo(id, texto) {
+  const el = $(id); if (!el) return;
+  const lab = el.closest('label') || el.parentElement;
+  let e = lab.querySelector('.ferr');
+  if (!texto) { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); if (e) e.remove(); return; }
+  if (!e) { e = h('span', { class: 'ferr', id: id + '-err' }); lab.append(e); }
+  e.textContent = texto; el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err');
+}
+function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf']) errorCampo(id, ''); }
+function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
+async function enviar(ev) {
+  ev.preventDefault();
+  if (!S.db || !S.uid) { msg('m-form', 'Necesitas iniciar sesión para registrar piezas.', 'bad'); return; }
+  const orf = $('i-orfebre')?.value;
+  const p = leerForm();
+  limpiarErrores();
+  const errs = [];
+  if (!orf) errs.push(['i-orfebre', 'Elige tu nombre de orfebre.']);
+  if (!p.fecha) errs.push(['i-fecha', 'Ingresa la fecha.']); else if (p.fecha > hoy()) errs.push(['i-fecha', 'La fecha no puede ser futura.']);
+  if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
+  if (!(p.oro_trabajo > 0)) errs.push(['i-ot', 'Ingresa el oro trabajado (mayor que 0).']);
+  if (p.peso_final == null) errs.push(['i-pf', 'Ingresa el peso final.']);
+  if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
+  const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Enviando…');
+  const ahora = new Date().toISOString();
+  try {
+    if (S.perfil?.orfebre !== orf) await S.db.doc(`envios/${S.uid}`).set({ orfebre: orf, actualizado_en: ahora });
+    const id = S.editando || nuevoId();
+    const prev = S.editando ? S.mis.find((x) => x._id === id) : null;
+    await S.db.doc(`envios/${S.uid}/piezas/${id}`).set({ ...p, orfebre: orf, autor: S.uid, estado: 'pendiente', creado_en: prev?.creado_en || ahora, actualizado_en: ahora, comentario: null, revisado_por: null, revisado_en: null });
+    msg('m-form', S.editando ? 'Cambios enviados a aprobación.' : 'Pieza enviada a aprobación.', 'ok');
+    S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación';
+    const fecha = p.fecha; llenarForm(null); $('i-fecha').value = fecha;
+  } catch (e) {
+    msg('m-form', e.code === 'invalid_argument' ? 'No tienes permiso para registrar. Pide al supervisor acceso de Colaborador.' : 'No se pudo enviar (' + (e.code || e.message) + '). Intenta de nuevo.', 'bad');
+  } finally { b.disabled = false; }
+}
+function renderMis() {
+  const seg = $('f-estado');
+  const cuenta = (e) => S.mis.filter((p) => e === 'todas' || p.estado === e).length;
+  seg.replaceChildren(...[['todas', 'Todas'], ['pendiente', 'Pendientes'], ['rechazada', 'Rechazadas'], ['aprobada', 'Aprobadas']].map(([e, t]) =>
+    h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
+  const tb = $('tb-mis').tBodies[0];
+  const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
+  if (!S.uid) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 9, class: 'note' }, 'Inicia sesión para ver tus registros.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 9, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'Aún no registras piezas. Usa el formulario de arriba.'))); return; }
+  tb.replaceChildren(...rs.map((p) => {
+    const editable = p.estado !== 'aprobada';
+    return h('tr', {},
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+      h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, h('span', { class: 'pill ' + p.estado }, p.estado)),
+      h('td', { class: 'wrap' }, p.comentario || ''),
+      h('td', {}, editable ? h('span', {},
+        h('button', { type: 'button', class: 'btn link', onclick: () => editar(p) }, 'Editar'),
+        h('button', { type: 'button', class: 'btn link' + (confirmando.has(p._id) ? ' armado' : ''), onclick: () => eliminar(p) }, confirmando.has(p._id) ? 'Confirmar eliminación' : 'Eliminar')) : ''));
+  }));
+}
+function editar(p) {
+  S.editando = p._id; llenarForm(p); $('h-form').textContent = 'Editar pieza'; $('b-cancelar').hidden = false;
+  $('b-enviar').textContent = p.estado === 'rechazada' ? 'Reenviar a aprobación' : 'Guardar y enviar';
+  msg('m-form', p.estado === 'rechazada' && p.comentario ? 'Motivo del rechazo: ' + p.comentario : '');
+  $('c-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+const confirmando = new Set();
+async function eliminar(p) {
+  if (!confirmando.has(p._id)) { confirmando.add(p._id); renderMis(); setTimeout(() => { confirmando.delete(p._id); renderMis(); }, 6000); return; }
+  confirmando.delete(p._id);
+  try { await S.db.doc(`envios/${S.uid}/piezas/${p._id}`).delete(); msg('m-form', 'Pieza eliminada.', 'ok'); if (S.editando === p._id) cancelarEdicion(); }
+  catch (e) { msg('m-form', 'No se pudo eliminar (' + (e.code || e.message) + ').', 'bad'); }
+}
+function cancelarEdicion() { S.editando = null; llenarForm(null); $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación'; msg('m-form', ''); }
+
+// ---------- revisión (supervisor) ----------
+function listaPend() { return Object.entries(S.pend).flatMap(([uid, l]) => l.map((p) => ({ ...p, _uid: uid }))).sort((a, b) => (a.creado_en || '').localeCompare(b.creado_en || '')); }
+async function renderRevision() {
+  const lista = listaPend();
+  const n = $('n-pend'); n.hidden = !lista.length; n.textContent = String(lista.length);
+  if (!S.isSup) return;
+  for (const k of [...S.sel]) if (!lista.some((p) => p._uid + '/' + p._id === k)) S.sel.delete(k);
+  $('b-aprobar-sel').disabled = !S.sel.size;
+  $('b-aprobar-sel').textContent = S.sel.size ? `Aprobar seleccionadas (${S.sel.size})` : 'Aprobar seleccionadas';
+  $('sel-all').checked = lista.length > 0 && S.sel.size === lista.length;
+  const ids = [...new Set([...lista.map((p) => p._uid), ...S.aprobadas.slice(0, 40).flatMap((a) => [a.aprobado_por, a.autor])].filter(Boolean))];
+  const ps = S.user && ids.length ? await S.user.profiles(ids) : {};
+  const nombre = (id) => (ps[id] && ps[id].name) || 'Alguien';
+  const cola = $('cola');
+  if (!lista.length) cola.replaceChildren(h('p', { class: 'empty' }, 'No hay piezas pendientes. Cuando un orfebre registre una, aparecerá aquí.'));
+  else cola.replaceChildren(...lista.map((p) => itemRevision(p, nombre)));
+  const hist = S.aprobadas.slice().sort((a, b) => (b.aprobado_en || '').localeCompare(a.aprobado_en || '')).slice(0, 25);
+  $('tb-hist').tBodies[0].replaceChildren(...(hist.length ? hist.map((a) => h('tr', {},
+    h('td', {}, a.aprobado_en ? new Date(a.aprobado_en).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : ''), h('td', {}, nombre(a.aprobado_por)),
+    h('td', {}, a.orfebre), h('td', {}, fFecha(a.fecha)), h('td', {}, a.modelo), h('td', { class: 'n' }, g2(a.oro_trabajo)),
+    h('td', { class: 'n' }, a.merma_pct == null ? '' : fDec.format(a.merma_pct) + '%'),
+    h('td', {}, h('button', { type: 'button', class: 'btn link' + (anulando.has(a._id) ? ' armado' : ''), onclick: () => anular(a) }, anulando.has(a._id) ? 'Confirmar anulación' : 'Anular')))) : [h('tr', {}, h('td', { colspan: 8, class: 'note' }, 'Todavía no hay aprobaciones en el portal.'))]));
+}
+function itemRevision(p, nombre) {
+  const key = p._uid + '/' + p._id, flags = flagsDe(p);
+  const el = h('div', { class: 'item' + (flags.length ? ' flag' : '') });
+  const chk = h('input', { type: 'checkbox', 'aria-label': 'Seleccionar ' + p.modelo });
+  chk.checked = S.sel.has(key);
+  chk.addEventListener('change', () => { chk.checked ? S.sel.add(key) : S.sel.delete(key); renderRevision(); });
+  el.append(h('div', { class: 'head' }, chk, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), h('span', { class: 'pill neutral' }, p.orfebre || 'Sin orfebre'),
+    h('span', { class: 'who2' }, `${fFecha(p.fecha)} · enviado por ${nombre(p._uid)}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}`)));
+  if (S.corrigiendo === key) { el.append(formCorreccion(p)); return el; }
+  el.append(h('div', { class: 'kv' },
+    h('span', {}, 'Objetivo ', h('b', {}, p.peso_obj ? g2(p.peso_obj) + ' g' : '—')), h('span', {}, 'Oro trabajado ', h('b', {}, g2(p.oro_trabajo) + ' g')),
+    h('span', {}, 'Peso final ', h('b', {}, g2(p.peso_final) + ' g')), h('span', {}, 'Devuelto ', h('b', {}, g2(p.oro_devuelto || 0) + ' g')),
+    h('span', {}, 'Merma ', h('b', {}, p.merma_g == null ? '—' : `${fDec2.format(p.merma_g)} g (${fDec.format(p.merma_pct)}%)`)),
+    h('span', {}, 'Trabajo ', h('b', {}, p.tipo + (p.garantia ? ', garantía' : ''))),
+    p.codigo_producto ? h('span', {}, 'Producto ', h('b', {}, p.codigo_producto)) : null));
+  if (S.modelos.length && p.modelo && !modeloDe(p.modelo)) flags.push(['neutral', 'Modelo que no está en el maestro']);
+  if (p.observaciones) el.append(h('p', { class: 'note' }, 'Observaciones: ' + p.observaciones));
+  if (flags.length) el.append(h('div', { class: 'flags' }, ...flags.map(([c, t]) => h('span', { class: 'pill ' + c }, t))));
+  if (S.rechazando === key) {
+    const ta = h('textarea', { rows: 2, placeholder: 'Explica qué debe corregir el orfebre', 'aria-label': 'Motivo del rechazo' });
+    el.append(h('div', { class: 'reject' }, ta, h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'btn danger', onclick: () => rechazar(p, ta.value) }, 'Confirmar rechazo'),
+      h('button', { type: 'button', class: 'btn link', onclick: () => { S.rechazando = null; renderRevision(); } }, 'Cancelar'))));
+    setTimeout(() => ta.focus(), 0);
+  } else el.append(h('div', { class: 'actions' },
+    h('button', { type: 'button', class: 'btn ok', onclick: () => aprobar([p]) }, 'Aprobar'),
+    h('button', { type: 'button', class: 'btn', onclick: () => { S.corrigiendo = key; S.rechazando = null; renderRevision(); } }, 'Corregir y aprobar'),
+    h('button', { type: 'button', class: 'btn danger', onclick: () => { S.rechazando = key; S.corrigiendo = null; renderRevision(); } }, 'Rechazar')));
+  return el;
+}
+function formCorreccion(p) {
+  const f = (label, key, val, type = 'number') => { const i = h('input', { type, step: '0.01', value: val ?? '' }); i.dataset.k = key; return h('label', { class: 'field' }, label, i); };
+  const box = h('div', { class: 'fields' },
+    f('Fecha', 'fecha', p.fecha, 'date'), f('Modelo', 'modelo', p.modelo, 'text'), f('Peso objetivo (g)', 'peso_obj', p.peso_obj), f('Oro trabajado (g)', 'oro_trabajo', p.oro_trabajo),
+    f('Peso final (g)', 'peso_final', p.peso_final), f('Oro devuelto (g)', 'oro_devuelto', p.oro_devuelto));
+  const out = h('div', { style: 'display:grid;gap:10px' }, box, h('div', { class: 'actions' },
+    h('button', { type: 'button', class: 'btn ok', onclick: () => {
+      const c = { ...p };
+      for (const i of box.querySelectorAll('input')) c[i.dataset.k] = i.type === 'number' ? num(i.value) : i.value.trim();
+      if (!c.fecha || !c.modelo || !(c.oro_trabajo > 0) || c.peso_final == null) { msg('m-rev', 'Completa fecha, modelo, oro trabajado y peso final.', 'bad'); return; }
+      const m = mermaDe(c.oro_trabajo, c.peso_final, c.oro_devuelto || 0); c.merma_g = m.g; c.merma_pct = m.pct; c.oro_devuelto = c.oro_devuelto || 0;
+      aprobar([c], true);
+    } }, 'Guardar y aprobar'),
+    h('button', { type: 'button', class: 'btn link', onclick: () => { S.corrigiendo = null; renderRevision(); } }, 'Cancelar')));
+  return out;
+}
+async function aprobar(lista, corregido = false) {
+  msg('m-rev', `Aprobando ${lista.length === 1 ? 'pieza' : lista.length + ' piezas'}…`);
+  let ok = 0;
+  for (const p of lista) {
+    const ahora = new Date().toISOString(), aid = `${p._uid}__${p._id}`;
+    const campos = ['fecha', 'tono', 'modelo', 'cotizacion', 'codigo_producto', 'tipo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto', 'merma_g', 'merma_pct', 'garantia', 'observaciones', 'orfebre'];
+    const body = Object.fromEntries(campos.map((k) => [k, p[k] ?? null]));
+    try {
+      await S.db.doc(`aprobadas/${aid}`).set({ ...body, autor: p._uid, envio: `envios/${p._uid}/piezas/${p._id}`, aprobado_por: S.uid, aprobado_en: ahora, corregido });
+      await S.db.doc(`envios/${p._uid}/piezas/${p._id}`).update({ ...(corregido ? body : {}), estado: 'aprobada', revisado_por: S.uid, revisado_en: ahora, comentario: corregido ? 'Aprobada con correcciones del supervisor.' : null });
+      ok++; S.sel.delete(p._uid + '/' + p._id);
+    } catch (e) { msg('m-rev', `No se pudo aprobar ${p.modelo} (${e.code || e.message}).`, 'bad'); }
+  }
+  S.corrigiendo = null;
+  if (ok) msg('m-rev', ok === 1 ? 'Pieza aprobada. Ya cuenta en la productividad.' : `${ok} piezas aprobadas.`, 'ok');
+  renderRevision();
+}
+async function rechazar(p, motivo) {
+  motivo = (motivo || '').trim();
+  if (!motivo) { msg('m-rev', 'Escribe el motivo del rechazo para que el orfebre sepa qué corregir.', 'bad'); return; }
+  try {
+    await S.db.doc(`envios/${p._uid}/piezas/${p._id}`).update({ estado: 'rechazada', comentario: motivo, revisado_por: S.uid, revisado_en: new Date().toISOString() });
+    S.rechazando = null; msg('m-rev', 'Pieza rechazada. El orfebre verá el motivo.', 'ok'); renderRevision();
+  } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.code || e.message) + ').', 'bad'); }
+}
+const anulando = new Set();
+async function anular(a) {
+  if (!anulando.has(a._id)) { anulando.add(a._id); renderRevision(); setTimeout(() => { anulando.delete(a._id); renderRevision(); }, 6000); return; }
+  anulando.delete(a._id);
+  try {
+    if (a.envio) { try { await S.db.doc(a.envio).update({ estado: 'pendiente', comentario: 'Aprobación anulada por el supervisor.', revisado_por: S.uid, revisado_en: new Date().toISOString() }); } catch (e) { /* el envío pudo haberse borrado */ } }
+    await S.db.doc(`aprobadas/${a._id}`).delete();
+    msg('m-rev', 'Aprobación anulada; la pieza volvió a pendientes.', 'ok');
+  } catch (e) { msg('m-rev', 'No se pudo anular (' + (e.code || e.message) + ').', 'bad'); }
+}
+
+// ---------- maestros ----------
+const clave = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const fCLP = (v) => v == null || v === '' ? '' : '$' + fNum.format(v);
+const lineas = (txt) => [...new Set(String(txt || '').split('\n').map((s) => s.trim()).filter(Boolean))];
+const siglaDe = (lista, nombre) => (lista.find((x) => clave(x.nombre) === clave(nombre)) || {}).sigla || '';
+
+let prodKey = null, prodCache = [];
+function productos() {
+  const k = S.prodBase.length + '|' + [...S.prodOv.values()].map((o) => o._v).join(',');
+  if (k === prodKey) return prodCache;
+  const base = new Map(S.prodBase.map((p) => [p.codigo, p]));
+  const out = S.prodBase.map((p) => S.prodOv.has(p.codigo) ? { ...p, ...S.prodOv.get(p.codigo), origen: 'Editado' } : { ...p, activo: true, origen: 'Bsale' });
+  for (const [cod, o] of S.prodOv) if (!base.has(cod)) out.push({ ...o, codigo: cod, origen: 'Nuevo' });
+  out.sort((a, b) => a.codigo.localeCompare(b.codigo, 'es', { numeric: true }));
+  prodKey = k; prodCache = out;
+  return out;
+}
+function modeloDe(nombre) {
+  const c = clave(nombre);
+  if (!c) return null;
+  return S.modelos.find((m) => clave(m.nombre) === c || (m.alias || []).some((a) => clave(a) === c)) || null;
+}
+
+function renderMaestros() {
+  if (!S.isSup) return;
+  document.querySelectorAll('#m-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === S.msub)));
+  for (const s of ['parametros', 'modelos', 'productos']) $('sub-' + s).hidden = S.msub !== s;
+  if (S.msub === 'parametros') renderParam();
+  if (S.msub === 'modelos') renderModelos();
+  if (S.msub === 'productos') renderProductos();
+}
+// --- parámetros: cada grupo es una lista de valores {nombre, sigla, activo} ---
+function grupos() {
+  return [...GRUPOS_BASE, ...(S.param.extras || []).map((g) => ({ id: g.id, nombre: g.nombre, sigla: !!g.sigla, extra: true, nota: 'Grupo propio. Aparece como campo en la ficha de producto.' }))];
+}
+function itemsDe(gid) {
+  if (gid === 'orfebres') return S.orfItems;
+  if (S.param[gid]) return S.param[gid];
+  return (S.param.extras || []).find((g) => g.id === gid)?.items || [];
+}
+function usosDe(gid) {
+  const c = new Map(), add = (v) => { const k = clave(v); if (k) c.set(k, (c.get(k) || 0) + 1); };
+  const filas = filasDefinitivas(), prods = productos();
+  if (gid === 'tonos') { filas.forEach((r) => add(r.tono)); prods.forEach((p) => add(p.tono)); }
+  else if (gid === 'piedras') prods.forEach((p) => add(p.piedra));
+  else if (gid === 'tipos') filas.forEach((r) => add(r.tipo));
+  else if (gid === 'categorias') { S.modelos.forEach((m) => add(m.categoria)); prods.forEach((p) => add(p.categoria)); }
+  else if (gid === 'orfebres') filas.forEach((r) => add(r.persona));
+  else prods.forEach((p) => add(p.atributos?.[gid]));
+  return c;
+}
+async function guardarParametros(texto) {
+  const body = { tonos: S.param.tonos, piedras: S.param.piedras, tipos: S.param.tipos, categorias: S.param.categorias, extras: S.param.extras || [], actualizado_por: S.uid, actualizado_en: new Date().toISOString() };
+  try { await S.db.doc('maestro/parametros').set(body); msg('m-param', texto, 'ok'); return true; }
+  catch (e) { msg('m-param', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); return false; }
+}
+async function guardarGrupo(gid, items, texto) {
+  if (gid === 'orfebres') {
+    try { await S.db.doc('config/catalogo').set({ orfebres: activos(items), orfebres_todos: items, actualizado_en: new Date().toISOString() }); msg('m-param', texto, 'ok'); return true; }
+    catch (e) { msg('m-param', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); return false; }
+  }
+  if (S.param[gid]) S.param[gid] = items;
+  else S.param.extras = (S.param.extras || []).map((g) => g.id === gid ? { ...g, items } : g);
+  return guardarParametros(texto);
+}
+function validarItem(g, items, nombre, sigla, idx) {
+  if (!nombre) return 'Escribe un nombre.';
+  if (items.some((x, i) => i !== idx && clave(x.nombre) === clave(nombre))) return `"${nombre}" ya existe en ${g.nombre.toLowerCase()}.`;
+  if (g.sigla && sigla) {
+    if (!/^[A-Z0-9]{1,6}$/.test(sigla)) return 'La sigla debe tener de 1 a 6 letras o números, sin espacios.';
+    if (items.some((x, i) => i !== idx && x.sigla === sigla)) return `La sigla ${sigla} ya la usa otro valor.`;
+  }
+  return null;
+}
+const paramConfirm = new Set(), paramLimpiar = new Set();
+function renderParam() {
+  const grid = $('param-grid');
+  const foco = document.activeElement && grid.contains(document.activeElement) ? document.activeElement.id : null;
+  const escrito = {};
+  grid.querySelectorAll('input[id]').forEach((i) => { if (!paramLimpiar.has(i.id)) escrito[i.id] = i.value; });
+  paramLimpiar.clear();
+  grid.replaceChildren(...grupos().map((g) => tarjetaGrupo(g)));
+  for (const [id, v] of Object.entries(escrito)) if ($(id)) $(id).value = v;
+  if (foco && $(foco)) $(foco).focus();
+}
+function tarjetaGrupo(g) {
+  const items = itemsDe(g.id), usos = usosDe(g.id);
+  const card = h('div', { class: 'card', id: 'pg-' + g.id });
+  const head = h('div', { class: 'actions', style: 'justify-content:space-between' }, h('h2', {}, g.nombre),
+    h('span', { class: 'note' }, `${fNum.format(activos(items).length)} activos de ${fNum.format(items.length)}`));
+  card.append(head, h('p', { class: 'note' }, g.nota));
+  if (g.extra) {
+    const renom = S.pEdit && S.pEdit.gid === g.id && S.pEdit.grupo;
+    if (renom) {
+      const inp = h('input', { id: `pgn-${g.id}`, value: g.nombre, 'aria-label': 'Nombre del grupo' });
+      card.append(h('div', { class: 'actions' }, inp,
+        h('button', { type: 'button', class: 'btn primary', onclick: () => renombrarGrupo(g, inp.value.trim()) }, 'Guardar nombre'),
+        h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = null; renderParam(); } }, 'Cancelar')));
+    } else card.append(h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = { gid: g.id, grupo: true }; renderParam(); } }, 'Cambiar nombre del grupo'),
+      h('button', { type: 'button', class: 'btn link danger' + (paramConfirm.has('grupo|' + g.id) ? ' armado' : ''), onclick: () => eliminarGrupo(g) }, paramConfirm.has('grupo|' + g.id) ? 'Confirmar eliminación del grupo' : 'Eliminar grupo')));
+  }
+  const tb = h('tbody');
+  items.forEach((it, idx) => {
+    const editando = S.pEdit && S.pEdit.gid === g.id && S.pEdit.idx === idx;
+    const n = usos.get(clave(it.nombre)) || 0;
+    if (editando) {
+      const iN = h('input', { id: `pe-${g.id}-${idx}-n`, value: it.nombre, 'aria-label': 'Nombre' });
+      const iS = g.sigla ? h('input', { id: `pe-${g.id}-${idx}-s`, value: it.sigla || '', class: 'mono', style: 'width:6rem', 'aria-label': 'Sigla' }) : null;
+      const guardar = () => editarItem(g, idx, iN.value.trim(), iS ? iS.value.trim().toUpperCase() : '');
+      for (const i of [iN, iS].filter(Boolean)) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') { S.pEdit = null; renderParam(); } });
+      tb.append(h('tr', {}, h('td', {}, iN), g.sigla ? h('td', {}, iS) : null, h('td', { class: 'n' }, fNum.format(n)), h('td', {}),
+        h('td', {}, h('button', { type: 'button', class: 'btn primary', onclick: guardar }, 'Guardar'), h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = null; renderParam(); } }, 'Cancelar'))));
+      setTimeout(() => iN.focus(), 0);
+    } else {
+      const k = g.id + '|' + idx;
+      tb.append(h('tr', { class: it.activo === false ? 'note' : null },
+        h('td', {}, it.nombre), g.sigla ? h('td', { class: 'mono' }, it.sigla || '—') : null,
+        h('td', { class: 'n', title: 'Piezas, productos o modelos que usan este valor' }, fNum.format(n)),
+        h('td', {}, h('span', { class: 'pill ' + (it.activo === false ? 'neutral' : 'ok') }, it.activo === false ? 'inactivo' : 'activo')),
+        h('td', {},
+          h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = { gid: g.id, idx }; renderParam(); } }, 'Editar'),
+          h('button', { type: 'button', class: 'btn link', onclick: () => cambiarActivo(g, idx) }, it.activo === false ? 'Activar' : 'Desactivar'),
+          h('button', { type: 'button', class: 'btn link danger' + (paramConfirm.has(k) ? ' armado' : ''), onclick: () => eliminarItem(g, idx, n) }, paramConfirm.has(k) ? 'Confirmar eliminación' : 'Eliminar'))));
+    }
+  });
+  const table = h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Nombre'), g.sigla ? h('th', {}, 'Sigla') : null, h('th', { class: 'n' }, 'En uso'), h('th', {}, 'Estado'), h('th', {}))), tb);
+  card.append(h('div', { class: 'tbl', style: 'max-height:20rem' }, table));
+  const aN = h('input', { id: `pa-${g.id}-n`, placeholder: 'Nuevo valor', 'aria-label': `Nuevo valor en ${g.nombre}`, style: 'flex:1;min-width:8rem' });
+  const aS = g.sigla ? h('input', { id: `pa-${g.id}-s`, placeholder: 'Sigla', class: 'mono', style: 'width:6rem', 'aria-label': 'Sigla' }) : null;
+  const agregar = () => agregarItem(g, aN.value.trim(), aS ? aS.value.trim().toUpperCase() : '');
+  for (const i of [aN, aS].filter(Boolean)) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') agregar(); });
+  card.append(h('div', { class: 'actions' }, aN, aS, h('button', { type: 'button', class: 'btn', onclick: agregar }, 'Agregar')));
+  return card;
+}
+async function agregarItem(g, nombre, sigla) {
+  const items = itemsDe(g.id), err = validarItem(g, items, nombre, sigla, -1);
+  if (err) { msg('m-param', err, 'bad'); return; }
+  if (await guardarGrupo(g.id, [...items, { nombre, sigla, activo: true }], `"${nombre}" agregado a ${g.nombre.toLowerCase()}.`)) { paramLimpiar.add(`pa-${g.id}-n`); paramLimpiar.add(`pa-${g.id}-s`); renderParam(); $(`pa-${g.id}-n`)?.focus(); }
+}
+async function editarItem(g, idx, nombre, sigla) {
+  const items = itemsDe(g.id), err = validarItem(g, items, nombre, sigla, idx);
+  if (err) { msg('m-param', err, 'bad'); return; }
+  const antes = items[idx].nombre;
+  const nuevos = items.map((x, i) => i === idx ? { ...x, nombre, sigla } : x);
+  S.pEdit = null; paramLimpiar.add(`pe-${g.id}-${idx}-n`); paramLimpiar.add(`pe-${g.id}-${idx}-s`);
+  const aviso = clave(antes) !== clave(nombre) && (usosDe(g.id).get(clave(antes)) || 0) ? ` Los registros anteriores siguen con "${antes}".` : '';
+  if (await guardarGrupo(g.id, nuevos, `Cambios guardados.${aviso}`)) renderParam();
+}
+async function cambiarActivo(g, idx) {
+  const items = itemsDe(g.id), it = items[idx];
+  if (g.minimo && it.activo !== false && activos(items).length <= 1) { msg('m-param', `${g.nombre} necesita al menos un valor activo.`, 'bad'); return; }
+  const nuevos = items.map((x, i) => i === idx ? { ...x, activo: x.activo === false } : x);
+  if (await guardarGrupo(g.id, nuevos, `"${it.nombre}" ${it.activo === false ? 'activado' : 'desactivado'}.`)) renderParam();
+}
+async function eliminarItem(g, idx, enUso) {
+  const items = itemsDe(g.id), it = items[idx], k = g.id + '|' + idx;
+  if (g.minimo && it.activo !== false && activos(items).length <= 1) { msg('m-param', `${g.nombre} necesita al menos un valor activo.`, 'bad'); return; }
+  if (!paramConfirm.has(k)) {
+    paramConfirm.add(k); setTimeout(() => { paramConfirm.delete(k); renderParam(); }, 6000);
+    msg('m-param', enUso ? `"${it.nombre}" se usa en ${fNum.format(enUso)} registros; esos registros lo conservan, pero dejará de existir como opción. Si solo quieres ocultarlo, desactívalo. Pulsa "Confirmar eliminación" para seguir.` : `Pulsa "Confirmar eliminación" para borrar "${it.nombre}".`);
+    renderParam(); return;
+  }
+  paramConfirm.delete(k);
+  if (await guardarGrupo(g.id, items.filter((_, i) => i !== idx), `"${it.nombre}" eliminado.`)) renderParam();
+}
+async function crearGrupo() {
+  const nombre = $('g-nombre').value.trim();
+  if (!nombre) { msg('m-grupo', 'Escribe el nombre del grupo.', 'bad'); return; }
+  if (grupos().some((g) => clave(g.nombre) === clave(nombre))) { msg('m-grupo', 'Ya existe un grupo con ese nombre.', 'bad'); return; }
+  let id = 'g_' + (clave(nombre).slice(0, 30) || 'grupo');
+  while (grupos().some((g) => g.id === id)) id += '_';
+  S.param.extras = [...(S.param.extras || []), { id, nombre, sigla: $('g-sigla').checked, items: [] }];
+  if (await guardarParametros(`Grupo "${nombre}" creado. Agrega sus valores abajo.`)) { $('g-nombre').value = ''; $('g-sigla').checked = false; msg('m-grupo', ''); renderParam(); $('pg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+async function renombrarGrupo(g, nombre) {
+  if (!nombre) { msg('m-param', 'Escribe el nombre del grupo.', 'bad'); return; }
+  if (grupos().some((x) => x.id !== g.id && clave(x.nombre) === clave(nombre))) { msg('m-param', 'Ya existe un grupo con ese nombre.', 'bad'); return; }
+  S.param.extras = S.param.extras.map((x) => x.id === g.id ? { ...x, nombre } : x);
+  S.pEdit = null;
+  if (await guardarParametros('Nombre del grupo actualizado.')) renderParam();
+}
+async function eliminarGrupo(g) {
+  const k = 'grupo|' + g.id, enUso = [...usosDe(g.id).values()].reduce((s, n) => s + n, 0);
+  if (!paramConfirm.has(k)) {
+    paramConfirm.add(k); setTimeout(() => { paramConfirm.delete(k); renderParam(); }, 6000); renderParam();
+    msg('m-param', `${enUso ? `${fNum.format(enUso)} productos tienen un valor de "${g.nombre}"; lo conservan, pero el campo deja de mostrarse. ` : ''}Pulsa "Confirmar eliminación del grupo" para seguir.`);
+    return;
+  }
+  paramConfirm.delete(k);
+  S.param.extras = S.param.extras.filter((x) => x.id !== g.id);
+  if (await guardarParametros(`Grupo "${g.nombre}" eliminado.`)) renderParam();
+}
+
+function renderModelos() {
+  const prods = productos().filter((p) => p.activo !== false);
+  const porModelo = new Map();
+  for (const p of prods) { const k = clave(p.modelo); if (!k) continue; const o = porModelo.get(k) || { n: 0, min: null }; o.n++; if (p.precio > 0) o.min = o.min == null ? p.precio : Math.min(o.min, p.precio); porModelo.set(k, o); }
+  const piezas = new Map();
+  for (const r of filasDefinitivas()) { const m = modeloDe(r.modelo); if (m) piezas.set(m._id, (piezas.get(m._id) || 0) + 1); }
+  const q = clave(S.moQ);
+  const rs = S.modelos.filter((m) => !q || clave(m.nombre).includes(q) || (m.codigo_base || '').toLowerCase().includes(S.moQ.toLowerCase()) || (m.alias || []).some((a) => clave(a).includes(q)))
+    .slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  $('n-mo').textContent = `${fNum.format(S.modelos.length)} modelos, ${fNum.format(S.modelos.filter((m) => m.activo !== false).length)} activos. "Piezas en taller" cuenta los registros definitivos con ese nombre o sus otros nombres.`;
+  $('tb-mo').tBodies[0].replaceChildren(...(rs.length ? rs.map((m) => {
+    const pm = porModelo.get(clave(m.nombre)) || { n: 0, min: null };
+    return h('tr', {},
+      h('td', {}, m.nombre, (m.alias || []).length ? h('div', { class: 'note' }, 'También: ' + m.alias.join(', ')) : null),
+      h('td', {}, m.categoria || ''), h('td', { class: 'mono' }, m.codigo_base || ''), h('td', { class: 'n' }, g2(m.peso_objetivo)),
+      h('td', { class: 'n' }, fNum.format(pm.n)), h('td', { class: 'n' }, fCLP(pm.min)), h('td', { class: 'n' }, fNum.format(piezas.get(m._id) || 0)),
+      h('td', {}, h('span', { class: 'pill ' + (m.activo === false ? 'neutral' : 'ok') }, m.activo === false ? 'inactivo' : 'activo')),
+      h('td', {}, h('button', { type: 'button', class: 'btn link', onclick: () => abrirModelo(m) }, 'Editar')));
+  }) : [h('tr', {}, h('td', { colspan: 9, class: 'note' }, S.modelos.length ? 'Ningún modelo coincide con la búsqueda.' : 'Todavía no hay modelos. Crea el primero con "Nuevo modelo".'))]));
+}
+function abrirModelo(m) {
+  S.moEdit = m ? m._id : '__nuevo';
+  $('mo-cat').replaceChildren(...[...new Set([...CATS(), m?.categoria].filter(Boolean))].map((c) => new Option(c, c)));
+  $('h-modelo').textContent = m ? 'Editar modelo' : 'Nuevo modelo';
+  $('mo-nombre').value = m?.nombre || ''; $('mo-cat').value = m?.categoria || CATS()[0]; $('mo-base').value = m?.codigo_base || '';
+  $('mo-peso').value = m?.peso_objetivo ?? ''; $('mo-alias').value = (m?.alias || []).join(', '); $('mo-notas').value = m?.notas || ''; $('mo-activo').checked = m ? m.activo !== false : true;
+  msg('m-mo', ''); $('c-modelo-form').hidden = false; $('mo-nombre').focus();
+}
+async function guardarModelo() {
+  const nombre = $('mo-nombre').value.trim();
+  if (!nombre) { msg('m-mo', 'El modelo necesita un nombre.', 'bad'); return; }
+  const id = S.moEdit === '__nuevo' ? clave(nombre) : S.moEdit;
+  if (!id) { msg('m-mo', 'El nombre debe tener letras o números.', 'bad'); return; }
+  const otro = S.modelos.find((m) => m._id !== id && clave(m.nombre) === clave(nombre));
+  if (otro || (S.moEdit === '__nuevo' && S.modelos.some((m) => m._id === id))) { msg('m-mo', 'Ya existe un modelo con ese nombre.', 'bad'); return; }
+  const prev = S.modelos.find((m) => m._id === id) || {};
+  const body = { ...prev, nombre, categoria: $('mo-cat').value, codigo_base: $('mo-base').value.trim().toUpperCase() || null, peso_objetivo: num($('mo-peso').value),
+    alias: lineas($('mo-alias').value.replace(/,/g, '\n')).filter((a) => clave(a) !== clave(nombre)), notas: $('mo-notas').value.trim() || null, activo: $('mo-activo').checked,
+    actualizado_por: S.uid, actualizado_en: new Date().toISOString() };
+  delete body._id;
+  try { await S.db.doc(`maestro/catalogo/modelos/${id}`).set(body); S.moEdit = null; $('c-modelo-form').hidden = true; msg('m-mo', ''); }
+  catch (e) { msg('m-mo', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); }
+}
+
+function prodFiltrados() {
+  const f = S.pr, q = f.q.trim().toLowerCase();
+  return productos().filter((p) => (!q || p.codigo.toLowerCase().includes(q) || (p.nombre || '').toLowerCase().includes(q))
+    && (!f.cat || p.categoria === f.cat) && (!f.modelo || p.modelo === f.modelo) && (!f.tono || p.tono === f.tono) && (!f.piedra || p.piedra === f.piedra)
+    && (f.estado === 'todos' || (f.estado === 'activos' && p.activo !== false) || (f.estado === 'inactivos' && p.activo === false)
+      || (f.estado === 'editados' && p.origen !== 'Bsale') || (f.estado === 'sinprecio' && !(p.precio > 0))));
+}
+function renderProductos() {
+  const all = productos();
+  const opts = (id, label, vals, cur) => { const s = $(id); s.replaceChildren(new Option(label, ''), ...[...new Set(vals.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')).map((v) => new Option(v, v))); s.value = cur; };
+  opts('pf-cat', 'Todas las categorías', all.map((p) => p.categoria), S.pr.cat);
+  opts('pf-modelo', 'Todos los modelos', all.map((p) => p.modelo), S.pr.modelo);
+  opts('pf-tono', 'Todos los tonos', all.map((p) => p.tono), S.pr.tono);
+  opts('pf-piedra', 'Todas las piedras', all.map((p) => p.piedra), S.pr.piedra);
+  $('pf-estado').value = S.pr.estado;
+  const rs = prodFiltrados(), shown = rs.slice(0, 300);
+  const nEd = all.filter((p) => p.origen !== 'Bsale').length;
+  $('n-pr').textContent = S.prodBaseStatus === 'loading' ? 'Cargando catálogo…' :
+    `${fNum.format(all.length)} productos (${fNum.format(nEd)} editados o nuevos en el portal). ${fNum.format(rs.length)} coinciden con el filtro${rs.length > shown.length ? `; se muestran los primeros ${shown.length}` : ''}. Precios de la lista "Precio detalle" de Bsale.`;
+  $('tb-pr').tBodies[0].replaceChildren(...(shown.length ? shown.map((p) => h('tr', { class: p.activo === false ? 'note' : null },
+    h('td', { class: 'mono' }, p.codigo), h('td', { class: 'wrap' }, p.nombre || ''), h('td', {}, p.modelo || ''), h('td', {}, p.categoria || ''), h('td', {}, p.tono || ''),
+    h('td', {}, p.piedra || ''), h('td', { class: 'n' }, p.central_ct == null ? '' : fDec2.format(p.central_ct)), h('td', {}, p.variante || ''),
+    h('td', { class: 'n' }, p.precio > 0 ? fCLP(p.precio) : h('span', { class: 'pill pendiente' }, 'sin precio')), h('td', { class: 'n' }, p.precio > 0 ? fCLP(p.precio_neto) : ''),
+    h('td', {}, h('span', { class: 'pill ' + (p.origen === 'Bsale' ? 'neutral' : 'ok') }, p.origen), p.activo === false ? h('span', { class: 'pill neutral', style: 'margin-left:4px' }, 'inactivo') : null),
+    h('td', {}, h('button', { type: 'button', class: 'btn link', onclick: () => abrirProducto(p) }, 'Editar')))) :
+    [h('tr', {}, h('td', { colspan: 12, class: 'note' }, all.length ? 'Ningún producto coincide con el filtro.' : 'Todavía no hay productos.'))]));
+}
+function abrirProducto(p) {
+  S.prEdit = p ? p.codigo : '__nuevo';
+  const mods = [...new Set([...S.modelos.filter((m) => m.activo !== false).map((m) => m.nombre), p?.modelo].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  $('pr-modelo').replaceChildren(new Option('Sin modelo', ''), ...mods.map((m) => new Option(m, m)));
+  $('pr-cat').replaceChildren(...[...new Set([...CATS(), p?.categoria].filter(Boolean))].map((c) => new Option(c, c)));
+  $('pr-tono').replaceChildren(new Option('Sin tono', ''), ...[...new Set([...TONOS(), p?.tono].filter(Boolean))].map((c) => new Option(c, c)));
+  $('pr-piedra').replaceChildren(new Option('Sin piedra', ''), ...[...new Set([...PIEDRAS(), p?.piedra].filter(Boolean))].map((c) => new Option(c, c)));
+  const ext = $('pr-extras');
+  ext.replaceChildren(...(S.param.extras || []).map((g) => {
+    const actual = p?.atributos?.[g.id] || '';
+    const sel = h('select', { id: 'pr-x-' + g.id }, new Option('—', ''), ...[...new Set([...activos(g.items), actual].filter(Boolean))].map((v) => new Option(v, v)));
+    sel.value = actual; sel.dataset.g = g.id;
+    return h('label', { class: 'field' }, g.nombre, sel);
+  }));
+  $('h-prod').textContent = p ? `Editar ${p.codigo}` : 'Nuevo producto';
+  $('pr-modelo').value = p?.modelo || ''; $('pr-cat').value = p?.categoria || CATS()[0]; $('pr-tono').value = p?.tono || ''; $('pr-piedra').value = p?.piedra || '';
+  $('pr-ct').value = p?.central_ct ?? ''; $('pr-var').value = p?.variante || ''; $('pr-codigo').value = p?.codigo || ''; $('pr-nombre').value = p?.nombre || '';
+  $('pr-precio').value = p?.precio || ''; $('pr-activo').checked = p ? p.activo !== false : true;
+  const deBsale = p && S.prodBase.some((b) => b.codigo === p.codigo);
+  $('pr-codigo').readOnly = !!deBsale; $('b-pr-sugerir').hidden = !!deBsale;
+  $('b-pr-restaurar').hidden = !(deBsale && S.prodOv.has(p.codigo));
+  $('b-pr-restaurar').textContent = 'Volver a los valores de Bsale';
+  if (p && !deBsale) { $('b-pr-restaurar').hidden = false; $('b-pr-restaurar').textContent = 'Eliminar producto'; }
+  calcNeto(); msg('m-pr', deBsale ? 'Producto de Bsale: el código no se puede cambiar. Tus cambios quedan en el portal; Bsale no se modifica.' : '');
+  $('c-prod-form').hidden = false; $('c-prod-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function calcNeto() { const v = num($('pr-precio').value); $('pr-neto').value = v ? Math.round(v / (1 + IVA)) : ''; }
+function sugerirCodigo() {
+  const m = modeloDe($('pr-modelo').value), pie = siglaDe(S.param.piedras, $('pr-piedra').value), ton = siglaDe(S.param.tonos, $('pr-tono').value), ct = num($('pr-ct').value);
+  if (!m || !m.codigo_base) { msg('m-pr', 'El modelo no tiene código base. Agrégalo en Maestros > Modelos.', 'bad'); return; }
+  const partes = [m.codigo_base, pie, ct != null ? 'C' + String(ct).replace(',', '.') : '', ton].filter(Boolean);
+  let cod = partes.join('-');
+  const v = $('pr-var').value.trim().match(/\d+(?:[.,]\d+)?/);
+  if (v) cod += '-' + v[0].replace(',', '.');
+  $('pr-codigo').value = cod;
+  msg('m-pr', productos().some((p) => p.codigo === cod) ? 'Ese código ya existe; ajústalo antes de guardar.' : 'Código sugerido según el patrón modelo-piedra-quilates-tono.', productos().some((p) => p.codigo === cod) ? 'bad' : '');
+}
+function nombreAuto() {
+  const mod = $('pr-modelo').value, ton = $('pr-tono').value, pie = $('pr-piedra').value, ct = num($('pr-ct').value);
+  if (!mod) return '';
+  let n = mod;
+  if (ton) n += ` en oro ${ton.toLowerCase()}`;
+  if (pie) n += ` con ${pie.toLowerCase()}`;
+  if (ct != null) n += ` y central de ${fDec2.format(ct).replace(/,00$/, '')}ct`;
+  return n;
+}
+async function guardarProducto() {
+  const codigo = $('pr-codigo').value.trim(), precio = num($('pr-precio').value);
+  if (!CODIGO_OK.test(codigo)) { msg('m-pr', 'El código es obligatorio y solo admite letras, números y . - _ ~ : @ +', 'bad'); return; }
+  const esNuevo = S.prEdit === '__nuevo';
+  if ((esNuevo || codigo !== S.prEdit) && productos().some((p) => p.codigo === codigo)) { msg('m-pr', 'Ya existe un producto con ese código.', 'bad'); return; }
+  if (precio != null && precio < 0) { msg('m-pr', 'El precio no puede ser negativo.', 'bad'); return; }
+  const base = S.prodBase.find((b) => b.codigo === codigo);
+  const body = { ...(base || {}), codigo, nombre: $('pr-nombre').value.trim() || nombreAuto() || codigo, modelo: $('pr-modelo').value || null, categoria: $('pr-cat').value || null,
+    tono: $('pr-tono').value || null, piedra: $('pr-piedra').value || null, central_ct: num($('pr-ct').value), variante: $('pr-var').value.trim() || null,
+    precio: precio || 0, precio_neto: precio ? Math.round(precio / (1 + IVA)) : 0, activo: $('pr-activo').checked, editado_por: S.uid, editado_en: new Date().toISOString() };
+  const prev = productos().find((x) => x.codigo === S.prEdit);
+  const atributos = { ...(prev?.atributos || {}) };
+  for (const sel of $('pr-extras').querySelectorAll('select')) { if (sel.value) atributos[sel.dataset.g] = sel.value; else delete atributos[sel.dataset.g]; }
+  body.atributos = atributos;
+  try {
+    await S.db.doc(`maestro/catalogo/productos/${codigo}`).set(body);
+    if (!esNuevo && S.prEdit !== codigo && !S.prodBase.some((b) => b.codigo === S.prEdit)) await S.db.doc(`maestro/catalogo/productos/${S.prEdit}`).delete();
+    S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', '');
+  } catch (e) { msg('m-pr', 'No se pudo guardar (' + (e.code || e.message) + ').', 'bad'); }
+}
+const borrando = new Set();
+async function restaurarProducto() {
+  const cod = S.prEdit;
+  if (!cod || cod === '__nuevo') return;
+  const b = $('b-pr-restaurar'), txt = b.textContent;
+  if (!borrando.has(cod)) { borrando.add(cod); b.textContent = 'Confirmar: ' + txt.charAt(0).toLowerCase() + txt.slice(1); b.classList.add('armado'); setTimeout(() => { borrando.delete(cod); b.textContent = txt; b.classList.remove('armado'); }, 6000); return; }
+  b.classList.remove('armado');
+  borrando.delete(cod);
+  try { await S.db.doc(`maestro/catalogo/productos/${cod}`).delete(); S.prEdit = null; $('c-prod-form').hidden = true; msg('m-pr', ''); }
+  catch (e) { msg('m-pr', 'No se pudo (' + (e.code || e.message) + ').', 'bad'); }
+}
+let ajusteArmado = false;
+async function ajustarPrecios() {
+  const pct = num($('aj-pct').value);
+  const rs = prodFiltrados().filter((p) => p.precio > 0);
+  if (pct == null || pct === 0) { msg('m-aj', 'Escribe un porcentaje distinto de cero (negativo para bajar).', 'bad'); return; }
+  if (!rs.length) { msg('m-aj', 'No hay productos con precio en el filtro.', 'bad'); return; }
+  if (rs.length > 400) { msg('m-aj', `El filtro tiene ${fNum.format(rs.length)} productos; acótalo a 400 o menos.`, 'bad'); return; }
+  if (!ajusteArmado) { ajusteArmado = true; $('b-aj').textContent = 'Confirmar ajuste'; $('b-aj').classList.add('armado'); setTimeout(() => { $('b-aj').textContent = 'Aplicar'; $('b-aj').classList.remove('armado'); }, 8000); msg('m-aj', `Se cambiará el precio de ${fNum.format(rs.length)} productos en ${fDec.format(pct)}%. Pulsa "Confirmar ajuste" para aplicarlo.`); setTimeout(() => { ajusteArmado = false; }, 8000); return; }
+  ajusteArmado = false; $('b-aj').textContent = 'Aplicar'; $('b-aj').classList.remove('armado');
+  const red = $('aj-red').checked; let ok = 0;
+  for (const p of rs) {
+    let v = p.precio * (1 + pct / 100); v = red ? Math.round(v / 1000) * 1000 : Math.round(v);
+    const { origen, _v, ...resto } = p;
+    try { await S.db.doc(`maestro/catalogo/productos/${p.codigo}`).set({ ...resto, precio: v, precio_neto: Math.round(v / (1 + IVA)), editado_por: S.uid, editado_en: new Date().toISOString() }); ok++; }
+    catch (e) { msg('m-aj', `Se detuvo en ${p.codigo} (${e.code || e.message}). ${ok} precios actualizados.`, 'bad'); return; }
+    if (ok % 20 === 0) msg('m-aj', `Actualizando… ${ok} de ${rs.length}`);
+  }
+  msg('m-aj', `${fNum.format(ok)} precios actualizados.`, 'ok');
+}
+async function descargarCSV() {
+  const dl = await claude.use('downloads');
+  if (!dl) { msg('m-pr', 'La descarga no está disponible en esta vista.', 'bad'); return; }
+  const cols = ['codigo', 'nombre', 'modelo', 'categoria', 'tono', 'piedra', 'central_ct', 'variante', 'precio', 'precio_neto', 'activo', 'origen'];
+  const esc = (v) => { const s = v == null ? '' : String(v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = prodFiltrados().map((p) => cols.map((c) => c === 'activo' ? (p.activo === false ? 'no' : 'si') : esc(p[c])).join(';'));
+  try { await dl.save({ filename: `productos-vannucci-${hoy()}.csv`, data: '﻿' + ['codigo;nombre;modelo;categoria;tono;piedra;central_ct;variante;precio_con_iva;precio_neto;activo;origen', ...rows].join('\n') }); }
+  catch (e) { if (e.code !== 'declined') msg('m-pr', 'No se pudo descargar (' + (e.code || e.message) + ').', 'bad'); }
+}
+
+// ---------- maestros en el formulario ----------
+function opcionesRegistro() {
+  setOptions($('i-tono'), TONOS()); setOptions($('i-tipo'), TIPOS());
+  const cur = $('i-modelo').value;
+  const m = modeloDe(cur);
+  const cods = productos().filter((p) => p.activo !== false && (!m || clave(p.modelo) === clave(m.nombre)));
+  $('codigos').replaceChildren(...cods.slice(0, 400).map((p) => h('option', { value: p.codigo }, `${p.nombre}${p.variante ? ' · ' + p.variante : ''}`)));
+}
+function alCambiarModelo() {
+  const m = modeloDe($('i-modelo').value), hint = $('hint-modelo');
+  hint.textContent = '';
+  if (m) {
+    if (clave(m.nombre) !== clave($('i-modelo').value)) $('i-modelo').value = m.nombre;
+    if (m.peso_objetivo && !$('i-po').value) { $('i-po').value = m.peso_objetivo; renderCalc(); }
+    hint.textContent = `${m.nombre}${m.categoria ? ' · ' + m.categoria : ''}${m.peso_objetivo ? ` · peso objetivo de referencia ${g2(m.peso_objetivo)} g` : ''}`;
+  } else if ($('i-modelo').value.trim() && S.modelos.length) hint.textContent = 'Modelo nuevo: no está en el maestro. El supervisor lo verá al aprobar.';
+  opcionesRegistro();
+}
+function alCambiarProducto() {
+  const p = productos().find((x) => x.codigo === $('i-prod').value.trim());
+  if (!p) return;
+  if (p.modelo) $('i-modelo').value = p.modelo;
+  if (p.tono && TONOS().includes(p.tono)) $('i-tono').value = p.tono;
+  alCambiarModelo();
+}
+async function cargarCatalogoBase(url) {
+  try { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); S.prodBase = await r.json(); S.prodBaseStatus = 'ok'; }
+  catch (e) { S.prodBaseStatus = 'error'; }
+  prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+}
+
+// ---------- ventas (Bsale) ----------
+const SUCURSALES = ['Santiago 346', 'Manquehue 5885'];
+const colorSuc = (s) => css(['--s1', '--s2', '--s3', '--s4'][Math.max(0, SUCURSALES.indexOf(s)) % 4]);
+const fMoney = (v) => v == null || !isFinite(v) ? '—' : (Math.abs(v) >= 1e6 ? '$' + fDec.format(v / 1e6) + ' M' : '$' + fNum.format(v / 1e3) + ' mil');
+let ventasKey = null, ventasAgg = null;
+function aggVentas() {
+  if (ventasKey === S.ventas.length) return ventasAgg;
+  const g = new Map(), prod = new Map();
+  for (const r of S.ventas) for (const s of [r.sucursal, 'Todas']) for (const m of [r.mes, r.mes.slice(0, 4), 'Todos']) {
+    const k = s + '|' + m;
+    if (!g.has(k)) g.set(k, { sucursal: s, mes: m, bruta: 0, nc: 0, docs: new Set(), ncDocs: new Set(), unidades: 0 });
+    const o = g.get(k);
+    if (r.clase === 'Venta') { o.bruta += r.neto; o.docs.add(r.doc_id); o.unidades += r.cantidad; } else { o.nc -= r.neto; o.ncDocs.add(r.doc_id); }
+    const dims = [['grupo', r.grupo]];
+    if (r.grupo === 'Catálogo') dims.push(['modelo', r.modelo], ['tono', r.tono ? 'Oro ' + r.tono : 'Sin tono'], ['piedra', r.piedra || 'Sin piedra']);
+    for (const [dim, valor] of dims) {
+      const kk = k + '|' + dim; if (!prod.has(kk)) prod.set(kk, new Map());
+      const mm = prod.get(kk), p = mm.get(valor) || { valor, n: 0, unidades: 0 }; p.n += r.neto; p.unidades += r.cantidad; mm.set(valor, p);
+    }
+  }
+  const map = new Map();
+  for (const [k, o] of g) map.set(k, { sucursal: o.sucursal, mes: o.mes, bruta: o.bruta, nc: o.nc, neta: o.bruta - o.nc, docs: o.docs.size, nc_docs: o.ncDocs.size, ticket: o.docs.size ? o.bruta / o.docs.size : null, unidades: o.unidades });
+  const anterior = (mes) => { if (mes.length === 4) return String(+mes - 1); const [y, m] = mes.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
+  for (const r of map.values()) {
+    const tot = map.get('Todas|' + r.mes); r.participacion = tot && tot.neta ? r.neta / tot.neta : null;
+    const p = r.mes === 'Todos' ? null : map.get(r.sucursal + '|' + anterior(r.mes));
+    for (const f of ['neta', 'bruta', 'docs', 'ticket', 'unidades']) r['d_' + f] = p && p[f] != null && r[f] != null ? r[f] - p[f] : null;
+  }
+  ventasKey = S.ventas.length; ventasAgg = { map, prod, meses: [...new Set(S.ventas.map((r) => r.mes))].sort() };
+  return ventasAgg;
+}
+function stackGen(box, meses, keys, val, color, fmt, fmtAxis, sel, onClick) {
+  box.replaceChildren();
+  if (!meses.length) { box.append(h('p', { class: 'empty' }, 'Sin datos en este período.')); return; }
+  const W = box.clientWidth || 600, H = 230, m = { t: 8, r: 8, b: 26, l: 48 };
+  const data = meses.map((mes) => { const o = { mes }; for (const k of keys) o[k] = Math.max(0, val(k, mes) || 0); return o; });
+  const x = d3.scaleBand(meses, [m.l, W - m.r]).padding(0.22);
+  const y = d3.scaleLinear([0, d3.max(data, (d) => d3.sum(keys, (k) => d[k])) || 1], [H - m.b, m.t]).nice();
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  ejes(svg, y, W, m, H, meses, x, fmtAxis, x.bandwidth() / 2);
+  svg.append('g').selectAll('g').data(d3.stack().keys(keys)(data)).join('g').attr('fill', (s) => color(s.key))
+    .selectAll('rect').data((s) => s).join('rect').attr('x', (d) => x(d.data.mes)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('stroke', css('--panel')).attr('stroke-width', 1)
+    .attr('opacity', (d) => sel === 'Todos' || d.data.mes.startsWith(sel) ? 1 : 0.35);
+  const t = tip(box);
+  svg.append('g').selectAll('rect').data(data).join('rect').attr('x', (d) => x(d.mes)).attr('width', x.bandwidth()).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'transparent').style('cursor', 'pointer')
+    .on('mousemove', (ev, d) => t.show(ev, fMes(d.mes, true), [...keys.filter((k) => d[k]).map((k) => [color(k), k, fmt(d[k])]), [null, 'Total', fmt(d3.sum(keys, (k) => d[k]))]]))
+    .on('mouseleave', () => t.hide()).on('click', (ev, d) => onClick(d.mes));
+}
+function linesGen(box, meses, keys, val, color, fmtY, sel, foco) {
+  box.replaceChildren();
+  if (!meses.length) { box.append(h('p', { class: 'empty' }, 'Sin datos en este período.')); return; }
+  const W = box.clientWidth || 400, H = 200, conEtq = W >= 420, m = { t: 10, r: conEtq ? 110 : 10, b: 26, l: 58 };
+  const etq = [];
+  const x = d3.scalePoint(meses, [m.l, W - m.r]);
+  const vals = keys.flatMap((k) => meses.map((mes) => val(k, mes))).filter((v) => v != null);
+  const y = d3.scaleLinear([0, (d3.max(vals) || 0) * 1.08 || 1], [H - m.b, m.t]).nice();
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  ejes(svg, y, W, m, H, meses, x, fmtY, 0);
+  if (sel !== 'Todos' && x(sel) != null) svg.append('line').attr('x1', x(sel)).attr('x2', x(sel)).attr('y1', m.t).attr('y2', H - m.b).attr('stroke', css('--ref')).attr('stroke-dasharray', '2 3');
+  const line = d3.line().defined((d) => d.v != null).x((d) => x(d.mes)).y((d) => y(d.v));
+  for (const k of keys) {
+    const s = meses.map((mes) => ({ mes, v: val(k, mes) ?? null })), op = foco === 'Todas' || foco === k ? 1 : 0.22, pts = s.filter((d) => d.v != null);
+    svg.append('path').datum(s).attr('d', line).attr('fill', 'none').attr('stroke', color(k)).attr('stroke-width', 2).attr('stroke-dasharray', DASH[keys.indexOf(k) % DASH.length] || null).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').attr('opacity', op);
+    if (conEtq && pts.length) { const u = pts[pts.length - 1]; etq.push({ x: x(u.mes), y: y(u.v), text: k, color: color(k), op }); }
+    svg.append('g').selectAll('circle').data(pts.filter((d) => pts.length === 1 || d.mes === sel)).join('circle').attr('cx', (d) => x(d.mes)).attr('cy', (d) => y(d.v)).attr('r', 3.5).attr('fill', color(k)).attr('opacity', op);
+  }
+  etiquetasFinales(svg, etq, H, m);
+  const t = tip(box), step = meses.length > 1 ? x(meses[1]) - x(meses[0]) : W;
+  svg.append('g').selectAll('rect').data(meses).join('rect').attr('x', (d) => x(d) - step / 2).attr('width', step).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'transparent')
+    .on('mousemove', (ev, mes) => t.show(ev, fMes(mes, true), keys.map((k) => [k, val(k, mes)]).filter(([, v]) => v != null).map(([k, v]) => [color(k), k, fmtY(v)])))
+    .on('mouseleave', () => t.hide());
+}
+function renderVentas() {
+  const V = S.v, take = $('v-take');
+  if (S.ventasStatus !== 'ok') {
+    take.replaceChildren(S.ventasStatus === 'error' ? 'No se pudieron cargar las ventas. Recarga la página.' : S.ventasStatus === 'none' ? 'Todavía no hay datos de ventas cargados en el portal.' : h('span', { class: 'skel' }, 'cargando'));
+    return;
+  }
+  const A = aggVentas();
+  const anios = [...new Set(A.meses.map((m) => m.slice(0, 4)))];
+  if (V.anio !== 'Todos' && !anios.includes(V.anio)) V.anio = anios[anios.length - 1] || 'Todos';
+  const meses = V.anio === 'Todos' ? A.meses : A.meses.filter((m) => m.startsWith(V.anio));
+  if (V.mes !== 'Todos' && !meses.includes(V.mes)) V.mes = 'Todos';
+  const per = V.mes !== 'Todos' ? V.mes : V.anio;
+  $('vf-suc').replaceChildren(...['Todas', ...SUCURSALES].map((s) => h('button', { type: 'button', 'aria-pressed': String(V.suc === s), onclick: () => { V.suc = s; renderVentas(); } },
+    s !== 'Todas' ? h('span', { class: 'sw', style: `background:${colorSuc(s)}` }) : null, s === 'Todas' ? 'Ambas sucursales' : s)));
+  $('vf-anio').replaceChildren(new Option('Todos los años', 'Todos'), ...anios.slice().reverse().map((a) => new Option(a, a))); $('vf-anio').value = V.anio;
+  $('vf-mes').replaceChildren(new Option(V.anio === 'Todos' ? 'Todos los meses' : `Todo ${V.anio}`, 'Todos'), ...meses.slice().reverse().map((m) => new Option(fMes(m, true) + (m === S.ventasHasta?.slice(0, 7) ? ' (hasta el ' + S.ventasHasta.slice(8) + ')' : ''), m))); $('vf-mes').value = V.mes;
+
+  const cur = A.map.get(V.suc + '|' + per);
+  for (const [f, fmt] of [['neta', fMoney], ['bruta', fMoney], ['docs', (v) => fNum.format(v)], ['ticket', fMoney], ['unidades', (v) => fNum.format(v)]]) {
+    $('vk-' + f).textContent = cur ? fmt(cur[f]) : '—';
+    if (cur) delta($('vd-' + f), cur['d_' + f], fmt, true, per); else $('vd-' + f).textContent = '';
+  }
+  $('vk-nc').textContent = cur ? fMoney(cur.nc) : '—';
+  $('vd-nc').className = 'd'; $('vd-nc').textContent = cur ? `${fNum.format(cur.nc_docs)} notas · ${cur.bruta ? fPct(cur.nc / cur.bruta) : '—'} de la venta bruta` : '';
+  take.replaceChildren();
+  if (cur) {
+    take.append(`${V.suc === 'Todas' ? 'Vannucci' : V.suc} vendió `, h('b', {}, fMoney(cur.neta) + ' netos'), ` en ${fMes(per, true)}`);
+    if (cur.d_neta != null) { const prev = cur.neta - cur.d_neta; take.append(`, ${cur.d_neta >= 0 ? 'un alza' : 'una baja'} de ${fPct(Math.abs(cur.d_neta) / (prev || 1))} ${per.length === 4 ? 'frente al año anterior' : 'frente al mes anterior'}`); }
+    take.append(', con un ticket promedio de ', h('b', {}, fMoney(cur.ticket)), '.');
+  } else take.append(`Sin ventas en ${fMes(per, true)}.`);
+
+  $('v-leg').replaceChildren(...SUCURSALES.map((s) => h('span', {}, h('i', { class: 'sw', style: `background:${colorSuc(s)}` }), s)));
+  const val = (f) => (s, mes) => A.map.get(s + '|' + mes)?.[f] ?? null;
+  stackGen($('vch-mes'), meses, SUCURSALES, val('neta'), colorSuc, fMoney, (v) => fNum.format(v / 1e6) + ' M', per, (mes) => { V.mes = mes; V.anio = mes.slice(0, 4); renderVentas(); });
+  linesGen($('vch-ticket'), meses, SUCURSALES, val('ticket'), colorSuc, fMoney, per, V.suc);
+  linesGen($('vch-docs'), meses, SUCURSALES, val('docs'), colorSuc, (v) => fNum.format(v), per, V.suc);
+
+  $('vh-suc').textContent = `Resumen por sucursal, ${fMes(per, true)}`;
+  $('vtb-suc').tBodies[0].replaceChildren(...['Todas', ...SUCURSALES].map((s) => A.map.get(s + '|' + per)).filter(Boolean).map((r) => h('tr', { class: r.sucursal === V.suc ? 'sel' : null },
+    h('td', {}, r.sucursal === 'Todas' ? 'Ambas sucursales' : r.sucursal), h('td', { class: 'n' }, fNum.format(r.docs)), h('td', { class: 'n' }, fCLP(Math.round(r.bruta))),
+    h('td', { class: 'n' }, fCLP(Math.round(r.nc))), h('td', { class: 'n' }, fCLP(Math.round(r.neta))), h('td', { class: 'n' }, r.ticket == null ? '' : fCLP(Math.round(r.ticket))),
+    h('td', { class: 'n' }, fNum.format(r.unidades)), h('td', { class: 'n' }, fPct(r.participacion)))));
+
+  const c = V.suc === 'Todas' ? css('--muted') : colorSuc(V.suc);
+  const dimRows = (dim) => [...(A.prod.get(`${V.suc}|${per}|${dim}`)?.values() || [])];
+  for (const dim of ['grupo', 'tono', 'piedra']) {
+    const box = $('vhb-' + dim); hbars(box, dimRows(dim), c);
+    box.querySelectorAll('.val').forEach((el, i, all) => { const rs = dimRows(dim).slice().sort((a, b) => b.n - a.n); if (rs[i]) el.textContent = fMoney(rs[i].n); });
+  }
+  const fab = new Map();
+  for (const r of filasDefinitivas()) if (per === 'Todos' || r.mes.startsWith(per)) { const m = modeloDe(r.modelo); const k = clave(m ? m.nombre : r.modelo); fab.set(k, (fab.get(k) || 0) + 1); }
+  const mods = dimRows('modelo').sort((a, b) => b.n - a.n).slice(0, 15);
+  $('vtb-mod').tBodies[0].replaceChildren(...(mods.length ? mods.map((r) => h('tr', {}, h('td', {}, r.valor), h('td', { class: 'n' }, fNum.format(r.unidades)), h('td', { class: 'n' }, fCLP(Math.round(r.n))), h('td', { class: 'n' }, fNum.format(fab.get(clave(r.valor)) || 0)))) :
+    [h('tr', {}, h('td', { colspan: 4, class: 'note' }, 'Sin ventas de catálogo en este período. La venta de catálogo con modelo empieza en 2026.'))]));
+  $('v-fuente').textContent = `Fuente: Bsale, ${S.ventasFuente || 'documentos de venta y notas de crédito'}. Datos del ${fFecha(S.ventasDesde)} al ${fFecha(S.ventasHasta)}; es una copia que se actualiza cuando se pide. Venta neta = venta bruta − notas de crédito, sin IVA.`;
+}
+async function cargarVentas(cfg) {
+  S.ventasDesde = cfg.desde; S.ventasHasta = cfg.hasta; S.ventasFuente = cfg.fuente;
+  try { const r = await fetch(cfg.url); if (!r.ok) throw new Error('HTTP ' + r.status); S.ventas = await r.json(); S.ventasStatus = 'ok'; }
+  catch (e) { S.ventasStatus = 'error'; }
+  ventasKey = null; if (S.tab === 'ventas') renderVentas();
+}
+
+// ---------- pestañas ----------
+function setTab(t) {
+  if ((t === 'revision' || t === 'maestros' || t === 'ventas') && !S.isSup) t = 'panel';
+  S.tab = t;
+  for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = sec.id !== t;
+  const enIndicadores = t === 'panel' || t === 'ventas';
+  for (const b of document.querySelectorAll('nav.tabs button')) { if (b.dataset.tab === t || (b.dataset.tab === 'panel' && enIndicadores)) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  $('ind-sub').hidden = !(S.isSup && enIndicadores);
+  for (const b of document.querySelectorAll('#ind-sub button')) b.setAttribute('aria-pressed', String(b.dataset.sub === t));
+  try { history.replaceState(null, '', '#' + t); } catch (e) { /* sin historial */ }
+  if (t === 'panel') renderPanel();
+  if (t === 'revision') renderRevision();
+  if (t === 'maestros') renderMaestros();
+  if (t === 'ventas') renderVentas();
+}
+
+// ---------- arranque ----------
+function wire() {
+  document.querySelectorAll('nav.tabs button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  $('f-anio').addEventListener('change', (e) => { S.anio = e.target.value; S.mes = 'Todos'; renderPanel(); });
+  $('f-mes').addEventListener('change', (e) => { S.mes = e.target.value; renderPanel(); });
+  $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRegistros(agregados(), S.mes !== 'Todos' ? S.mes : S.anio); });
+  opcionesRegistro();
+  $('i-fecha').max = hoy();
+  $('i-modelo').addEventListener('change', alCambiarModelo);
+  $('i-prod').addEventListener('change', alCambiarProducto);
+  document.querySelectorAll('#m-sub button').forEach((b) => b.addEventListener('click', () => { S.msub = b.dataset.sub; renderMaestros(); }));
+  document.querySelectorAll('#ind-sub button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.sub)));
+  $('vf-anio').addEventListener('change', (e) => { S.v.anio = e.target.value; S.v.mes = 'Todos'; renderVentas(); });
+  $('vf-mes').addEventListener('change', (e) => { S.v.mes = e.target.value; renderVentas(); });
+  $('b-grupo').addEventListener('click', crearGrupo);
+  $('g-nombre').addEventListener('keydown', (e) => { if (e.key === 'Enter') crearGrupo(); });
+  $('mo-q').addEventListener('input', (e) => { S.moQ = e.target.value; renderModelos(); });
+  $('b-mo-nuevo').addEventListener('click', () => abrirModelo(null));
+  $('b-mo-guardar').addEventListener('click', guardarModelo);
+  $('b-mo-cancelar').addEventListener('click', () => { S.moEdit = null; $('c-modelo-form').hidden = true; });
+  $('pr-q').addEventListener('input', (e) => { S.pr.q = e.target.value; renderProductos(); });
+  for (const [id, k] of [['pf-cat', 'cat'], ['pf-modelo', 'modelo'], ['pf-tono', 'tono'], ['pf-piedra', 'piedra'], ['pf-estado', 'estado']]) $(id).addEventListener('change', (e) => { S.pr[k] = e.target.value; renderProductos(); });
+  $('b-pr-nuevo').addEventListener('click', () => abrirProducto(null));
+  $('b-pr-guardar').addEventListener('click', guardarProducto);
+  $('b-pr-cancelar').addEventListener('click', () => { S.prEdit = null; $('c-prod-form').hidden = true; });
+  $('b-pr-restaurar').addEventListener('click', restaurarProducto);
+  $('b-pr-sugerir').addEventListener('click', sugerirCodigo);
+  $('pr-precio').addEventListener('input', calcNeto);
+  $('b-aj').addEventListener('click', ajustarPrecios);
+  $('b-pr-csv').addEventListener('click', descargarCSV);
+  for (const id of ['i-ot', 'i-pf', 'i-od', 'i-po']) $(id).addEventListener('input', renderCalc);
+  for (const id of ['i-fecha', 'i-modelo', 'i-ot', 'i-pf']) $(id).addEventListener('input', () => errorCampo(id, ''));
+  $('form').addEventListener('submit', enviar);
+  $('b-cancelar').addEventListener('click', cancelarEdicion);
+  $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map((p) => p._uid + '/' + p._id) : []); renderRevision(); });
+  $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(p._uid + '/' + p._id))));
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'panel') renderPanel(); if (S.tab === 'ventas') renderVentas(); }, 150); });
+  llenarForm(null);
+}
+
+function modelosDatalist() {
+  const ms = (S.modelos.length ? S.modelos.filter((m) => m.activo !== false).map((m) => m.nombre) : [...new Set(filasDefinitivas().map((r) => r.modelo).filter(Boolean))]).sort((a, b) => a.localeCompare(b, 'es'));
+  $('modelos').replaceChildren(...ms.map((m) => h('option', { value: m })));
+}
+
+async function cargarHistorico(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    S.historico = data.map((x) => ({ ...x, origen: 'Planilla' }));
+    S.histStatus = 'ok';
+  } catch (e) { S.histStatus = 'error'; }
+  cacheKey = null; modelosDatalist(); renderPanel();
+}
+
+async function start() {
+  wire();
+  const ini = location.hash.slice(1);
+  setTab(['panel', 'ventas', 'registrar', 'revision', 'maestros', 'ayuda'].includes(ini) ? ini : 'panel');
+  const [user, db] = await Promise.all([claude.use('user'), claude.use('db')]);
+  S.user = user; S.db = db;
+  if (user) {
+    S.me = await user.me(); S.uid = S.me.id; S.isSup = await user.canEdit();
+    const cw = await user.can('data.write'); S.canWrite = cw !== false;
+  }
+  const who = $('who');
+  who.replaceChildren(
+    S.me && S.me.id ? h('img', { src: S.me.avatarUrl, alt: '' }) : null,
+    h('span', {}, (S.me && S.me.name) || (S.me && S.me.id ? 'Tú' : 'Sin sesión')),
+    h('span', { class: 'role' + (S.isSup ? ' sup' : '') }, S.isSup ? 'Supervisor de Taller' : S.uid && S.canWrite ? 'Orfebre' : 'Lector'));
+  $('t-revision').hidden = !S.isSup;
+  $('t-maestros').hidden = !S.isSup;
+  if (ini === 'ventas' && S.isSup) setTab('ventas');
+  else if (S.tab === 'panel') setTab('panel');
+  if (!S.uid || !S.canWrite) $('t-registrar').hidden = true;
+  if (ini === 'revision' && S.isSup) setTab('revision');
+  if (ini === 'maestros' && S.isSup) setTab('maestros');
+  if (S.isSup) claude.use('downloads').then((dl) => { $('b-pr-csv').hidden = !dl; });
+  if (ini === 'registrar' && !$('t-registrar').hidden) setTab('registrar');
+  if (!db) {
+    const av = $('aviso'); av.hidden = false; av.textContent = 'No se pudo conectar con la base de datos del portal. Inicia sesión en claude.ai con tu cuenta de la empresa y recarga.';
+    S.histStatus = 'error'; renderPanel(); return;
+  }
+  const fallo = () => { const av = $('aviso'); av.hidden = false; av.textContent = 'Se perdió la conexión con la base de datos. Recarga la página.'; };
+  db.doc('config/historico').onSnapshot((s) => { const u = s.exists && s.data().url; if (u) cargarHistorico(u); else { S.histStatus = 'ok'; renderPanel(); } }, fallo);
+  db.doc('config/catalogo').onSnapshot((s) => {
+    const d = s.exists ? s.data() : {};
+    const it = toItems(Array.isArray(d.orfebres_todos) && d.orfebres_todos.length ? d.orfebres_todos : d.orfebres);
+    S.orfItems = it.length ? it : toItems(DEFAULT_ORFEBRES); S.orfebres = activos(S.orfItems); cacheKey = null; renderPerfil(); renderPanel(); if (S.isSup) renderRevision(); if (S.tab === 'maestros') renderMaestros(); }, fallo);
+  if (S.isSup) db.doc('config/ventas').onSnapshot((s) => {
+    const c = s.exists ? s.data() : null;
+    if (c && c.url) cargarVentas(c); else { S.ventasStatus = 'none'; if (S.tab === 'ventas') renderVentas(); }
+  }, fallo);
+  db.doc('maestro/parametros').onSnapshot((s) => {
+    const d = s.exists ? s.data() : {};
+    const lista = (k) => { const it = toItems(d[k]); return it.length ? it : toItems(DEFAULT_PARAM[k]); };
+    S.param = {
+      tonos: lista('tonos'), piedras: lista('piedras'), tipos: lista('tipos'), categorias: lista('categorias'),
+      extras: (Array.isArray(d.extras) ? d.extras : []).filter((g) => g && g.id && g.nombre).map((g) => ({ id: g.id, nombre: g.nombre, sigla: !!g.sigla, items: toItems(g.items) })),
+    };
+    cacheKey = null;
+    opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+  }, fallo);
+  db.doc('maestro/catalogo').onSnapshot((s) => { const u = s.exists && s.data().base_url; if (u) cargarCatalogoBase(u); else { S.prodBaseStatus = 'ok'; if (S.tab === 'maestros') renderMaestros(); } }, fallo);
+  db.collection('maestro/catalogo/modelos').onSnapshot((snap) => {
+    S.modelos = snap.docs.map((d) => ({ ...d.data(), _id: d.id })); modelosDatalist(); opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+  }, fallo);
+  db.collection('maestro/catalogo/productos').onSnapshot((snap) => {
+    S.prodOv = new Map(snap.docs.map((d) => [d.id, { ...d.data(), _v: d.id + (d.data().editado_en || '') }])); prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
+  }, fallo);
+  db.collection('aprobadas').onSnapshot((snap) => {
+    S.aprobadas = snap.docs.map((d) => ({ ...d.data(), _id: d.id, _v: d.id + (d.data().aprobado_en || '') }));
+    cacheKey = null; modelosDatalist(); renderPanel(); if (S.isSup) renderRevision();
+  }, fallo);
+  if (S.uid && S.canWrite) {
+    db.doc(`envios/${S.uid}`).onSnapshot((s) => { S.perfil = s.exists ? s.data() : null; renderPerfil(); }, () => {});
+    db.collection(`envios/${S.uid}/piezas`).orderBy('creado_en', 'desc').limit(500).onSnapshot((snap) => {
+      S.mis = snap.docs.map((d) => ({ ...d.data(), _id: d.id })); renderMis();
+    }, () => {});
+    renderPerfil(); renderMis();
+  }
+  if (S.isSup) {
+    const subs = new Map();
+    db.collection('envios').onSnapshot((snap) => {
+      const uids = new Set(snap.docs.map((d) => d.id));
+      for (const [u, un] of subs) if (!uids.has(u)) { un(); subs.delete(u); delete S.pend[u]; }
+      for (const u of uids) if (!subs.has(u) && subs.size < 60) {
+        subs.set(u, db.collection(`envios/${u}/piezas`).where('estado', '==', 'pendiente').onSnapshot((ps) => {
+          S.pend[u] = ps.docs.map((d) => ({ ...d.data(), _id: d.id })); renderRevision(); if (S.tab === 'panel') renderPanel();
+        }, () => {}));
+      }
+      renderRevision();
+    }, fallo);
+  }
+}
+start();
+})();
+</script>
+
+</body></html>
