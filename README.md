@@ -2,6 +2,8 @@
 
 Portal del taller de joyería Vannucci: registro de piezas por orfebre, aprobación del Supervisor de Taller, indicadores de productividad y ventas, y maestros (parámetros, modelos, productos y precios, usuarios).
 
+**Portal en producción:** <https://vannucci-app.vercel.app> (Vercel publica automáticamente cada cambio en `main`).
+
 ## Arquitectura
 
 - **`index.html`**: la app completa (HTML, CSS y JS en un solo archivo). Usa d3 7.9.0 y supabase-js 2.45.4 desde CDN.
@@ -34,7 +36,7 @@ Un trigger impide que un orfebre apruebe sus piezas o registre a nombre de otro.
 ## Puesta en marcha
 
 1. En Supabase → **Authentication → Sign In / Providers**: dejar activo *Email* y desactivar *Allow new users to sign up*.
-2. En **Authentication → URL Configuration**: poner como *Site URL* la dirección donde se publique `index.html` (por ejemplo la de GitHub Pages) y agregarla en *Redirect URLs*.
+2. En **Authentication → URL Configuration**: *Site URL* `https://vannucci-app.vercel.app` y en *Redirect URLs* `https://vannucci-app.vercel.app/**`.
 3. Invitar usuarios en **Authentication → Users → Invite user**. Cada uno entra como Lector; el supervisor le asigna su rol en *Maestros → Usuarios*.
 4. El primer supervisor se asigna con SQL en el editor de Supabase:
    ```sql
