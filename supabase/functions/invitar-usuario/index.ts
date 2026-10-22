@@ -38,16 +38,28 @@ Deno.serve(async (req) => {
   if (!ROLES.includes(rol)) return responder(400, { error: 'Rol inválido.' });
   if (rol === 'orfebre' && !orfebreId) return responder(400, { error: 'Un orfebre debe quedar vinculado a su nombre del taller.' });
 
-  const { data: invitado, error } = await admin.auth.admin.inviteUserByEmail(email, { data: { nombre }, redirectTo: PORTAL });
-  if (error) {
-    const yaExiste = /already been registered|already exists/i.test(error.message);
-    return responder(yaExiste ? 409 : 400, { error: yaExiste ? 'Ese correo ya tiene usuario en el portal; cambia su rol en la tabla.' : 'No se pudo invitar: ' + error.message });
+  const yaExiste = (m: string) => /already been registered|already exists/i.test(m);
+  let userId: string;
+  let enlace: string | null = null;
+  const inv = await admin.auth.admin.inviteUserByEmail(email, { data: { nombre }, redirectTo: PORTAL });
+  if (!inv.error) userId = inv.data.user.id;
+  else if (yaExiste(inv.error.message)) return responder(409, { error: 'Ese correo ya tiene usuario en el portal; cambia su rol en la tabla.' });
+  else {
+    // El correo no salió (por ejemplo, el límite de envíos del correo de Supabase): se crea el usuario
+    // igual y se devuelve el enlace de invitación para que el administrador lo comparta por otro medio.
+    const gen = await admin.auth.admin.generateLink({ type: 'invite', email, options: { data: { nombre }, redirectTo: PORTAL } });
+    if (gen.error) {
+      if (yaExiste(gen.error.message)) return responder(409, { error: 'Ese correo ya tiene usuario en el portal; cambia su rol en la tabla.' });
+      return responder(400, { error: 'No se pudo invitar: ' + gen.error.message });
+    }
+    userId = gen.data.user.id;
+    enlace = gen.data.properties.action_link;
   }
 
   // El trigger crear_perfil ya creó el perfil como lector: se le asigna el rol pedido.
   const { error: e2 } = await admin.from('perfiles')
-    .upsert({ user_id: invitado.user.id, email, nombre, rol, orfebre_id: rol === 'orfebre' ? orfebreId : null }, { onConflict: 'user_id' });
+    .upsert({ user_id: userId, email, nombre, rol, orfebre_id: rol === 'orfebre' ? orfebreId : null }, { onConflict: 'user_id' });
   if (e2) return responder(500, { error: 'Usuario invitado, pero no se pudo asignar el rol: ' + e2.message });
 
-  return responder(200, { ok: true, user_id: invitado.user.id });
+  return responder(200, { ok: true, user_id: userId, correo_enviado: !enlace, enlace, motivo: enlace ? inv.error!.message : null });
 });

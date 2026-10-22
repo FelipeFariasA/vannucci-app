@@ -296,9 +296,9 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <div id="perfil-box" class="fields"></div>
       <form class="pieza" id="form" novalidate>
         <div class="fields">
-          <label class="field">Fecha<span class="req" aria-hidden="true">*</span><input type="date" id="i-fecha" required></label>
+          <label class="field"><span>Fecha<span class="req" aria-hidden="true">*</span></span><input type="date" id="i-fecha" required></label>
           <label class="field">Tono<select id="i-tono"></select></label>
-          <label class="field">Modelo<span class="req" aria-hidden="true">*</span><input id="i-modelo" list="modelos" required autocomplete="off" placeholder="Ej. Rapa Nui"></label>
+          <label class="field"><span>Modelo<span class="req" aria-hidden="true">*</span></span><input id="i-modelo" list="modelos" required autocomplete="off" placeholder="Ej. Rapa Nui"></label>
           <label class="field">Código de producto <span class="unit">(opcional)</span><input id="i-prod" list="codigos" autocomplete="off" class="mono" placeholder="Ej. P05-DL-C0.30-BL"></label>
           <label class="field">N° de cotización<input id="i-cot" inputmode="numeric" placeholder="Ej. 4633"></label>
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
@@ -458,12 +458,16 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <p class="note">La persona recibe un correo con un enlace para entrar al portal, ya con el rol que elijas. Un orfebre queda vinculado a su nombre del taller y sus piezas se registran siempre a ese nombre.</p>
       <form class="pieza" id="f-inv" novalidate>
         <div class="fields">
-          <label class="field">Correo<span class="req" aria-hidden="true">*</span><input type="email" id="inv-email" autocomplete="off" required placeholder="nombre@correo.cl"></label>
+          <label class="field"><span>Correo<span class="req" aria-hidden="true">*</span></span><input type="email" id="inv-email" autocomplete="off" required placeholder="nombre@correo.cl"></label>
           <label class="field">Nombre<input id="inv-nombre" autocomplete="off" placeholder="Ej. Milena Rojas"></label>
           <label class="field">Rol<select id="inv-rol"></select></label>
           <label class="field">Orfebre vinculado<select id="inv-orf"></select></label>
         </div>
         <div class="actions"><button type="submit" class="btn primary" id="b-inv">Enviar invitación</button><span class="msg" id="m-inv" role="status"></span></div>
+        <div class="calc" id="inv-enlace" hidden style="display:grid;gap:8px">
+          <span>No se pudo enviar el correo, pero el usuario ya quedó creado con su rol. Copia este enlace y envíaselo por WhatsApp o desde tu correo. Sirve una sola vez para entrar.</span>
+          <div class="actions"><input id="inv-link" readonly class="mono" style="flex:1;min-width:12rem" aria-label="Enlace de invitación"><button type="button" class="btn" id="b-copiar">Copiar enlace</button></div>
+        </div>
       </form>
     </div>
     <div class="card">
@@ -1219,7 +1223,7 @@ async function invitarUsuario(ev) {
   const email = $('inv-email').value.trim(), nombre = $('inv-nombre').value.trim(), rol = $('inv-rol').value, orf = $('inv-orf').value;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg('m-inv', 'Escribe un correo válido.', 'bad'); $('inv-email').focus(); return; }
   if (rol === 'orfebre' && !orf) { msg('m-inv', 'Elige el orfebre del taller al que corresponde.', 'bad'); $('inv-orf').focus(); return; }
-  const b = $('b-inv'); b.disabled = true; msg('m-inv', 'Enviando invitación…');
+  const b = $('b-inv'); b.disabled = true; msg('m-inv', 'Enviando invitación…'); $('inv-enlace').hidden = true;
   const { data, error } = await sb.functions.invoke('invitar-usuario', { body: { email, nombre, rol, orfebre_id: rol === 'orfebre' ? Number(orf) : null } });
   b.disabled = false;
   if (error) {
@@ -1227,7 +1231,11 @@ async function invitarUsuario(ev) {
     try { const j = await error.context.json(); if (j && j.error) texto = j.error; } catch (e) { /* sin detalle */ }
     msg('m-inv', texto, 'bad'); return;
   }
-  msg('m-inv', `Invitación enviada a ${email} como ${nombreRol(rol)}.`, 'ok');
+  if (data && data.enlace) {
+    // El correo no salió (límite de envíos de Supabase): el administrador comparte el enlace por otro medio.
+    $('inv-link').value = data.enlace; $('inv-enlace').hidden = false;
+    msg('m-inv', `${email} quedó creado como ${nombreRol(rol)}. Falta enviarle el enlace.`, 'ok');
+  } else msg('m-inv', `Invitación enviada a ${email} como ${nombreRol(rol)}.`, 'ok');
   $('inv-email').value = ''; $('inv-nombre').value = '';
   await cargarPerfiles(); renderUsuarios();
 }
@@ -1823,6 +1831,11 @@ function wire() {
   $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(claveRev(p)))));
   $('f-login').addEventListener('submit', enviarEnlace);
   $('f-inv').addEventListener('submit', invitarUsuario);
+  $('b-copiar').addEventListener('click', async () => {
+    const i = $('inv-link');
+    try { await navigator.clipboard.writeText(i.value); } catch (e) { i.select(); document.execCommand('copy'); }
+    $('b-copiar').textContent = 'Copiado'; setTimeout(() => { $('b-copiar').textContent = 'Copiar enlace'; }, 2000);
+  });
   $('inv-rol').addEventListener('change', () => { $('inv-orf').disabled = $('inv-rol').value !== 'orfebre'; });
   $('vista').addEventListener('change', (e) => { S.vista = e.target.value; aplicarVista(); });
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'panel') renderPanel(); if (S.tab === 'ventas') renderVentas(); }, 150); });
