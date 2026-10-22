@@ -156,6 +156,16 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="who" id="who"><span class="role">Cargando…</span></div>
   </header>
 
+  <div class="banner" id="vista-box" hidden style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center">
+    <label for="vista" style="font-weight:600">Ver el portal como</label>
+    <select id="vista" aria-describedby="vista-nota">
+      <option value="administrador">Administrador</option>
+      <option value="supervisor">Supervisor de Taller</option>
+      <option value="orfebre">Orfebre</option>
+    </select>
+    <span class="note" id="vista-nota">Solo cambia lo que ves. Tus permisos en la base de datos siguen siendo de administrador.</span>
+  </div>
+
   <section id="login" class="card" hidden style="max-width:28rem">
     <h2>Ingresar al portal</h2>
     <p class="note">Escribe tu correo y te enviaremos un enlace para entrar. Solo pueden ingresar personas invitadas por el Supervisor de Taller.</p>
@@ -170,6 +180,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <button type="button" id="t-registrar" data-tab="registrar">Registrar pieza</button>
     <button type="button" id="t-revision" data-tab="revision" hidden>Aprobaciones <span class="count" id="n-pend" hidden>0</span></button>
     <button type="button" id="t-maestros" data-tab="maestros" hidden>Maestros</button>
+    <button type="button" id="t-usuarios" data-tab="usuarios" hidden>Usuarios</button>
     <button type="button" id="t-ayuda" data-tab="ayuda">Cómo funciona</button>
   </nav>
 
@@ -350,18 +361,6 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <button type="button" data-sub="parametros">Parámetros</button>
       <button type="button" data-sub="modelos">Modelos</button>
       <button type="button" data-sub="productos">Productos y precios</button>
-      <button type="button" data-sub="usuarios">Usuarios</button>
-    </div>
-
-    <div id="sub-usuarios" class="msub" hidden style="display:grid;gap:14px">
-      <div class="card">
-        <h2>Usuarios y roles</h2>
-        <p class="note">Cada persona que entra al portal aparece aquí como Lector. Asígnale su rol: un Orfebre debe quedar vinculado a su nombre del taller, y sus piezas se registran siempre a ese nombre. Para sumar a alguien nuevo, invítalo desde el panel de Supabase (Authentication → Users → Invite user).</p>
-        <span class="msg" id="m-us" role="status"></span>
-        <div class="tbl free"><table id="tb-us"><thead><tr>
-          <th>Nombre</th><th>Correo</th><th>Rol</th><th>Orfebre vinculado</th><th></th>
-        </tr></thead><tbody></tbody></table></div>
-      </div>
     </div>
 
     <div id="sub-parametros" class="msub" style="display:grid;gap:14px">
@@ -452,6 +451,40 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     </div>
   </section>
 
+  <!-- USUARIOS (administrador) -->
+  <section id="usuarios" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div class="card">
+      <h2>Invitar usuario</h2>
+      <p class="note">La persona recibe un correo con un enlace para entrar al portal, ya con el rol que elijas. Un orfebre queda vinculado a su nombre del taller y sus piezas se registran siempre a ese nombre.</p>
+      <form class="pieza" id="f-inv" novalidate>
+        <div class="fields">
+          <label class="field">Correo<span class="req" aria-hidden="true">*</span><input type="email" id="inv-email" autocomplete="off" required placeholder="nombre@correo.cl"></label>
+          <label class="field">Nombre<input id="inv-nombre" autocomplete="off" placeholder="Ej. Milena Rojas"></label>
+          <label class="field">Rol<select id="inv-rol"></select></label>
+          <label class="field">Orfebre vinculado<select id="inv-orf"></select></label>
+        </div>
+        <div class="actions"><button type="submit" class="btn primary" id="b-inv">Enviar invitación</button><span class="msg" id="m-inv" role="status"></span></div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Usuarios y roles</h2>
+      <p class="note">Quien entra sin invitación de esta pantalla aparece como Lector hasta que le asignes un rol.</p>
+      <span class="msg" id="m-us" role="status"></span>
+      <div class="tbl free"><table id="tb-us"><thead><tr>
+        <th>Nombre</th><th>Correo</th><th>Rol</th><th>Orfebre vinculado</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Qué ve cada rol</h2>
+      <ul class="defs">
+        <li><b>Administrador</b>: todo lo del supervisor, más esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
+        <li><b>Supervisor de Taller</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones y Maestros.</li>
+        <li><b>Orfebre</b>: Indicadores de productividad, Registrar pieza (a su nombre) y sus propios registros.</li>
+        <li><b>Lector</b>: solo Indicadores de productividad.</li>
+      </ul>
+    </div>
+  </section>
+
   <!-- AYUDA -->
   <section id="ayuda" class="pv-tab" hidden style="display:grid;gap:20px">
     <div class="steps">
@@ -462,8 +495,9 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="card">
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
-        <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas invitadas; cada una parte como Lector y el Supervisor le asigna su rol en Maestros → Usuarios.</li>
-        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos, administra los maestros, los usuarios y las ventas.</li>
+        <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas que invita el Administrador, ya con su rol.</li>
+        <li><b>Administrador</b>: todo lo del Supervisor, más invitar usuarios y asignar roles. Puede ver el portal como lo ve cada rol.</li>
+        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos, administra los maestros y ve las ventas.</li>
         <li><b>Orfebre</b>: vinculado a su nombre del taller. Registra sus piezas y ve solo las suyas, además de la productividad.</li>
         <li><b>Lector</b>: ve la productividad, no registra.</li>
         <li><b>Maestros</b>: solo el Supervisor ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
@@ -523,7 +557,7 @@ const S = {
   orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
-  me: null, uid: null, isSup: false, canWrite: false,
+  me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
   persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
@@ -890,7 +924,7 @@ function renderPerfil() {
   const box = $('perfil-box');
   box.replaceChildren();
   if (!S.uid) return;
-  if (!S.isSup) {
+  if (!S.isSup && S.rolReal !== 'administrador') {
     // El orfebre siempre registra a su propio nombre; la base de datos lo fija aunque se cambie la página.
     const sel = h('select', { id: 'i-orfebre', disabled: true }, new Option(nombreOrfebre(S.perfil?.orfebre_id), String(S.perfil?.orfebre_id || '')));
     box.append(h('label', { class: 'field' }, 'Orfebre (tú)', sel));
@@ -899,7 +933,7 @@ function renderPerfil() {
   const sel = h('select', { id: 'i-orfebre' }, new Option('Elige el orfebre…', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id))));
   box.append(h('label', { class: 'field' }, h('span', {}, 'Registrar a nombre de', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
   sel.addEventListener('change', () => errorCampo('i-orfebre', ''));
-  box.append(h('p', { class: 'note', style: 'align-self:end' }, 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.'));
+  box.append(h('p', { class: 'note', style: 'align-self:end' }, S.isSup ? 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.' : 'Vista previa de orfebre: un orfebre real no elige nombre, registra siempre al suyo.'));
 }
 function leerForm() {
   const ot = num($('i-ot').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
@@ -1144,18 +1178,26 @@ function modeloDe(nombre) {
 function renderMaestros() {
   if (!S.isSup) return;
   document.querySelectorAll('#m-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === S.msub)));
-  for (const s of ['parametros', 'modelos', 'productos', 'usuarios']) $('sub-' + s).hidden = S.msub !== s;
+  for (const s of ['parametros', 'modelos', 'productos']) $('sub-' + s).hidden = S.msub !== s;
   if (S.msub === 'parametros') renderParam();
   if (S.msub === 'modelos') renderModelos();
   if (S.msub === 'productos') renderProductos();
-  if (S.msub === 'usuarios') renderUsuarios();
 }
-// --- usuarios: rol y orfebre vinculado ---
+// --- usuarios (administrador): invitar, rol y orfebre vinculado ---
+const ROLES = [['administrador', 'Administrador'], ['supervisor', 'Supervisor de Taller'], ['orfebre', 'Orfebre'], ['lector', 'Lector']];
+const nombreRol = (r) => (ROLES.find(([v]) => v === r) || [, 'Sin rol'])[1];
 function renderUsuarios() {
+  if (!S.isAdmin) return;
+  const rolInv = $('inv-rol'), orfInv = $('inv-orf');
+  if (!rolInv.options.length) { rolInv.replaceChildren(...ROLES.map(([v, t]) => new Option(t, v))); rolInv.value = 'orfebre'; }
+  const curOrf = orfInv.value;
+  orfInv.replaceChildren(new Option('—', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id))));
+  orfInv.value = curOrf;
+  orfInv.disabled = rolInv.value !== 'orfebre';
   const tb = $('tb-us').tBodies[0];
   if (!S.perfiles.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 5, class: 'note' }, 'Todavía no hay usuarios.'))); return; }
   tb.replaceChildren(...S.perfiles.map((u) => {
-    const rol = h('select', { 'aria-label': 'Rol de ' + (u.nombre || u.email) }, ...[['lector', 'Lector'], ['orfebre', 'Orfebre'], ['supervisor', 'Supervisor de Taller']].map(([v, t]) => new Option(t, v)));
+    const rol = h('select', { 'aria-label': 'Rol de ' + (u.nombre || u.email) }, ...ROLES.map(([v, t]) => new Option(t, v)));
     rol.value = u.rol;
     const orf = h('select', { 'aria-label': 'Orfebre vinculado' }, new Option('—', ''), ...S.orfItems.map((o) => new Option(o.nombre, String(o.id))));
     orf.value = u.orfebre_id ? String(u.orfebre_id) : '';
@@ -1165,11 +1207,47 @@ function renderUsuarios() {
 }
 async function guardarUsuario(u, rol, orfebreId) {
   if (rol === 'orfebre' && !orfebreId) { msg('m-us', 'Un orfebre debe quedar vinculado a su nombre del taller.', 'bad'); return; }
-  if (u.user_id === S.uid && rol !== 'supervisor') { msg('m-us', 'No puedes quitarte el rol de supervisor a ti mismo; pídeselo a otro supervisor.', 'bad'); return; }
+  if (u.user_id === S.uid && rol !== 'administrador') { msg('m-us', 'No puedes quitarte el rol de administrador a ti mismo; pídeselo a otro administrador.', 'bad'); return; }
   const { error } = await sb.from('perfiles').update({ rol, orfebre_id: orfebreId ? Number(orfebreId) : null }).eq('user_id', u.user_id);
   if (error) { msg('m-us', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
   msg('m-us', `Rol de ${u.nombre || u.email} actualizado.`, 'ok');
-  cargarPerfiles();
+  await cargarPerfiles(); renderUsuarios();
+}
+async function invitarUsuario(ev) {
+  ev.preventDefault();
+  const email = $('inv-email').value.trim(), nombre = $('inv-nombre').value.trim(), rol = $('inv-rol').value, orf = $('inv-orf').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg('m-inv', 'Escribe un correo válido.', 'bad'); $('inv-email').focus(); return; }
+  if (rol === 'orfebre' && !orf) { msg('m-inv', 'Elige el orfebre del taller al que corresponde.', 'bad'); $('inv-orf').focus(); return; }
+  const b = $('b-inv'); b.disabled = true; msg('m-inv', 'Enviando invitación…');
+  const { data, error } = await sb.functions.invoke('invitar-usuario', { body: { email, nombre, rol, orfebre_id: rol === 'orfebre' ? Number(orf) : null } });
+  b.disabled = false;
+  if (error) {
+    let texto = error.message;
+    try { const j = await error.context.json(); if (j && j.error) texto = j.error; } catch (e) { /* sin detalle */ }
+    msg('m-inv', texto, 'bad'); return;
+  }
+  msg('m-inv', `Invitación enviada a ${email} como ${nombreRol(rol)}.`, 'ok');
+  $('inv-email').value = ''; $('inv-nombre').value = '';
+  await cargarPerfiles(); renderUsuarios();
+}
+// --- vista previa por rol (solo administrador) ---
+function aplicarVista() {
+  const v = S.vista;
+  S.isSup = v === 'administrador' || v === 'supervisor';
+  S.isAdmin = v === 'administrador';
+  S.canWrite = v !== 'lector' && v != null;
+  $('t-revision').hidden = !S.isSup;
+  $('t-maestros').hidden = !S.isSup;
+  $('t-usuarios').hidden = !S.isAdmin;
+  $('t-registrar').hidden = !S.canWrite;
+  $('b-pr-csv').hidden = !S.isSup;
+  const rolVisto = S.rolReal === 'administrador' ? v : S.rolReal;
+  $('who').replaceChildren(
+    h('span', {}, S.perfil?.nombre || S.me.email),
+    h('span', { class: 'role' + (S.isSup ? ' sup' : '') }, nombreRol(rolVisto) + (S.rolReal === 'administrador' && v !== 'administrador' ? ' (vista previa)' : '')),
+    h('button', { type: 'button', class: 'btn link', onclick: salir }, 'Salir'));
+  renderPerfil();
+  setTab(S.tab);
 }
 // --- parámetros: cada grupo es una lista de valores {nombre, sigla, activo} ---
 function grupos() {
@@ -1687,6 +1765,8 @@ function renderVentas() {
 // ---------- pestañas ----------
 function setTab(t) {
   if ((t === 'revision' || t === 'maestros' || t === 'ventas') && !S.isSup) t = 'panel';
+  if (t === 'usuarios' && !S.isAdmin) t = 'panel';
+  if (t === 'registrar' && !S.canWrite) t = 'panel';
   S.tab = t;
   for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = sec.id !== t;
   const enIndicadores = t === 'panel' || t === 'ventas';
@@ -1698,6 +1778,7 @@ function setTab(t) {
   if (t === 'revision') renderRevision();
   if (t === 'maestros') renderMaestros();
   if (t === 'ventas') renderVentas();
+  if (t === 'usuarios') renderUsuarios();
 }
 
 // ---------- arranque ----------
@@ -1737,6 +1818,9 @@ function wire() {
   $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map(claveRev) : []); renderRevision(); });
   $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(claveRev(p)))));
   $('f-login').addEventListener('submit', enviarEnlace);
+  $('f-inv').addEventListener('submit', invitarUsuario);
+  $('inv-rol').addEventListener('change', () => { $('inv-orf').disabled = $('inv-rol').value !== 'orfebre'; });
+  $('vista').addEventListener('change', (e) => { S.vista = e.target.value; aplicarVista(); });
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'panel') renderPanel(); if (S.tab === 'ventas') renderVentas(); }, 150); });
   llenarForm(null);
 }
@@ -1775,22 +1859,15 @@ async function entrar(session) {
   await Promise.all([cargarOrfebres(), cargarParametros(), cargarModelos()]);
   await cargarPerfiles();
   const rol = S.perfil?.rol || null;
-  S.isSup = rol === 'supervisor'; S.canWrite = rol === 'supervisor' || rol === 'orfebre';
+  S.rolReal = rol; S.vista = rol || 'lector';
+  S.isSup = rol === 'administrador' || rol === 'supervisor';
   if (S.isSup) await cargarPerfiles();
-  $('who').replaceChildren(
-    h('span', {}, S.perfil?.nombre || S.me.email),
-    h('span', { class: 'role' + (S.isSup ? ' sup' : '') }, S.isSup ? 'Supervisor de Taller' : rol === 'orfebre' ? 'Orfebre' : 'Lector'),
-    h('button', { type: 'button', class: 'btn link', onclick: salir }, 'Salir'));
-  if (!rol) avisoError('Tu usuario todavía no tiene perfil en el portal. Pide al Supervisor de Taller que te asigne un rol.');
-  else if (rol === 'orfebre' && !S.perfil.orfebre_id) avisoError('Tu usuario no está vinculado a un orfebre del taller. Pide al supervisor que lo vincule en Maestros → Usuarios.');
-  $('t-revision').hidden = !S.isSup;
-  $('t-maestros').hidden = !S.isSup;
-  $('t-registrar').hidden = !S.canWrite;
-  $('b-pr-csv').hidden = !S.isSup;
+  if (!rol) avisoError('Tu usuario todavía no tiene perfil en el portal. Pide al Administrador que te asigne un rol.');
+  else if (rol === 'orfebre' && !S.perfil.orfebre_id) avisoError('Tu usuario no está vinculado a un orfebre del taller. Pide al Administrador que lo vincule en la pestaña Usuarios.');
+  $('vista-box').hidden = rol !== 'administrador';
   const ini = location.hash.slice(1);
-  const permitida = (t) => t === 'panel' || t === 'ayuda' || (t === 'registrar' && S.canWrite) || (['ventas', 'revision', 'maestros'].includes(t) && S.isSup);
-  setTab(permitida(ini) ? ini : 'panel');
-  renderPerfil();
+  S.tab = ['panel', 'ventas', 'registrar', 'revision', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
+  aplicarVista();
   await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas()]);
   // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { cargarMis(); cargarPendientes(); } });
