@@ -355,7 +355,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
   <section id="maestros" class="pv-tab" hidden style="display:grid;gap:20px">
     <div style="display:grid;gap:6px">
       <h2>Maestros</h2>
-      <p class="note">Datos base del taller: parámetros, modelos y productos con su código y precio. Solo el Supervisor de Taller los cambia; los orfebres los usan en el formulario de registro.</p>
+      <p class="note">Datos base del taller: parámetros, modelos y productos con su código y precio. Solo el Administrador los cambia; el supervisor y los orfebres los usan al revisar y registrar piezas.</p>
     </div>
     <div class="seg" id="m-sub" role="group" aria-label="Maestro">
       <button type="button" data-sub="parametros">Parámetros</button>
@@ -477,8 +477,8 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="card">
       <h2>Qué ve cada rol</h2>
       <ul class="defs">
-        <li><b>Administrador</b>: todo lo del supervisor, más esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
-        <li><b>Supervisor de Taller</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones y Maestros.</li>
+        <li><b>Administrador</b>: todo lo del supervisor, más Maestros y esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
+        <li><b>Supervisor de Taller</b>: Indicadores (productividad y ventas), Registrar pieza y Aprobaciones.</li>
         <li><b>Orfebre</b>: Indicadores de productividad, Registrar pieza (a su nombre) y sus propios registros.</li>
         <li><b>Lector</b>: solo Indicadores de productividad.</li>
       </ul>
@@ -496,11 +496,11 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
         <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas que invita el Administrador, ya con su rol.</li>
-        <li><b>Administrador</b>: todo lo del Supervisor, más invitar usuarios y asignar roles. Puede ver el portal como lo ve cada rol.</li>
-        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos, administra los maestros y ve las ventas.</li>
+        <li><b>Administrador</b>: todo lo del Supervisor, más los maestros, invitar usuarios y asignar roles. Puede ver el portal como lo ve cada rol.</li>
+        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos y ve las ventas.</li>
         <li><b>Orfebre</b>: vinculado a su nombre del taller. Registra sus piezas y ve solo las suyas, además de la productividad.</li>
         <li><b>Lector</b>: ve la productividad, no registra.</li>
-        <li><b>Maestros</b>: solo el Supervisor ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
+        <li><b>Maestros</b>: solo el Administrador ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
         <li><b>Seguridad</b>: los permisos los aplica la base de datos (Supabase), no la página. Un orfebre no puede aprobar ni registrar a nombre de otro.</li>
       </ul>
     </div>
@@ -1176,7 +1176,7 @@ function modeloDe(nombre) {
 }
 
 function renderMaestros() {
-  if (!S.isSup) return;
+  if (!S.isAdmin) return;
   document.querySelectorAll('#m-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === S.msub)));
   for (const s of ['parametros', 'modelos', 'productos']) $('sub-' + s).hidden = S.msub !== s;
   if (S.msub === 'parametros') renderParam();
@@ -1237,10 +1237,10 @@ function aplicarVista() {
   S.isAdmin = v === 'administrador';
   S.canWrite = v !== 'lector' && v != null;
   $('t-revision').hidden = !S.isSup;
-  $('t-maestros').hidden = !S.isSup;
+  $('t-maestros').hidden = !S.isAdmin;
   $('t-usuarios').hidden = !S.isAdmin;
   $('t-registrar').hidden = !S.canWrite;
-  $('b-pr-csv').hidden = !S.isSup;
+  $('b-pr-csv').hidden = !S.isAdmin;
   const rolVisto = S.rolReal === 'administrador' ? v : S.rolReal;
   $('who').replaceChildren(
     h('span', {}, S.perfil?.nombre || S.me.email),
@@ -1764,8 +1764,8 @@ function renderVentas() {
 
 // ---------- pestañas ----------
 function setTab(t) {
-  if ((t === 'revision' || t === 'maestros' || t === 'ventas') && !S.isSup) t = 'panel';
-  if (t === 'usuarios' && !S.isAdmin) t = 'panel';
+  if ((t === 'revision' || t === 'ventas') && !S.isSup) t = 'panel';
+  if ((t === 'usuarios' || t === 'maestros') && !S.isAdmin) t = 'panel';
   if (t === 'registrar' && !S.canWrite) t = 'panel';
   S.tab = t;
   for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = sec.id !== t;
