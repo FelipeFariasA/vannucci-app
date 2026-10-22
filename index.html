@@ -92,6 +92,7 @@ tr.sel td { font-weight: 600; }
 td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
+.pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
 .pill.aprobada, .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.rechazada, .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .pill.neutral { background: var(--soft); color: var(--muted); }
@@ -178,6 +179,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
   <nav class="tabs" aria-label="Secciones">
     <button type="button" id="t-panel" data-tab="panel">Indicadores</button>
     <button type="button" id="t-registrar" data-tab="registrar">Registrar pieza</button>
+    <button type="button" id="t-trabajos" data-tab="trabajos" hidden>Mis trabajos <span class="count" id="n-tr" hidden>0</span></button>
     <button type="button" id="t-revision" data-tab="revision" hidden>Aprobaciones <span class="count" id="n-pend" hidden>0</span></button>
     <button type="button" id="t-maestros" data-tab="maestros" hidden>Maestros</button>
     <button type="button" id="t-usuarios" data-tab="usuarios" hidden>Usuarios</button>
@@ -291,7 +293,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="card" id="c-form">
       <div style="display:grid;gap:4px">
         <h2 id="h-form">Nueva pieza</h2>
-        <p class="note">Lo que registres queda pendiente hasta que el Supervisor de Taller lo apruebe. Solo entonces cuenta en la productividad.</p>
+        <p class="note">Registra el trabajo y asígnalo a un orfebre. El orfebre lo verá en "Mis trabajos", completará oro trabajado, peso final, oro devuelto y observaciones, y te lo enviará a revisión. Los pesos son opcionales aquí.</p>
       </div>
       <div id="perfil-box" class="fields"></div>
       <form class="pieza" id="form" novalidate>
@@ -303,10 +305,10 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
           <label class="field">N° de cotización<input id="i-cot" inputmode="numeric" placeholder="Ej. 4633"></label>
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
           <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
-          <label class="field"><span>Oro trabajado <span class="unit">(g)</span><span class="req" aria-hidden="true">*</span></span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal" required></label>
-          <label class="field"><span>Peso final <span class="unit">(g)</span><span class="req" aria-hidden="true">*</span></span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal" required></label>
+          <label class="field">Oro trabajado <span class="unit">(g, opcional)</span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Peso final <span class="unit">(g, opcional)</span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Oro devuelto <span class="unit">(g)</span><input id="i-od" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
-          <label class="field full">Observaciones<textarea id="i-obs" rows="2" placeholder="Ej. Engaste, garantía, ajuste de talla"></textarea></label>
+          <label class="field full">Observaciones<textarea id="i-obs" rows="2" placeholder="Ej. Instrucciones para el orfebre: engaste, garantía, ajuste de talla"></textarea></label>
           <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="i-gar" style="width:auto"> Trabajo por garantía</label>
         </div>
         <datalist id="modelos"></datalist>
@@ -314,18 +316,35 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
         <p class="note" id="hint-modelo"></p>
         <div class="calc" id="calc" aria-live="polite"></div>
         <div class="actions">
-          <button type="submit" class="btn primary" id="b-enviar">Enviar a aprobación</button>
+          <button type="submit" class="btn primary" id="b-enviar">Asignar al orfebre</button>
           <button type="button" class="btn" id="b-cancelar" hidden>Cancelar edición</button>
           <span class="msg" id="m-form" role="status"></span>
         </div>
       </form>
     </div>
     <div class="card">
-      <h2>Mis registros</h2>
-      <p class="note">Puedes editar o eliminar las piezas pendientes o rechazadas. Las aprobadas ya son definitivas.</p>
+      <h2>Trabajos en curso</h2>
+      <p class="note">Piezas asignadas que aún no tienen visto bueno final. Puedes editar o eliminar las que el orfebre todavía no envía a revisión.</p>
       <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
       <div class="tbl"><table id="tb-mis"><thead><tr>
-        <th>Fecha</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- MIS TRABAJOS (orfebre) -->
+  <section id="trabajos" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div style="display:grid;gap:6px">
+      <h2>Mis trabajos</h2>
+      <p class="note">Trabajos que te asignó el supervisor. Completa oro trabajado, peso final, oro devuelto y observaciones, y envíalo a revisión. Puedes guardar sin enviar y seguir después.</p>
+      <label class="field" id="tr-orf-box" hidden style="max-width:18rem">Ver trabajos de (vista previa)<select id="tr-orf"></select></label>
+      <span class="msg" id="m-tr" role="status"></span>
+    </div>
+    <div class="queue" id="tr-lista"></div>
+    <div class="card">
+      <h2>Enviados y terminados</h2>
+      <div class="tbl"><table id="tb-tr"><thead><tr>
+        <th>Fecha</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -333,8 +352,8 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
   <!-- REVISIÓN -->
   <section id="revision" class="pv-tab" hidden style="display:grid;gap:20px">
     <div style="display:grid;gap:6px">
-      <h2>Piezas por aprobar</h2>
-      <p class="note">Revisa los pesos antes de aprobar. Al aprobar, la pieza se copia a los registros definitivos y el orfebre ya no puede cambiarla. Puedes corregir valores antes de aprobar.</p>
+      <h2>Trabajos en revisión</h2>
+      <p class="note">Trabajos que los orfebres completaron y enviaron. Revisa los pesos y da el visto bueno final: la pieza queda terminada y cuenta en los indicadores. Si algo no cuadra, devuélvela con un comentario o corrige los valores antes de aprobar.</p>
     </div>
     <div class="actions" id="bulk">
       <label style="display:inline-flex;gap:6px;align-items:center;font-size:.85rem"><input type="checkbox" id="sel-all"> Seleccionar todas</label>
@@ -482,8 +501,8 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <h2>Qué ve cada rol</h2>
       <ul class="defs">
         <li><b>Administrador</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones, Maestros y esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
-        <li><b>Supervisor de Taller</b>: Aprobaciones (entra directo ahí) y Registrar pieza.</li>
-        <li><b>Orfebre</b>: Registrar pieza (a su nombre) y sus propios registros.</li>
+        <li><b>Supervisor de Taller</b>: Registrar pieza (la asigna a un orfebre) y Aprobaciones (entra directo ahí, da el visto bueno final).</li>
+        <li><b>Orfebre</b>: Mis trabajos. Completa oro trabajado, peso final, oro devuelto y observaciones de lo que le asignan y lo envía a revisión.</li>
         <li><b>Lector</b>: sin acceso a datos; solo ve "Cómo funciona". Úsalo para quien todavía no tiene rol.</li>
       </ul>
     </div>
@@ -492,17 +511,18 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
   <!-- AYUDA -->
   <section id="ayuda" class="pv-tab" hidden style="display:grid;gap:20px">
     <div class="steps">
-      <div class="step"><span class="n">1 · Orfebre</span><b>Registra la pieza</b><span>Fecha, modelo, tono, pesos y observaciones. El portal calcula la merma al instante.</span></div>
-      <div class="step"><span class="n">2 · Supervisor</span><b>Revisa y aprueba</b><span>Ve las pendientes de todos, con alertas de merma atípica o peso fuera de objetivo. Aprueba, corrige o rechaza con un motivo.</span></div>
-      <div class="step"><span class="n">3 · Registro definitivo</span><b>Cuenta en la productividad</b><span>Solo lo aprobado entra a los indicadores. Una pieza rechazada vuelve al orfebre para corregirla.</span></div>
+      <div class="step"><span class="n">1 · Supervisor</span><b>Registra y asigna</b><span>Fecha, modelo, tono, tipo de trabajo, peso objetivo e instrucciones, y elige el orfebre. Los pesos son opcionales.</span></div>
+      <div class="step"><span class="n">2 · Orfebre</span><b>Completa y envía</b><span>En "Mis trabajos" ingresa oro trabajado, peso final, oro devuelto y observaciones. El portal calcula la merma y lo envía a revisión.</span></div>
+      <div class="step"><span class="n">3 · Supervisor</span><b>Visto bueno final</b><span>Revisa los pesos, con alertas de merma atípica o peso fuera de objetivo. Lo da por terminado, lo corrige o lo devuelve al orfebre con un comentario.</span></div>
+      <div class="step"><span class="n">4 · Terminado</span><b>Cuenta en la productividad</b><span>Solo los trabajos terminados entran a los indicadores.</span></div>
     </div>
     <div class="card">
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
         <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas que invita el Administrador, ya con su rol.</li>
         <li><b>Administrador</b>: ve los indicadores de productividad y ventas, aprueba piezas, administra los maestros, invita usuarios y asigna roles. Puede ver el portal como lo ve cada rol.</li>
-        <li><b>Supervisor de Taller</b>: ve y aprueba las piezas de todos.</li>
-        <li><b>Orfebre</b>: vinculado a su nombre del taller. Registra sus piezas y ve solo las suyas.</li>
+        <li><b>Supervisor de Taller</b>: registra las piezas, las asigna a los orfebres y da el visto bueno final.</li>
+        <li><b>Orfebre</b>: vinculado a su nombre del taller. Solo ve los trabajos que le asignan y solo puede completar oro trabajado, peso final, oro devuelto y observaciones.</li>
         <li><b>Lector</b>: sin acceso a datos hasta que el Administrador le asigne un rol.</li>
         <li><b>Maestros</b>: solo el Administrador ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
         <li><b>Seguridad</b>: los permisos los aplica la base de datos (Supabase), no la página. Un orfebre no puede aprobar ni registrar a nombre de otro.</li>
@@ -562,7 +582,7 @@ const S = {
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
   me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
-  definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
+  definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
   persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
 };
@@ -665,11 +685,21 @@ async function cargarProductos() {
   } catch (e) { S.prodStatus = 'error'; }
   prodKey = null; opcionesRegistro(); if (S.tab === 'maestros') renderMaestros();
 }
+// Supervisor: trabajos en curso de todos. Orfebre: sus trabajos (el administrador en vista previa elige el orfebre).
 async function cargarMis() {
   if (!S.uid) return;
-  const { data, error } = await sb.from('piezas').select('*').eq('autor', S.uid).order('creado_en', { ascending: false }).limit(500);
-  if (!error) S.mis = data.map(pieza);
-  renderMis();
+  if (S.rolReal === 'administrador' || S.rolReal === 'supervisor') {
+    const { data, error } = await sb.from('piezas').select('*').in('estado', ['asignada', 'pendiente', 'rechazada']).order('creado_en', { ascending: false }).limit(500);
+    if (!error) S.mis = data.map(pieza);
+    renderMis();
+  }
+  const orf = S.rolReal === 'orfebre' ? S.perfil?.orfebre_id : S.rolReal === 'administrador' ? (S.trOrf || S.orfItems[0]?.id) : null;
+  if (orf) {
+    S.trOrf = S.trOrf || orf;
+    const { data, error } = await sb.from('piezas').select('*').eq('orfebre_id', orf).eq('origen', 'portal').order('fecha', { ascending: false }).order('id', { ascending: false }).limit(300);
+    if (!error) S.trabajos = data.map(pieza);
+    renderTrabajos();
+  }
 }
 async function cargarPendientes() {
   if (!S.isSup) return;
@@ -925,20 +955,16 @@ function renderRegistros(A, per) {
 
 // ---------- registrar ----------
 function setOptions(sel, values) { const cur = sel.value; sel.replaceChildren(...values.map((v) => new Option(v, v))); if (values.includes(cur)) sel.value = cur; }
+const ESTADOS = { asignada: 'Asignada', pendiente: 'En revisión', rechazada: 'Devuelta', aprobada: 'Terminada' };
+const pillEstado = (e) => h('span', { class: 'pill ' + e }, ESTADOS[e] || e);
 function renderPerfil() {
   const box = $('perfil-box');
   box.replaceChildren();
   if (!S.uid) return;
-  if (!S.isSup && S.rolReal !== 'administrador') {
-    // El orfebre siempre registra a su propio nombre; la base de datos lo fija aunque se cambie la página.
-    const sel = h('select', { id: 'i-orfebre', disabled: true }, new Option(nombreOrfebre(S.perfil?.orfebre_id), String(S.perfil?.orfebre_id || '')));
-    box.append(h('label', { class: 'field' }, 'Orfebre (tú)', sel));
-    return;
-  }
+  // Solo el supervisor (o el administrador) registra y asigna: la base de datos rechaza que un orfebre cree piezas.
   const sel = h('select', { id: 'i-orfebre' }, new Option('Elige el orfebre…', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id))));
-  box.append(h('label', { class: 'field' }, h('span', {}, 'Registrar a nombre de', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
+  box.append(h('label', { class: 'field' }, h('span', {}, 'Asignar a', h('span', { class: 'req', 'aria-hidden': 'true' }, '*')), sel));
   sel.addEventListener('change', () => errorCampo('i-orfebre', ''));
-  box.append(h('p', { class: 'note', style: 'align-self:end' }, S.isSup ? 'Como supervisor también puedes registrar piezas. Igual pasan por aprobación.' : 'Vista previa de orfebre: un orfebre real no elige nombre, registra siempre al suyo.'));
 }
 function leerForm() {
   const ot = num($('i-ot').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
@@ -953,7 +979,8 @@ function llenarForm(p) {
   $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
   $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
-  $('i-od').value = p?.oro_devuelto ?? ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
+  $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
+  if ($('i-orfebre')) $('i-orfebre').value = p?.orfebre_id ? String(p.orfebre_id) : '';
   renderCalc();
   if ($('i-orfebre')) limpiarErrores();
 }
@@ -965,14 +992,14 @@ function flagsDe(p) {
   if (p.oro_devuelto > 0 && p.oro_trabajo > 0 && p.oro_devuelto / p.oro_trabajo > 0.3) f.push(['pendiente', 'Mucho oro devuelto']);
   return f;
 }
-function renderCalc() {
-  const p = leerForm(), box = $('calc');
+function calcEn(box, p) {
   box.replaceChildren();
   if (p.merma_g == null) { box.append(h('span', { class: 'note' }, 'Ingresa oro trabajado y peso final para ver la merma.')); return; }
   box.append(h('span', {}, 'Merma ', h('b', {}, fDec2.format(p.merma_g) + ' g')), h('span', {}, 'Merma % ', h('b', {}, fDec.format(p.merma_pct) + '%')),
     ...flagsDe(p).map(([c, t]) => h('span', { class: 'pill ' + c }, t)));
   if (p.merma_pct != null && p.merma_pct <= META && p.merma_pct >= -5) box.append(h('span', { class: 'pill ok' }, 'Dentro de la meta'));
 }
+function renderCalc() { calcEn($('calc'), leerForm()); }
 function errorCampo(id, texto) {
   const el = $(id); if (!el) return;
   const lab = el.closest('label') || el.parentElement;
@@ -983,6 +1010,8 @@ function errorCampo(id, texto) {
 }
 function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf']) errorCampo(id, ''); }
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
+
+// ---------- supervisor: registrar y asignar ----------
 async function enviar(ev) {
   ev.preventDefault();
   if (!S.uid) { msg('m-form', 'Necesitas iniciar sesión para registrar piezas.', 'bad'); return; }
@@ -990,42 +1019,40 @@ async function enviar(ev) {
   const p = leerForm();
   limpiarErrores();
   const errs = [];
-  if (!orf) errs.push(['i-orfebre', 'Elige tu nombre de orfebre.']);
+  if (!orf) errs.push(['i-orfebre', 'Elige a qué orfebre asignas el trabajo.']);
   if (!p.fecha) errs.push(['i-fecha', 'Ingresa la fecha.']); else if (p.fecha > hoy()) errs.push(['i-fecha', 'La fecha no puede ser futura.']);
   if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
-  if (!(p.oro_trabajo > 0)) errs.push(['i-ot', 'Ingresa el oro trabajado (mayor que 0).']);
-  if (p.peso_final == null) errs.push(['i-pf', 'Ingresa el peso final.']);
+  if (p.oro_trabajo != null && !(p.oro_trabajo > 0)) errs.push(['i-ot', 'Si lo ingresas, el oro trabajado debe ser mayor que 0.']);
   if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
-  const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Enviando…');
+  const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Guardando…');
   try {
     const { merma_g, merma_pct, ...campos } = p;
-    const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null, estado: 'pendiente', comentario: null };
+    const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null };
     const r = S.editando
       ? await sb.from('piezas').update(body).eq('id', S.editando)
-      : await sb.from('piezas').insert({ ...body, autor: S.uid });
+      : await sb.from('piezas').insert({ ...body, autor: S.uid, estado: 'asignada' });
     if (r.error) throw r.error;
-    msg('m-form', S.editando ? 'Cambios enviados a aprobación.' : 'Pieza enviada a aprobación.', 'ok');
-    cargarMis(); cargarPendientes();
-    S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación';
+    msg('m-form', S.editando ? 'Cambios guardados.' : `Trabajo asignado a ${nombreOrfebre(Number(orf))}. Lo verá en "Mis trabajos".`, 'ok');
+    cargarMis();
+    S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Asignar al orfebre';
     const fecha = p.fecha; llenarForm(null); $('i-fecha').value = fecha;
   } catch (e) {
-    msg('m-form', e.code === '42501' ? 'No tienes permiso para registrar. Pide al supervisor que te asigne el rol de Orfebre.' : 'No se pudo enviar (' + (e.message || e.code) + '). Intenta de nuevo.', 'bad');
+    msg('m-form', e.code === '42501' ? 'No tienes permiso para registrar piezas.' : 'No se pudo guardar (' + (e.message || e.code) + '). Intenta de nuevo.', 'bad');
   } finally { b.disabled = false; }
 }
 function renderMis() {
   const seg = $('f-estado');
   const cuenta = (e) => S.mis.filter((p) => e === 'todas' || p.estado === e).length;
-  seg.replaceChildren(...[['todas', 'Todas'], ['pendiente', 'Pendientes'], ['rechazada', 'Rechazadas'], ['aprobada', 'Aprobadas']].map(([e, t]) =>
+  seg.replaceChildren(...[['todas', 'Todos'], ['asignada', 'Asignados'], ['pendiente', 'En revisión'], ['rechazada', 'Devueltos']].map(([e, t]) =>
     h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
   const tb = $('tb-mis').tBodies[0];
   const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
-  if (!S.uid) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 9, class: 'note' }, 'Inicia sesión para ver tus registros.'))); return; }
-  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 9, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'Aún no registras piezas. Usa el formulario de arriba.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 10, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
   tb.replaceChildren(...rs.map((p) => {
-    const editable = p.estado !== 'aprobada';
+    const editable = p.estado === 'asignada' || p.estado === 'rechazada';
     return h('tr', {},
-      h('td', {}, fFecha(p.fecha)), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
-      h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, h('span', { class: 'pill ' + p.estado }, p.estado)),
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+      h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)),
       h('td', { class: 'wrap' }, p.comentario || ''),
       h('td', {}, editable ? h('span', {},
         h('button', { type: 'button', class: 'btn link', onclick: () => editar(p) }, 'Editar'),
@@ -1033,9 +1060,9 @@ function renderMis() {
   }));
 }
 function editar(p) {
-  S.editando = p._id; llenarForm(p); $('h-form').textContent = 'Editar pieza'; $('b-cancelar').hidden = false;
-  $('b-enviar').textContent = p.estado === 'rechazada' ? 'Reenviar a aprobación' : 'Guardar y enviar';
-  msg('m-form', p.estado === 'rechazada' && p.comentario ? 'Motivo del rechazo: ' + p.comentario : '');
+  S.editando = p._id; llenarForm(p); $('h-form').textContent = 'Editar trabajo asignado'; $('b-cancelar').hidden = false;
+  $('b-enviar').textContent = 'Guardar cambios';
+  msg('m-form', '');
   $('c-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 const confirmando = new Set();
@@ -1045,10 +1072,65 @@ async function eliminar(p) {
   try {
     const { error } = await sb.from('piezas').delete().eq('id', p._id);
     if (error) throw error;
-    msg('m-form', 'Pieza eliminada.', 'ok'); if (S.editando === p._id) cancelarEdicion(); cargarMis(); cargarPendientes();
+    msg('m-form', 'Trabajo eliminado.', 'ok'); if (S.editando === p._id) cancelarEdicion(); cargarMis();
   } catch (e) { msg('m-form', 'No se pudo eliminar (' + (e.message || e.code) + ').', 'bad'); }
 }
-function cancelarEdicion() { S.editando = null; llenarForm(null); $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Enviar a aprobación'; msg('m-form', ''); }
+
+// ---------- orfebre: mis trabajos ----------
+function renderTrabajos() {
+  const activos = S.trabajos.filter((p) => p.estado === 'asignada' || p.estado === 'rechazada');
+  const n = $('n-tr'); n.hidden = !activos.length; n.textContent = String(activos.length);
+  const box = $('tr-orf-box');
+  box.hidden = S.rolReal !== 'administrador';
+  if (!box.hidden) {
+    const sel = $('tr-orf'), cur = S.trOrf;
+    sel.replaceChildren(...S.orfItems.map((o) => new Option(o.nombre, String(o.id))));
+    sel.value = cur ? String(cur) : sel.value;
+  }
+  const lista = $('tr-lista');
+  lista.replaceChildren(...(activos.length ? activos.map(tarjetaTrabajo) : [h('p', { class: 'empty' }, 'No tienes trabajos pendientes. Cuando el supervisor te asigne uno, aparecerá aquí.')]));
+  const hist = S.trabajos.filter((p) => p.estado === 'pendiente' || p.estado === 'aprobada');
+  $('tb-tr').tBodies[0].replaceChildren(...(hist.length ? hist.map((p) => h('tr', {},
+    h('td', {}, fFecha(p.fecha)), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+    h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)))) :
+    [h('tr', {}, h('td', { colspan: 7, class: 'note' }, 'Aún no envías trabajos a revisión.'))]));
+}
+function tarjetaTrabajo(p) {
+  const el = h('div', { class: 'item' + (p.estado === 'rechazada' ? ' flag' : '') });
+  el.append(h('div', { class: 'head' }, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), pillEstado(p.estado),
+    h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.tipo ? ' · ' + p.tipo : ''}${p.garantia ? ' · garantía' : ''}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.codigo_producto ? ' · ' + p.codigo_producto : ''}`)));
+  if (p.peso_obj) el.append(h('div', { class: 'kv' }, h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g'))));
+  if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
+  const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
+  const [lOt, iOt] = inp(h('span', {}, 'Oro trabajado ', h('span', { class: 'unit' }, '(g)')), 'oro_trabajo');
+  const [lPf, iPf] = inp(h('span', {}, 'Peso final ', h('span', { class: 'unit' }, '(g)')), 'peso_final');
+  const [lOd, iOd] = inp(h('span', {}, 'Oro devuelto ', h('span', { class: 'unit' }, '(g)')), 'oro_devuelto', { placeholder: '0', value: p.oro_devuelto || '' });
+  const obs = h('textarea', { rows: 2 }); obs.value = p.observaciones || '';
+  const calc = h('div', { class: 'calc', 'aria-live': 'polite' });
+  const valores = () => { const ot = num(iOt.value), pf = num(iPf.value), od = num(iOd.value) ?? 0; const m = mermaDe(ot, pf, od); return { ...p, oro_trabajo: ot, peso_final: pf, oro_devuelto: od, merma_g: m.g, merma_pct: m.pct, observaciones: obs.value.trim() || null }; };
+  const recalc = () => calcEn(calc, valores());
+  for (const i of [iOt, iPf, iOd]) i.addEventListener('input', recalc);
+  recalc();
+  const m = h('span', { class: 'msg', role: 'status' });
+  const guardar = async (enviarRevision) => {
+    const v = valores();
+    if (v.oro_trabajo != null && !(v.oro_trabajo > 0)) { m.textContent = 'El oro trabajado debe ser mayor que 0.'; m.className = 'msg bad'; iOt.focus(); return; }
+    if (enviarRevision && !(v.oro_trabajo > 0)) { m.textContent = 'Para enviar a revisión ingresa el oro trabajado.'; m.className = 'msg bad'; iOt.focus(); return; }
+    if (enviarRevision && v.peso_final == null) { m.textContent = 'Para enviar a revisión ingresa el peso final.'; m.className = 'msg bad'; iPf.focus(); return; }
+    const body = { oro_trabajo: v.oro_trabajo, peso_final: v.peso_final, oro_devuelto: v.oro_devuelto, observaciones: v.observaciones };
+    if (enviarRevision) body.estado = 'pendiente';
+    const { error } = await sb.from('piezas').update(body).eq('id', p._id);
+    if (error) { m.textContent = 'No se pudo guardar (' + (error.message || error.code) + ').'; m.className = 'msg bad'; return; }
+    msg('m-tr', enviarRevision ? `${p.modelo} enviado a revisión del supervisor.` : `${p.modelo}: avance guardado.`, 'ok');
+    cargarMis(); cargarPendientes();
+  };
+  el.append(h('div', { class: 'fields' }, lOt, lPf, lOd, h('label', { class: 'field full' }, 'Observaciones', obs)), calc,
+    h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'btn primary', onclick: () => guardar(true) }, p.estado === 'rechazada' ? 'Reenviar a revisión' : 'Enviar a revisión'),
+      h('button', { type: 'button', class: 'btn', onclick: () => guardar(false) }, 'Guardar sin enviar'), m));
+  return el;
+}
+function cancelarEdicion() { S.editando = null; llenarForm(null); $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Asignar al orfebre'; msg('m-form', ''); }
 
 // ---------- revisión (supervisor) ----------
 function listaPend() { return Object.values(S.pend).flat().map((p) => ({ ...p, _uid: p.autor })).sort((a, b) => (a.creado_en || '').localeCompare(b.creado_en || '')); }
@@ -1079,7 +1161,7 @@ function itemRevision(p, nombre) {
   chk.checked = S.sel.has(key);
   chk.addEventListener('change', () => { chk.checked ? S.sel.add(key) : S.sel.delete(key); renderRevision(); });
   el.append(h('div', { class: 'head' }, chk, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), h('span', { class: 'pill neutral' }, p.orfebre || 'Sin orfebre'),
-    h('span', { class: 'who2' }, `${fFecha(p.fecha)} · enviado por ${nombre(p._uid)}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}`)));
+    h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.peso_obj ? ' · objetivo ' + g2(p.peso_obj) + ' g' : ''}`)));
   if (S.corrigiendo === key) { el.append(formCorreccion(p)); return el; }
   el.append(h('div', { class: 'kv' },
     h('span', {}, 'Objetivo ', h('b', {}, p.peso_obj ? g2(p.peso_obj) + ' g' : '—')), h('span', {}, 'Oro trabajado ', h('b', {}, g2(p.oro_trabajo) + ' g')),
@@ -1093,13 +1175,13 @@ function itemRevision(p, nombre) {
   if (S.rechazando === key) {
     const ta = h('textarea', { rows: 2, placeholder: 'Explica qué debe corregir el orfebre', 'aria-label': 'Motivo del rechazo' });
     el.append(h('div', { class: 'reject' }, ta, h('div', { class: 'actions' },
-      h('button', { type: 'button', class: 'btn danger', onclick: () => rechazar(p, ta.value) }, 'Confirmar rechazo'),
+      h('button', { type: 'button', class: 'btn danger', onclick: () => rechazar(p, ta.value) }, 'Confirmar devolución'),
       h('button', { type: 'button', class: 'btn link', onclick: () => { S.rechazando = null; renderRevision(); } }, 'Cancelar'))));
     setTimeout(() => ta.focus(), 0);
   } else el.append(h('div', { class: 'actions' },
-    h('button', { type: 'button', class: 'btn ok', onclick: () => aprobar([p]) }, 'Aprobar'),
+    h('button', { type: 'button', class: 'btn ok', onclick: () => aprobar([p]) }, 'Dar visto bueno'),
     h('button', { type: 'button', class: 'btn', onclick: () => { S.corrigiendo = key; S.rechazando = null; renderRevision(); } }, 'Corregir y aprobar'),
-    h('button', { type: 'button', class: 'btn danger', onclick: () => { S.rechazando = key; S.corrigiendo = null; renderRevision(); } }, 'Rechazar')));
+    h('button', { type: 'button', class: 'btn danger', onclick: () => { S.rechazando = key; S.corrigiendo = null; renderRevision(); } }, 'Devolver al orfebre')));
   return el;
 }
 function formCorreccion(p) {
@@ -1244,12 +1326,13 @@ function aplicarVista() {
   const v = S.vista;
   S.isSup = v === 'administrador' || v === 'supervisor';
   S.isAdmin = v === 'administrador';
-  S.canWrite = v !== 'lector' && v != null;
+  S.canWrite = v === 'orfebre'; // el orfebre completa sus trabajos; registrar y asignar es del supervisor
   $('t-panel').hidden = !S.isAdmin;
   $('t-revision').hidden = !S.isSup;
   $('t-maestros').hidden = !S.isAdmin;
   $('t-usuarios').hidden = !S.isAdmin;
-  $('t-registrar').hidden = !S.canWrite;
+  $('t-registrar').hidden = !S.isSup;
+  $('t-trabajos').hidden = !S.canWrite;
   $('b-pr-csv').hidden = !S.isAdmin;
   const rolVisto = S.rolReal === 'administrador' ? v : S.rolReal;
   $('who').replaceChildren(
@@ -1774,11 +1857,12 @@ function renderVentas() {
 
 // ---------- pestañas ----------
 // Pestaña de entrada de cada rol: los indicadores son solo del administrador.
-const tabInicio = () => S.isAdmin ? 'panel' : S.isSup ? 'revision' : S.canWrite ? 'registrar' : 'ayuda';
+const tabInicio = () => S.isAdmin ? 'panel' : S.isSup ? 'revision' : S.canWrite ? 'trabajos' : 'ayuda';
 function setTab(t) {
   if ((t === 'panel' || t === 'ventas' || t === 'usuarios' || t === 'maestros') && !S.isAdmin) t = tabInicio();
   if (t === 'revision' && !S.isSup) t = tabInicio();
-  if (t === 'registrar' && !S.canWrite) t = tabInicio();
+  if (t === 'registrar' && !S.isSup) t = tabInicio();
+  if (t === 'trabajos' && !S.canWrite) t = tabInicio();
   S.tab = t;
   for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = sec.id !== t;
   const enIndicadores = t === 'panel' || t === 'ventas';
@@ -1791,6 +1875,7 @@ function setTab(t) {
   if (t === 'maestros') renderMaestros();
   if (t === 'ventas') renderVentas();
   if (t === 'usuarios') renderUsuarios();
+  if (t === 'trabajos') renderTrabajos();
 }
 
 // ---------- arranque ----------
@@ -1831,6 +1916,7 @@ function wire() {
   $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(claveRev(p)))));
   $('f-login').addEventListener('submit', enviarEnlace);
   $('f-inv').addEventListener('submit', invitarUsuario);
+  $('tr-orf').addEventListener('change', (e) => { S.trOrf = Number(e.target.value); cargarMis(); });
   $('b-copiar').addEventListener('click', async () => {
     const i = $('inv-link');
     try { await navigator.clipboard.writeText(i.value); } catch (e) { i.select(); document.execCommand('copy'); }
@@ -1883,7 +1969,7 @@ async function entrar(session) {
   else if (rol === 'orfebre' && !S.perfil.orfebre_id) avisoError('Tu usuario no está vinculado a un orfebre del taller. Pide al Administrador que lo vincule en la pestaña Usuarios.');
   $('vista-box').hidden = rol !== 'administrador';
   const ini = location.hash.slice(1);
-  S.tab = ['panel', 'ventas', 'registrar', 'revision', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
+  S.tab = ['panel', 'ventas', 'registrar', 'trabajos', 'revision', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
   aplicarVista();
   await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas()]);
   // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
