@@ -93,6 +93,18 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Cuadro de confirmación */
+dialog.confirmar { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink); padding: 0; width: min(28rem, calc(100vw - 32px)); box-shadow: var(--shadow); font-family: var(--f-body); }
+dialog.confirmar::backdrop { background: rgb(10 10 10 / .45); }
+dialog.confirmar .cuerpo { padding: 20px 20px 16px; display: grid; gap: 12px; }
+dialog.confirmar h2 { font-size: 1.35rem; }
+dialog.confirmar dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: .9rem; padding: 10px 14px; background: var(--soft); border-radius: 8px; }
+dialog.confirmar dt { color: var(--muted); }
+dialog.confirmar dd { margin: 0; font-weight: 500; }
+dialog.confirmar .aviso { font-size: .875rem; color: var(--muted); margin: 0; }
+dialog.confirmar .pie { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--bg); border-radius: 0 0 var(--r) var(--r); }
+.btn.peligro { background: var(--bad); border-color: var(--bad); color: var(--panel); }
+.btn.peligro:hover:not(:disabled) { filter: brightness(1.08); }
 .pill.aprobada, .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.rechazada, .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .pill.neutral { background: var(--soft); color: var(--muted); }
@@ -1226,8 +1238,33 @@ async function rechazar(p, motivo) {
     S.rechazando = null; msg('m-rev', 'Pieza rechazada. El orfebre verá el motivo.', 'ok'); cargarPendientes();
   } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.message || e.code) + ').', 'bad'); }
 }
+// Cuadro de confirmación con el estilo del portal. Devuelve true si se confirma; Esc o Cancelar devuelven false.
+function confirmar({ titulo, datos = [], aviso, aceptar = 'Confirmar' }) {
+  return new Promise((resolver) => {
+    const cancelarBtn = h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
+    const aceptarBtn = h('button', { type: 'button', class: 'btn peligro' }, aceptar);
+    const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-titulo' },
+      h('div', { class: 'cuerpo' },
+        h('h2', { id: 'dlg-titulo' }, titulo),
+        datos.length ? h('dl', {}, ...datos.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])) : null,
+        aviso ? h('p', { class: 'aviso' }, aviso) : null),
+      h('div', { class: 'pie' }, cancelarBtn, aceptarBtn));
+    const cerrar = (valor) => { dlg.close(); dlg.remove(); resolver(valor); };
+    cancelarBtn.addEventListener('click', () => cerrar(false));
+    aceptarBtn.addEventListener('click', () => cerrar(true));
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(false); });
+    document.body.append(dlg);
+    dlg.showModal();
+  });
+}
 async function eliminarTrabajo(p) {
-  const ok = window.confirm(`¿Estás seguro de eliminar este trabajo?\n\n${p.modelo} · ${p.tono || 'sin tono'}\nOrfebre: ${p.orfebre}\nFecha: ${fFecha(p.fecha)}\n\nSe borra definitivamente, junto con los pesos que ingresó el orfebre. Esta acción no se puede deshacer.`);
+  const ok = await confirmar({
+    titulo: 'Eliminar trabajo',
+    datos: [['Modelo', `${p.modelo}${p.tono ? ' · oro ' + p.tono.toLowerCase() : ''}`], ['Orfebre', p.orfebre], ['Fecha', fFecha(p.fecha)],
+      ['Oro trabajado', p.oro_trabajo != null ? g2(p.oro_trabajo) + ' g' : '—'], ['Peso final', p.peso_final != null ? g2(p.peso_final) + ' g' : '—']],
+    aviso: 'El trabajo y los pesos registrados por el orfebre se eliminarán de forma permanente y no contarán en los indicadores. Esta acción no se puede deshacer.',
+    aceptar: 'Eliminar definitivamente',
+  });
   if (!ok) return;
   const { error } = await sb.from('piezas').delete().eq('id', p._id);
   if (error) { msg('m-rev', 'No se pudo eliminar (' + (error.message || error.code) + ').', 'bad'); return; }
