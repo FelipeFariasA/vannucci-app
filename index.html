@@ -706,7 +706,7 @@ async function cargarMis() {
     if (!error) S.mis = data.map(pieza);
     renderMis();
   }
-  const orf = S.rolReal === 'orfebre' ? S.perfil?.orfebre_id : S.rolReal === 'administrador' ? (S.trOrf || S.orfItems[0]?.id) : null;
+  const orf = S.rolReal === 'orfebre' ? S.perfil?.orfebre_id : S.rolReal === 'administrador' ? (S.trOrf || S.orfItems.find((o) => o.activo !== false)?.id) : null;
   if (orf) {
     S.trOrf = S.trOrf || orf;
     const { data, error } = await sb.from('piezas').select('*').eq('orfebre_id', orf).eq('origen', 'portal').order('fecha', { ascending: false }).order('id', { ascending: false }).limit(300);
@@ -993,7 +993,13 @@ function llenarForm(p) {
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
   $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
   $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
-  if ($('i-orfebre')) $('i-orfebre').value = p?.orfebre_id ? String(p.orfebre_id) : '';
+  const selO = $('i-orfebre');
+  if (selO) {
+    // Al editar un trabajo de un orfebre ya inactivo, se muestra igual para no perder la asignación.
+    const v = p?.orfebre_id ? String(p.orfebre_id) : '';
+    if (v && ![...selO.options].some((o) => o.value === v)) selO.append(new Option(nombreOrfebre(p.orfebre_id) + ' (inactivo)', v));
+    selO.value = v;
+  }
   renderCalc();
   if ($('i-orfebre')) limpiarErrores();
 }
@@ -1096,9 +1102,11 @@ function renderTrabajos() {
   const box = $('tr-orf-box');
   box.hidden = S.rolReal !== 'administrador';
   if (!box.hidden) {
-    const sel = $('tr-orf'), cur = S.trOrf;
-    sel.replaceChildren(...S.orfItems.map((o) => new Option(o.nombre, String(o.id))));
-    sel.value = cur ? String(cur) : sel.value;
+    // Solo orfebres activos: los inactivos ya no reciben trabajos.
+    const sel = $('tr-orf'), act = S.orfItems.filter((o) => o.activo !== false);
+    sel.replaceChildren(...act.map((o) => new Option(o.nombre, String(o.id))));
+    if (act.length && !act.some((o) => o.id === S.trOrf)) { S.trOrf = act[0].id; sel.value = String(S.trOrf); cargarMis(); return; }
+    sel.value = String(S.trOrf);
   }
   const lista = $('tr-lista');
   lista.replaceChildren(...(activos.length ? activos.map(tarjetaTrabajo) : [h('p', { class: 'empty' }, 'No tienes trabajos pendientes. Cuando el supervisor te asigne uno, aparecerá aquí.')]));
@@ -1334,7 +1342,7 @@ function renderUsuarios() {
   tb.replaceChildren(...S.perfiles.map((u) => {
     const rol = h('select', { 'aria-label': 'Rol de ' + (u.nombre || u.email) }, ...ROLES.map(([v, t]) => new Option(t, v)));
     rol.value = u.rol;
-    const orf = h('select', { 'aria-label': 'Orfebre vinculado' }, new Option('—', ''), ...S.orfItems.map((o) => new Option(o.nombre, String(o.id))));
+    const orf = h('select', { 'aria-label': 'Orfebre vinculado' }, new Option('—', ''), ...S.orfItems.filter((o) => o.activo !== false || o.id === u.orfebre_id).map((o) => new Option(o.nombre + (o.activo === false ? ' (inactivo)' : ''), String(o.id))));
     orf.value = u.orfebre_id ? String(u.orfebre_id) : '';
     const guardar = h('button', { type: 'button', class: 'btn', onclick: () => guardarUsuario(u, rol.value, orf.value) }, 'Guardar');
     return h('tr', {}, h('td', {}, u.nombre || '—', u.user_id === S.uid ? h('span', { class: 'note' }, ' (tú)') : null), h('td', {}, u.email || ''), h('td', {}, rol), h('td', {}, orf), h('td', {}, guardar));
