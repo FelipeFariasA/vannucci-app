@@ -396,8 +396,9 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
 
     <div id="sub-parametros" class="msub" style="display:grid;gap:14px">
       <p class="note">Cada cambio se guarda al momento. Cambiar el nombre de un valor no modifica las piezas ni los productos ya registrados con el nombre anterior. Si un valor ya no se usa, desactívalo: deja de aparecer en los formularios y conserva el historial.</p>
+      <div class="seg" id="pg-tabs" role="group" aria-label="Mantenedor" style="justify-self:start"></div>
       <span class="msg" id="m-param" role="status"></span>
-      <div class="grid" id="param-grid"></div>
+      <div id="param-grid" style="display:grid;gap:14px;max-width:44rem"></div>
       <div class="card" id="c-grupo-nuevo">
         <h2>Nuevo grupo de parámetros</h2>
         <p class="note">Por ejemplo Tallas, Largo de cadena o Terminación. Los grupos nuevos aparecen como campos en la ficha de cada producto.</p>
@@ -593,7 +594,7 @@ const S = {
   orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
-  me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
+  pGrupo: 'tonos', me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
   persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
@@ -1239,10 +1240,10 @@ async function rechazar(p, motivo) {
   } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.message || e.code) + ').', 'bad'); }
 }
 // Cuadro de confirmación con el estilo del portal. Devuelve true si se confirma; Esc o Cancelar devuelven false.
-function confirmar({ titulo, datos = [], aviso, aceptar = 'Confirmar' }) {
+function confirmar({ titulo, datos = [], aviso, aceptar = 'Confirmar', peligro = true, soloAceptar = false }) {
   return new Promise((resolver) => {
-    const cancelarBtn = h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
-    const aceptarBtn = h('button', { type: 'button', class: 'btn peligro' }, aceptar);
+    const cancelarBtn = soloAceptar ? null : h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
+    const aceptarBtn = h('button', { type: 'button', class: 'btn ' + (peligro ? 'peligro' : 'primary'), autofocus: soloAceptar }, aceptar);
     const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-titulo' },
       h('div', { class: 'cuerpo' },
         h('h2', { id: 'dlg-titulo' }, titulo),
@@ -1250,7 +1251,7 @@ function confirmar({ titulo, datos = [], aviso, aceptar = 'Confirmar' }) {
         aviso ? h('p', { class: 'aviso' }, aviso) : null),
       h('div', { class: 'pie' }, cancelarBtn, aceptarBtn));
     const cerrar = (valor) => { dlg.close(); dlg.remove(); resolver(valor); };
-    cancelarBtn.addEventListener('click', () => cerrar(false));
+    if (cancelarBtn) cancelarBtn.addEventListener('click', () => cerrar(false));
     aceptarBtn.addEventListener('click', () => cerrar(true));
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(false); });
     document.body.append(dlg);
@@ -1447,7 +1448,11 @@ function renderParam() {
   const escrito = {};
   grid.querySelectorAll('input[id]').forEach((i) => { if (!paramLimpiar.has(i.id)) escrito[i.id] = i.value; });
   paramLimpiar.clear();
-  grid.replaceChildren(...grupos().map((g) => tarjetaGrupo(g)));
+  // Un mantenedor a la vez: pestañas por grupo.
+  const gs = grupos();
+  if (!gs.some((g) => g.id === S.pGrupo)) S.pGrupo = gs[0]?.id;
+  $('pg-tabs').replaceChildren(...gs.map((g) => h('button', { type: 'button', 'aria-pressed': String(g.id === S.pGrupo), onclick: () => { S.pGrupo = g.id; S.pEdit = null; msg('m-param', ''); renderParam(); } }, g.nombre)));
+  grid.replaceChildren(...gs.filter((g) => g.id === S.pGrupo).map((g) => tarjetaGrupo(g)));
   for (const [id, v] of Object.entries(escrito)) if ($(id)) $(id).value = v;
   if (foco && $(foco)) $(foco).focus();
 }
@@ -1466,7 +1471,7 @@ function tarjetaGrupo(g) {
         h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = null; renderParam(); } }, 'Cancelar')));
     } else card.append(h('div', { class: 'actions' },
       h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = { gid: g.id, grupo: true }; renderParam(); } }, 'Cambiar nombre del grupo'),
-      h('button', { type: 'button', class: 'btn link danger' + (paramConfirm.has('grupo|' + g.id) ? ' armado' : ''), onclick: () => eliminarGrupo(g) }, paramConfirm.has('grupo|' + g.id) ? 'Confirmar eliminación del grupo' : 'Eliminar grupo')));
+      h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarGrupo(g) }, 'Eliminar grupo')));
   }
   const tb = h('tbody');
   items.forEach((it, idx) => {
@@ -1489,7 +1494,7 @@ function tarjetaGrupo(g) {
         h('td', {},
           h('button', { type: 'button', class: 'btn link', onclick: () => { S.pEdit = { gid: g.id, idx }; renderParam(); } }, 'Editar'),
           h('button', { type: 'button', class: 'btn link', onclick: () => cambiarActivo(g, idx) }, it.activo === false ? 'Activar' : 'Desactivar'),
-          h('button', { type: 'button', class: 'btn link danger' + (paramConfirm.has(k) ? ' armado' : ''), onclick: () => eliminarItem(g, idx, n) }, paramConfirm.has(k) ? 'Confirmar eliminación' : 'Eliminar'))));
+          h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarItem(g, idx, n) }, 'Eliminar'))));
     }
   });
   const table = h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Nombre'), g.sigla ? h('th', {}, 'Sigla') : null, h('th', { class: 'n' }, 'En uso'), h('th', {}, 'Estado'), h('th', {}))), tb);
@@ -1522,14 +1527,36 @@ async function cambiarActivo(g, idx) {
   if (await guardarGrupo(g.id, nuevos, `"${it.nombre}" ${it.activo === false ? 'activado' : 'desactivado'}.`)) renderParam();
 }
 async function eliminarItem(g, idx, enUso) {
-  const items = itemsDe(g.id), it = items[idx], k = g.id + '|' + idx;
+  const items = itemsDe(g.id), it = items[idx];
   if (g.minimo && it.activo !== false && activos(items).length <= 1) { msg('m-param', `${g.nombre} necesita al menos un valor activo.`, 'bad'); return; }
-  if (!paramConfirm.has(k)) {
-    paramConfirm.add(k); setTimeout(() => { paramConfirm.delete(k); renderParam(); }, 6000);
-    msg('m-param', enUso ? `"${it.nombre}" se usa en ${fNum.format(enUso)} registros; esos registros lo conservan, pero dejará de existir como opción. Si solo quieres ocultarlo, desactívalo. Pulsa "Confirmar eliminación" para seguir.` : `Pulsa "Confirmar eliminación" para borrar "${it.nombre}".`);
-    renderParam(); return;
+  if (g.id === 'orfebres') {
+    // Un orfebre con piezas o con un usuario vinculado no se puede borrar sin perder historial: se ofrece desactivarlo.
+    const [pz, us] = await Promise.all([
+      sb.from('piezas').select('id', { count: 'exact', head: true }).eq('orfebre_id', it.id),
+      sb.from('perfiles').select('user_id', { count: 'exact', head: true }).eq('orfebre_id', it.id),
+    ]);
+    if (pz.error || us.error) { msg('m-param', 'No se pudo revisar si el orfebre tiene registros. Intenta de nuevo.', 'bad'); return; }
+    const nPz = pz.count || 0, nUs = us.count || 0;
+    if (nPz || nUs) {
+      const motivos = [nPz ? `${fNum.format(nPz)} ${nPz === 1 ? 'pieza registrada' : 'piezas registradas'}` : null, nUs ? `${nUs === 1 ? 'un usuario vinculado' : nUs + ' usuarios vinculados'} en Usuarios` : null].filter(Boolean);
+      if (it.activo === false) {
+        await confirmar({ titulo: `No se puede eliminar a ${it.nombre}`, datos: [['Orfebre', it.nombre], ['Registros', motivos.join(' y ')], ['Estado', 'Inactivo']],
+          aviso: 'Eliminarlo dejaría su historial sin dueño. Ya está inactivo: no aparece al asignar trabajos y su historial se conserva en los indicadores.', aceptar: 'Entendido', soloAceptar: true });
+        return;
+      }
+      const desactivar = await confirmar({ titulo: `No se puede eliminar a ${it.nombre}`, datos: [['Orfebre', it.nombre], ['Registros', motivos.join(' y ')]],
+        aviso: 'Eliminarlo dejaría su historial sin dueño. Puedes desactivarlo: dejará de aparecer al asignar trabajos y su historial se conservará en los indicadores.', aceptar: 'Desactivar orfebre', peligro: false });
+      if (desactivar) cambiarActivo(g, idx);
+      return;
+    }
   }
-  paramConfirm.delete(k);
+  const ok = await confirmar({
+    titulo: g.id === 'orfebres' ? 'Eliminar orfebre' : `Eliminar valor de ${g.nombre.toLowerCase()}`,
+    datos: [['Nombre', it.nombre], ...(g.sigla && it.sigla ? [['Sigla', it.sigla]] : []), ['En uso', enUso ? `${fNum.format(enUso)} registros` : 'Sin registros']],
+    aviso: enUso ? 'Los registros que lo usan conservan el valor, pero dejará de existir como opción en los formularios. Si solo quieres ocultarlo, desactívalo. Esta acción no se puede deshacer.' : 'Dejará de existir como opción en los formularios. Esta acción no se puede deshacer.',
+    aceptar: 'Eliminar definitivamente',
+  });
+  if (!ok) return;
   if (await guardarGrupo(g.id, items.filter((_, i) => i !== idx), `"${it.nombre}" eliminado.`)) renderParam();
 }
 async function crearGrupo() {
@@ -1540,7 +1567,7 @@ async function crearGrupo() {
   while (grupos().some((g) => g.id === id)) id += '_';
   const { error } = await sb.from('grupos_parametro').insert({ id, nombre, usa_sigla: $('g-sigla').checked, orden: 10 + (S.param.extras || []).length });
   if (error) { msg('m-grupo', 'No se pudo crear (' + (error.message || error.code) + ').', 'bad'); return; }
-  $('g-nombre').value = ''; $('g-sigla').checked = false; msg('m-grupo', ''); msg('m-param', `Grupo "${nombre}" creado. Agrega sus valores abajo.`, 'ok');
+  $('g-nombre').value = ''; $('g-sigla').checked = false; msg('m-grupo', ''); S.pGrupo = id; msg('m-param', `Grupo "${nombre}" creado. Agrega sus valores abajo.`, 'ok');
   await cargarParametros(); renderParam(); $('pg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 async function renombrarGrupo(g, nombre) {
@@ -1552,13 +1579,14 @@ async function renombrarGrupo(g, nombre) {
   msg('m-param', 'Nombre del grupo actualizado.', 'ok'); await cargarParametros(); renderParam();
 }
 async function eliminarGrupo(g) {
-  const k = 'grupo|' + g.id, enUso = [...usosDe(g.id).values()].reduce((s, n) => s + n, 0);
-  if (!paramConfirm.has(k)) {
-    paramConfirm.add(k); setTimeout(() => { paramConfirm.delete(k); renderParam(); }, 6000); renderParam();
-    msg('m-param', `${enUso ? `${fNum.format(enUso)} productos tienen un valor de "${g.nombre}"; lo conservan, pero el campo deja de mostrarse. ` : ''}Pulsa "Confirmar eliminación del grupo" para seguir.`);
-    return;
-  }
-  paramConfirm.delete(k);
+  const enUso = [...usosDe(g.id).values()].reduce((s, n) => s + n, 0);
+  const ok = await confirmar({
+    titulo: 'Eliminar grupo de parámetros',
+    datos: [['Grupo', g.nombre], ['Valores', fNum.format(itemsDe(g.id).length)], ['Productos que lo usan', enUso ? fNum.format(enUso) : 'Ninguno']],
+    aviso: `${enUso ? 'Los productos conservan su valor, pero el campo deja de mostrarse en la ficha de producto. ' : ''}Se eliminan el grupo y todos sus valores. Esta acción no se puede deshacer.`,
+    aceptar: 'Eliminar definitivamente',
+  });
+  if (!ok) return;
   const { error } = await sb.from('grupos_parametro').delete().eq('id', g.id);
   if (error) { msg('m-param', 'No se pudo eliminar (' + (error.message || error.code) + ').', 'bad'); return; }
   msg('m-param', `Grupo "${g.nombre}" eliminado.`, 'ok'); await cargarParametros(); renderParam();
