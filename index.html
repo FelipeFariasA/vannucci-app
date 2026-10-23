@@ -1181,7 +1181,8 @@ function itemRevision(p, nombre) {
   } else el.append(h('div', { class: 'actions' },
     h('button', { type: 'button', class: 'btn ok', onclick: () => aprobar([p]) }, 'Dar visto bueno'),
     h('button', { type: 'button', class: 'btn', onclick: () => { S.corrigiendo = key; S.rechazando = null; renderRevision(); } }, 'Corregir y aprobar'),
-    h('button', { type: 'button', class: 'btn danger', onclick: () => { S.rechazando = key; S.corrigiendo = null; renderRevision(); } }, 'Devolver al orfebre')));
+    h('button', { type: 'button', class: 'btn danger', onclick: () => { S.rechazando = key; S.corrigiendo = null; renderRevision(); } }, 'Devolver al orfebre'),
+    h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarTrabajo(p) }, 'Eliminar trabajo')));
   return el;
 }
 function formCorreccion(p) {
@@ -1224,6 +1225,15 @@ async function rechazar(p, motivo) {
     if (error) throw error;
     S.rechazando = null; msg('m-rev', 'Pieza rechazada. El orfebre verá el motivo.', 'ok'); cargarPendientes();
   } catch (e) { msg('m-rev', 'No se pudo rechazar (' + (e.message || e.code) + ').', 'bad'); }
+}
+async function eliminarTrabajo(p) {
+  const ok = window.confirm(`¿Estás seguro de eliminar este trabajo?\n\n${p.modelo} · ${p.tono || 'sin tono'}\nOrfebre: ${p.orfebre}\nFecha: ${fFecha(p.fecha)}\n\nSe borra definitivamente, junto con los pesos que ingresó el orfebre. Esta acción no se puede deshacer.`);
+  if (!ok) return;
+  const { error } = await sb.from('piezas').delete().eq('id', p._id);
+  if (error) { msg('m-rev', 'No se pudo eliminar (' + (error.message || error.code) + ').', 'bad'); return; }
+  S.sel.delete(claveRev(p));
+  msg('m-rev', `Trabajo ${p.modelo} de ${p.orfebre} eliminado.`, 'ok');
+  cargarPendientes(); cargarMis();
 }
 const anulando = new Set();
 async function anular(a) {
