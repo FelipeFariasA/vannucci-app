@@ -28,9 +28,20 @@ Deno.serve(async (req) => {
   const { data: yo } = await admin.from('perfiles').select('rol').eq('user_id', user.id).maybeSingle();
   if (yo?.rol !== 'administrador') return responder(403, { error: 'Solo un administrador puede invitar usuarios.' });
 
-  let body: { email?: string; nombre?: string; rol?: string; orfebre_id?: number | null };
+  let body: { accion?: string; email?: string; nombre?: string; rol?: string; orfebre_id?: number | null };
   try { body = await req.json(); } catch { return responder(400, { error: 'Datos inválidos.' }); }
   const email = String(body.email ?? '').trim().toLowerCase();
+
+  // Enlace de acceso para un usuario que ya existe: le permite crear o restablecer su contraseña.
+  // No envía correo; el administrador lo comparte por otro medio.
+  if (body.accion === 'enlace') {
+    const { data: perfil } = await admin.from('perfiles').select('user_id').eq('email', email).maybeSingle();
+    if (!perfil) return responder(404, { error: 'Ese correo no tiene usuario en el portal.' });
+    const gen = await admin.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo: PORTAL } });
+    if (gen.error) return responder(400, { error: 'No se pudo generar el enlace: ' + gen.error.message });
+    return responder(200, { ok: true, enlace: gen.data.properties.action_link });
+  }
+
   const nombre = String(body.nombre ?? '').trim() || email.split('@')[0];
   const rol = String(body.rol ?? 'lector');
   const orfebreId = body.orfebre_id ? Number(body.orfebre_id) : null;

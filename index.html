@@ -93,6 +93,15 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Ingreso y creación de contraseña */
+.acceso { max-width: 26rem; width: 100%; justify-self: center; margin-top: 4vh; padding: 24px; gap: 16px; }
+.acceso .clave { display: flex; gap: 6px; align-items: center; }
+.acceso .clave input { flex: 1; }
+.pie-acceso { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 10px; justify-items: start; }
+.reglas { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: .85rem; color: var(--muted); }
+.reglas li::before { content: "○ "; }
+.reglas li.ok { color: var(--ok); }
+.reglas li.ok::before { content: "✓ "; }
 /* Cuadro de confirmación */
 dialog.confirmar { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink); padding: 0; width: min(28rem, calc(100vw - 32px)); box-shadow: var(--shadow); font-family: var(--f-body); }
 dialog.confirmar::backdrop { background: rgb(10 10 10 / .45); }
@@ -179,12 +188,46 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <span class="note" id="vista-nota">Solo cambia lo que ves. Tus permisos en la base de datos siguen siendo de administrador.</span>
   </div>
 
-  <section id="login" class="card" hidden style="max-width:28rem">
-    <h2>Ingresar al portal</h2>
-    <p class="note">Escribe tu correo y te enviaremos un enlace para entrar. Solo pueden ingresar personas invitadas por el Supervisor de Taller.</p>
+  <section id="login" class="card acceso" hidden>
+    <div style="display:grid;gap:4px">
+      <h2>Ingresar al portal</h2>
+      <p class="note">Usa el correo con que te invitaron y tu contraseña.</p>
+    </div>
     <form id="f-login" class="pieza" novalidate>
-      <label class="field">Correo<input type="email" id="l-email" autocomplete="email" required placeholder="nombre@correo.cl"></label>
-      <div class="actions"><button type="submit" class="btn primary" id="b-login">Enviar enlace</button><span class="msg" id="m-login" role="status"></span></div>
+      <label class="field">Correo<input type="email" id="l-email" autocomplete="username" required placeholder="nombre@correo.cl"></label>
+      <label class="field">Contraseña
+        <span class="clave"><input type="password" id="l-clave" autocomplete="current-password" required><button type="button" class="btn link" data-ver="l-clave" aria-label="Mostrar contraseña">Mostrar</button></span>
+      </label>
+      <div class="actions"><button type="submit" class="btn primary" id="b-login">Ingresar</button><span class="msg" id="m-login" role="status"></span></div>
+    </form>
+    <div class="pie-acceso">
+      <button type="button" class="btn link" id="b-olvido">¿Primera vez u olvidaste tu contraseña?</button>
+      <form id="f-olvido" class="pieza" novalidate hidden>
+        <p class="note">Te enviaremos un enlace al correo para crear una contraseña nueva. Si no te llega, pídele un enlace de acceso al Administrador.</p>
+        <label class="field">Correo<input type="email" id="o-email" autocomplete="email" required placeholder="nombre@correo.cl"></label>
+        <div class="actions"><button type="submit" class="btn" id="b-olvido-enviar">Enviar enlace</button><span class="msg" id="m-olvido" role="status"></span></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="crear-clave" class="card acceso" hidden>
+    <div style="display:grid;gap:4px">
+      <h2 id="cc-titulo">Crea tu contraseña</h2>
+      <p class="note" id="cc-nota">Es tu primer ingreso. Crea la contraseña con la que entrarás al portal de ahora en adelante.</p>
+      <p class="note">Usuario: <b id="cc-email"></b></p>
+    </div>
+    <form id="f-clave" class="pieza" novalidate>
+      <label class="field">Contraseña nueva
+        <span class="clave"><input type="password" id="c-clave" autocomplete="new-password" required><button type="button" class="btn link" data-ver="c-clave" aria-label="Mostrar contraseña">Mostrar</button></span>
+      </label>
+      <label class="field">Repite la contraseña<input type="password" id="c-clave2" autocomplete="new-password" required></label>
+      <ul class="reglas" id="c-reglas" aria-live="polite">
+        <li data-r="largo">Al menos 8 caracteres</li>
+        <li data-r="letra">Al menos una letra</li>
+        <li data-r="numero">Al menos un número</li>
+        <li data-r="igual">Las dos contraseñas coinciden</li>
+      </ul>
+      <div class="actions"><button type="submit" class="btn primary" id="b-clave">Guardar y entrar</button><button type="button" class="btn link" id="b-clave-salir">Salir</button><span class="msg" id="m-clave" role="status"></span></div>
     </form>
   </section>
 
@@ -497,7 +540,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
         </div>
         <div class="actions"><button type="submit" class="btn primary" id="b-inv">Enviar invitación</button><span class="msg" id="m-inv" role="status"></span></div>
         <div class="calc" id="inv-enlace" hidden style="display:grid;gap:8px">
-          <span>No se pudo enviar el correo, pero el usuario ya quedó creado con su rol. Copia este enlace y envíaselo por WhatsApp o desde tu correo. Sirve una sola vez para entrar.</span>
+          <span>No se pudo enviar el correo, pero el usuario ya quedó creado con su rol. Copia este enlace y envíaselo por WhatsApp o desde tu correo. Al abrirlo creará su contraseña; sirve una sola vez.</span>
           <div class="actions"><input id="inv-link" readonly class="mono" style="flex:1;min-width:12rem" aria-label="Enlace de invitación"><button type="button" class="btn" id="b-copiar">Copiar enlace</button></div>
         </div>
       </form>
@@ -532,7 +575,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     <div class="card">
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
-        <li><b>Ingreso</b>: con un enlace que llega al correo. Solo entran las personas que invita el Administrador, ya con su rol.</li>
+        <li><b>Ingreso</b>: con correo y contraseña. Solo entran las personas que invita el Administrador, ya con su rol. La primera vez se entra con el enlace de invitación y se crea la contraseña. Si se olvida, se pide un enlace nuevo desde la pantalla de ingreso o al Administrador (Usuarios → Enlace de acceso).</li>
         <li><b>Administrador</b>: ve los indicadores de productividad y ventas, aprueba piezas, administra los maestros, invita usuarios y asigna roles. Puede ver el portal como lo ve cada rol.</li>
         <li><b>Supervisor de Taller</b>: registra las piezas, las asigna a los orfebres y da el visto bueno final.</li>
         <li><b>Orfebre</b>: vinculado a su nombre del taller. Solo ve los trabajos que le asignan y solo puede completar oro trabajado, peso final, oro devuelto y observaciones.</li>
@@ -587,6 +630,11 @@ const CODIGO_OK = /^[A-Za-z0-9_\-.~:@+]{1,80}$/;
 // Supabase: la clave publicable es pública por diseño; los permisos los aplica RLS en la base de datos.
 const SB_URL = 'https://qrjeknshzeqrodrnnfhv.supabase.co';
 const SB_KEY = 'sb_publishable_RNJ5BRUKGhLyGD_gsEPrkw_-zoj_CV7';
+// Los enlaces de invitación y de recuperación llegan con #...&type=invite|recovery (o con un error si expiraron).
+// Se leen antes de crear el cliente, que limpia la URL al procesar la sesión.
+const URL_HASH = new URLSearchParams(location.hash.slice(1));
+let TIPO_ENLACE = URL_HASH.get('type');
+const ERROR_ENLACE = URL_HASH.get('error_code') || URL_HASH.get('error');
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 const S = {
@@ -1345,7 +1393,8 @@ function renderUsuarios() {
     const orf = h('select', { 'aria-label': 'Orfebre vinculado' }, new Option('—', ''), ...S.orfItems.filter((o) => o.activo !== false || o.id === u.orfebre_id).map((o) => new Option(o.nombre + (o.activo === false ? ' (inactivo)' : ''), String(o.id))));
     orf.value = u.orfebre_id ? String(u.orfebre_id) : '';
     const guardar = h('button', { type: 'button', class: 'btn', onclick: () => guardarUsuario(u, rol.value, orf.value) }, 'Guardar');
-    return h('tr', {}, h('td', {}, u.nombre || '—', u.user_id === S.uid ? h('span', { class: 'note' }, ' (tú)') : null), h('td', {}, u.email || ''), h('td', {}, rol), h('td', {}, orf), h('td', {}, guardar));
+    const enlace = u.user_id === S.uid || !u.email ? null : h('button', { type: 'button', class: 'btn link', title: 'Genera un enlace para que cree o restablezca su contraseña', onclick: () => enlaceAcceso(u) }, 'Enlace de acceso');
+    return h('tr', {}, h('td', {}, u.nombre || '—', u.user_id === S.uid ? h('span', { class: 'note' }, ' (tú)') : null), h('td', {}, u.email || ''), h('td', {}, rol), h('td', {}, orf), h('td', {}, guardar, enlace));
   }));
 }
 async function guardarUsuario(u, rol, orfebreId) {
@@ -1355,6 +1404,35 @@ async function guardarUsuario(u, rol, orfebreId) {
   if (error) { msg('m-us', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
   msg('m-us', `Rol de ${u.nombre || u.email} actualizado.`, 'ok');
   await cargarPerfiles(); renderUsuarios();
+}
+// Enlace para crear o restablecer contraseña de un usuario existente (no depende del correo de Supabase).
+async function enlaceAcceso(u) {
+  msg('m-us', `Generando enlace para ${u.nombre || u.email}…`);
+  const { data, error } = await sb.functions.invoke('invitar-usuario', { body: { accion: 'enlace', email: u.email } });
+  if (error) {
+    let texto = error.message;
+    try { const j = await error.context.json(); if (j && j.error) texto = j.error; } catch (e) { /* sin detalle */ }
+    msg('m-us', texto, 'bad'); return;
+  }
+  msg('m-us', '');
+  const input = h('input', { readonly: true, class: 'mono', value: data.enlace, style: 'width:100%', 'aria-label': 'Enlace de acceso' });
+  const copiar = h('button', { type: 'button', class: 'btn primary', autofocus: true }, 'Copiar enlace');
+  const cerrarBtn = h('button', { type: 'button', class: 'btn' }, 'Cerrar');
+  const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-enlace' },
+    h('div', { class: 'cuerpo' },
+      h('h2', { id: 'dlg-enlace' }, 'Enlace de acceso'),
+      h('dl', {}, h('dt', {}, 'Usuario'), h('dd', {}, u.nombre || '—'), h('dt', {}, 'Correo'), h('dd', {}, u.email)),
+      h('p', { class: 'aviso' }, 'Envíale este enlace por WhatsApp o desde tu correo. Al abrirlo podrá crear su contraseña y entrar. Sirve una sola vez y vence en 24 horas.'),
+      input),
+    h('div', { class: 'pie' }, cerrarBtn, copiar));
+  const cerrar = () => { dlg.close(); dlg.remove(); };
+  cerrarBtn.addEventListener('click', cerrar);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(); });
+  copiar.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(input.value); } catch (e) { input.select(); document.execCommand('copy'); }
+    copiar.textContent = 'Copiado'; setTimeout(() => { copiar.textContent = 'Copiar enlace'; }, 2000);
+  });
+  document.body.append(dlg); dlg.showModal();
 }
 async function invitarUsuario(ev) {
   ev.preventDefault();
@@ -1997,7 +2075,16 @@ function wire() {
   $('b-cancelar').addEventListener('click', cancelarEdicion);
   $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map(claveRev) : []); renderRevision(); });
   $('b-aprobar-sel').addEventListener('click', () => aprobar(listaPend().filter((p) => S.sel.has(claveRev(p)))));
-  $('f-login').addEventListener('submit', enviarEnlace);
+  $('f-login').addEventListener('submit', ingresar);
+  $('f-olvido').addEventListener('submit', enviarRecuperacion);
+  $('b-olvido').addEventListener('click', () => { const f = $('f-olvido'); f.hidden = !f.hidden; if (!f.hidden) { $('o-email').value = $('l-email').value; $('o-email').focus(); } });
+  $('f-clave').addEventListener('submit', guardarClave);
+  for (const id of ['c-clave', 'c-clave2']) $(id).addEventListener('input', revisarReglas);
+  $('b-clave-salir').addEventListener('click', salir);
+  document.querySelectorAll('[data-ver]').forEach((b) => b.addEventListener('click', () => {
+    const i = $(b.dataset.ver), ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  }));
   $('f-inv').addEventListener('submit', invitarUsuario);
   $('tr-orf').addEventListener('change', (e) => { S.trOrf = Number(e.target.value); cargarMis(); });
   $('b-copiar').addEventListener('click', async () => {
@@ -2017,22 +2104,91 @@ function modelosDatalist() {
 }
 
 // ---------- sesión ----------
-async function enviarEnlace(ev) {
-  ev.preventDefault();
-  const email = $('l-email').value.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg('m-login', 'Escribe un correo válido.', 'bad'); return; }
-  const b = $('b-login'); b.disabled = true; msg('m-login', 'Enviando…');
-  // shouldCreateUser: false → solo entran las personas que el supervisor invitó.
-  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } });
-  b.disabled = false;
-  if (error) msg('m-login', /signups not allowed|not found/i.test(error.message) ? 'Ese correo no está invitado al portal. Pídele acceso al Supervisor de Taller.' : 'No se pudo enviar el enlace (' + error.message + ').', 'bad');
-  else msg('m-login', 'Listo. Revisa tu correo y abre el enlace desde este mismo navegador.', 'ok');
+const correoOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+function pantalla(cual) {
+  // cual: 'login' | 'clave' | 'portal'
+  $('login').hidden = cual !== 'login';
+  $('crear-clave').hidden = cual !== 'clave';
+  document.querySelector('nav.tabs').hidden = cual !== 'portal';
+  if (cual !== 'portal') {
+    for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = true;
+    $('ind-sub').hidden = true; $('vista-box').hidden = true;
+    $('who').replaceChildren(h('span', { class: 'role' }, cual === 'clave' ? 'Creando contraseña' : 'Sin sesión'));
+  }
 }
-function mostrarLogin(ver) {
-  $('login').hidden = !ver;
-  document.querySelector('nav.tabs').hidden = ver;
-  for (const sec of document.querySelectorAll('.pv-tab')) if (ver) sec.hidden = true;
-  if (ver) { $('ind-sub').hidden = true; $('who').replaceChildren(h('span', { class: 'role' }, 'Sin sesión')); }
+function mostrarLogin(ver) { if (ver) pantalla('login'); }
+async function ingresar(ev) {
+  ev.preventDefault();
+  const email = $('l-email').value.trim(), clave = $('l-clave').value;
+  if (!correoOk(email)) { msg('m-login', 'Escribe un correo válido.', 'bad'); $('l-email').focus(); return; }
+  if (!clave) { msg('m-login', 'Escribe tu contraseña.', 'bad'); $('l-clave').focus(); return; }
+  const b = $('b-login'); b.disabled = true; msg('m-login', 'Ingresando…');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: clave });
+  b.disabled = false;
+  if (error) {
+    msg('m-login', /invalid login credentials/i.test(error.message) ? 'Correo o contraseña incorrectos. Si es tu primera vez, usa el enlace de invitación o "¿Primera vez u olvidaste tu contraseña?".'
+      : /email not confirmed/i.test(error.message) ? 'Aún no activas tu cuenta. Abre el enlace de invitación que te enviaron.'
+      : 'No se pudo ingresar (' + error.message + ').', 'bad');
+    return;
+  }
+  msg('m-login', '');
+  conSesion(data.session);
+}
+async function enviarRecuperacion(ev) {
+  ev.preventDefault();
+  const email = $('o-email').value.trim();
+  if (!correoOk(email)) { msg('m-olvido', 'Escribe un correo válido.', 'bad'); return; }
+  const b = $('b-olvido-enviar'); b.disabled = true; msg('m-olvido', 'Enviando…');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  b.disabled = false;
+  // Mismo mensaje exista o no el correo, para no revelar quién tiene cuenta.
+  if (error && /rate limit/i.test(error.message)) msg('m-olvido', 'Se alcanzó el límite de correos por ahora. Pídele un enlace de acceso al Administrador.', 'bad');
+  else if (error) msg('m-olvido', 'No se pudo enviar el enlace (' + error.message + ').', 'bad');
+  else msg('m-olvido', 'Si el correo tiene cuenta en el portal, te llegará un enlace para crear tu contraseña. Ábrelo en este mismo navegador.', 'ok');
+}
+
+// Primera vez (invitación) o recuperación: hay que crear contraseña antes de entrar.
+const necesitaClave = (user) => TIPO_ENLACE === 'invite' || TIPO_ENLACE === 'recovery' || !user?.user_metadata?.clave_creada;
+let sesionPendiente = null;
+function mostrarCrearClave(session) {
+  sesionPendiente = session;
+  const primera = !session.user.user_metadata?.clave_creada;
+  $('cc-titulo').textContent = primera ? 'Crea tu contraseña' : 'Crea una contraseña nueva';
+  $('cc-nota').textContent = primera ? 'Es tu primer ingreso. Crea la contraseña con la que entrarás al portal de ahora en adelante.' : 'Escribe tu nueva contraseña. La anterior dejará de funcionar.';
+  $('cc-email').textContent = session.user.email;
+  $('c-clave').value = ''; $('c-clave2').value = ''; revisarReglas(); msg('m-clave', '');
+  pantalla('clave');
+  setTimeout(() => $('c-clave').focus(), 0);
+}
+function reglasClave() {
+  const c = $('c-clave').value, c2 = $('c-clave2').value;
+  return { largo: c.length >= 8, letra: /[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(c), numero: /\d/.test(c), igual: c.length > 0 && c === c2 };
+}
+function revisarReglas() {
+  const r = reglasClave();
+  for (const li of $('c-reglas').children) li.classList.toggle('ok', !!r[li.dataset.r]);
+  return Object.values(r).every(Boolean);
+}
+async function guardarClave(ev) {
+  ev.preventDefault();
+  if (!revisarReglas()) { msg('m-clave', 'La contraseña aún no cumple todos los requisitos.', 'bad'); return; }
+  const b = $('b-clave'); b.disabled = true; msg('m-clave', 'Guardando…');
+  const { data, error } = await sb.auth.updateUser({ password: $('c-clave').value, data: { clave_creada: true } });
+  b.disabled = false;
+  if (error) {
+    msg('m-clave', /should be different/i.test(error.message) ? 'La contraseña nueva debe ser distinta de la anterior.'
+      : /weak|at least/i.test(error.message) ? 'La contraseña es muy débil. Usa una más larga.'
+      : 'No se pudo guardar (' + error.message + ').', 'bad');
+    return;
+  }
+  TIPO_ENLACE = null;
+  const { data: s } = await sb.auth.getSession();
+  entrar(s.session || { ...sesionPendiente, user: data.user });
+}
+function conSesion(session) {
+  if (!session) { pantalla('login'); return; }
+  if (necesitaClave(session.user)) mostrarCrearClave(session);
+  else entrar(session);
 }
 async function salir() { await sb.auth.signOut(); location.hash = ''; location.reload(); }
 
@@ -2040,7 +2196,7 @@ let iniciado = false;
 async function entrar(session) {
   if (iniciado) return;
   iniciado = true;
-  mostrarLogin(false);
+  pantalla('portal');
   S.uid = session.user.id; S.me = { id: S.uid, email: session.user.email };
   await Promise.all([cargarOrfebres(), cargarParametros(), cargarModelos()]);
   await cargarPerfiles();
@@ -2062,12 +2218,17 @@ async function entrar(session) {
 async function start() {
   wire();
   S.histStatus = 'loading';
+  pantalla('login');
+  if (ERROR_ENLACE) {
+    msg('m-login', /expired|otp_expired|invalid/i.test(ERROR_ENLACE) ? 'El enlace expiró o ya se usó. Ingresa con tu contraseña o pide un enlace nuevo.' : 'El enlace no es válido. Pide uno nuevo.', 'bad');
+    history.replaceState(null, '', location.pathname);
+  }
   const { data } = await sb.auth.getSession();
-  if (data.session) entrar(data.session);
-  else mostrarLogin(true);
+  if (data.session) conSesion(data.session);
   sb.auth.onAuthStateChange((evento, session) => {
-    if (session && !iniciado) entrar(session);
-    if (evento === 'SIGNED_OUT') mostrarLogin(true);
+    if (evento === 'PASSWORD_RECOVERY' && session && !iniciado) { TIPO_ENLACE = 'recovery'; mostrarCrearClave(session); return; }
+    if (evento === 'SIGNED_IN' && session && !iniciado && $('crear-clave').hidden && $('login').hidden === false && !$('b-login').disabled) conSesion(session);
+    if (evento === 'SIGNED_OUT') { iniciado = false; pantalla('login'); }
   });
 }
 start();
