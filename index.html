@@ -382,7 +382,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
       <p class="note">Piezas asignadas que aún no tienen visto bueno final. Puedes editar o eliminar las que el orfebre todavía no envía a revisión.</p>
       <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
       <div class="tbl"><table id="tb-mis"><thead><tr>
-        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -1114,11 +1114,11 @@ function renderMis() {
     h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
   const tb = $('tb-mis').tBodies[0];
   const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
-  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 10, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 11, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
   tb.replaceChildren(...rs.map((p) => {
     const editable = p.estado === 'asignada' || p.estado === 'rechazada';
     return h('tr', {},
-      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
       h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)),
       h('td', { class: 'wrap' }, p.comentario || ''),
       h('td', {}, editable ? h('span', {},
