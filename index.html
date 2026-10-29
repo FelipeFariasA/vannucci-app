@@ -424,10 +424,16 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
     </div>
     <div class="queue" id="cola"></div>
     <div class="card">
-      <h2>Últimas aprobaciones</h2>
-      <p class="note">Si aprobaste algo por error, anúlalo: la pieza vuelve a quedar pendiente.</p>
+      <h2>Historial de aprobaciones</h2>
+      <p class="note">Todos los trabajos con visto bueno en el portal, del más reciente al más antiguo. El mes y el año corresponden a la fecha de aprobación. Si aprobaste algo por error, anúlalo: el trabajo vuelve a revisión.</p>
+      <div class="filters">
+        <select id="h-orf" aria-label="Filtrar por orfebre"></select>
+        <select id="h-anio" aria-label="Filtrar por año"></select>
+        <select id="h-mes" aria-label="Filtrar por mes"></select>
+        <span class="note" id="n-hist"></span>
+      </div>
       <div class="tbl"><table id="tb-hist"><thead><tr>
-        <th>Aprobada</th><th>Por</th><th>Orfebre</th><th>Fecha</th><th>Modelo</th><th class="n">Oro (g)</th><th class="n">Merma %</th><th></th>
+        <th>Aprobada</th><th>Por</th><th>Orfebre</th><th>Fecha</th><th>Modelo</th><th>N° cotización</th><th>Tipo</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th></th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -649,7 +655,7 @@ const S = {
   orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
-  pGrupo: 'tonos', me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
+  pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
   persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
@@ -777,8 +783,11 @@ async function cargarPendientes() {
 }
 async function cargarAprobadasPortal() {
   if (!S.isSup) return;
-  const { data, error } = await sb.from('piezas').select('*').eq('estado', 'aprobada').eq('origen', 'portal').order('revisado_en', { ascending: false }).limit(25);
-  if (!error) S.aprobadas = data.map(pieza);
+  // Historial completo de aprobaciones del portal (el histórico de la planilla no pasó por aprobación).
+  try {
+    const rows = await todas(() => sb.from('piezas').select('*').eq('estado', 'aprobada').eq('origen', 'portal').order('revisado_en', { ascending: false }).order('id', { ascending: false }));
+    S.aprobadas = rows.map(pieza);
+  } catch (e) { /* se mantiene lo último cargado */ }
   renderRevision();
 }
 async function cargarPerfiles() {
@@ -1223,12 +1232,33 @@ async function renderRevision() {
   const cola = $('cola');
   if (!lista.length) cola.replaceChildren(h('p', { class: 'empty' }, 'No hay piezas pendientes. Cuando un orfebre registre una, aparecerá aquí.'));
   else cola.replaceChildren(...lista.map((p) => itemRevision(p, nombre)));
-  const hist = S.aprobadas.slice().sort((a, b) => (b.revisado_en || '').localeCompare(a.revisado_en || '')).slice(0, 25);
-  $('tb-hist').tBodies[0].replaceChildren(...(hist.length ? hist.map((a) => h('tr', {},
+  renderHistorial(nombre);
+}
+// Historial de aprobaciones con filtros por orfebre y mes/año de aprobación (hora local de Chile).
+function renderHistorial(nombre) {
+  const F = S.hf;
+  const mesDe = (a) => { if (!a.revisado_en) return ''; const d = new Date(a.revisado_en); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+  const todasAp = S.aprobadas.slice().sort((a, b) => (b.revisado_en || '').localeCompare(a.revisado_en || ''));
+  const meses = [...new Set(todasAp.map(mesDe).filter(Boolean))].sort().reverse();
+  const anios = [...new Set(meses.map((m) => m.slice(0, 4)))];
+  const orfs = [...new Set(todasAp.map((a) => a.orfebre))].sort((x, y) => x.localeCompare(y, 'es'));
+  if (F.anio && !anios.includes(F.anio)) F.anio = '';
+  const mesesAnio = F.anio ? meses.filter((m) => m.startsWith(F.anio)) : meses;
+  if (F.mes && !mesesAnio.includes(F.mes)) F.mes = '';
+  const sel = (id, primera, opciones, valor) => { const s = $(id); s.replaceChildren(new Option(primera, ''), ...opciones.map(([v, t]) => new Option(t, v))); s.value = valor; };
+  sel('h-orf', 'Todos los orfebres', orfs.map((o) => [o, o]), F.orf);
+  sel('h-anio', 'Todos los años', anios.map((a) => [a, a]), F.anio);
+  sel('h-mes', F.anio ? `Todo ${F.anio}` : 'Todos los meses', mesesAnio.map((m) => [m, fMes(m, true)]), F.mes);
+  const rs = todasAp.filter((a) => (!F.orf || a.orfebre === F.orf) && (!F.anio || mesDe(a).startsWith(F.anio)) && (!F.mes || mesDe(a) === F.mes));
+  const shown = rs.slice(0, 500);
+  $('n-hist').textContent = todasAp.length ? `${fNum.format(rs.length)} de ${fNum.format(todasAp.length)} aprobaciones${rs.length > shown.length ? `; se muestran las ${shown.length} más recientes` : ''}` : '';
+  $('tb-hist').tBodies[0].replaceChildren(...(shown.length ? shown.map((a) => h('tr', {},
     h('td', {}, a.revisado_en ? new Date(a.revisado_en).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : ''), h('td', {}, nombre(a.revisado_por)),
-    h('td', {}, a.orfebre), h('td', {}, fFecha(a.fecha)), h('td', {}, a.modelo), h('td', { class: 'n' }, g2(a.oro_trabajo)),
+    h('td', {}, a.orfebre), h('td', {}, fFecha(a.fecha)), h('td', {}, a.modelo), h('td', { class: 'mono' }, a.cotizacion || '—'), h('td', {}, a.tipo || ''),
+    h('td', { class: 'n' }, g2(a.oro_trabajo)), h('td', { class: 'n' }, g2(a.peso_final)),
     h('td', { class: 'n' }, a.merma_pct == null ? '' : fDec.format(a.merma_pct) + '%'),
-    h('td', {}, h('button', { type: 'button', class: 'btn link' + (anulando.has(a._id) ? ' armado' : ''), onclick: () => anular(a) }, anulando.has(a._id) ? 'Confirmar anulación' : 'Anular')))) : [h('tr', {}, h('td', { colspan: 8, class: 'note' }, 'Todavía no hay aprobaciones en el portal.'))]));
+    h('td', {}, h('button', { type: 'button', class: 'btn link' + (anulando.has(a._id) ? ' armado' : ''), onclick: () => anular(a) }, anulando.has(a._id) ? 'Confirmar anulación' : 'Anular')))) :
+    [h('tr', {}, h('td', { colspan: 11, class: 'note' }, todasAp.length ? 'Ninguna aprobación coincide con el filtro.' : 'Todavía no hay aprobaciones en el portal.'))]));
 }
 function itemRevision(p, nombre) {
   const key = claveRev(p), flags = flagsDe(p);
@@ -2101,6 +2131,9 @@ function wire() {
     i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
   }));
   $('f-inv').addEventListener('submit', invitarUsuario);
+  $('h-orf').addEventListener('change', (e) => { S.hf.orf = e.target.value; renderRevision(); });
+  $('h-anio').addEventListener('change', (e) => { S.hf.anio = e.target.value; S.hf.mes = ''; renderRevision(); });
+  $('h-mes').addEventListener('change', (e) => { S.hf.mes = e.target.value; renderRevision(); });
   $('tr-orf').addEventListener('change', (e) => { S.trOrf = Number(e.target.value); cargarMis(); });
   $('b-copiar').addEventListener('click', async () => {
     const i = $('inv-link');
