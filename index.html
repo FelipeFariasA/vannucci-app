@@ -93,6 +93,13 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Ficha del trabajo en revisión */
+.fichas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 10px; }
+.ficha { background: var(--soft); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+.ficha h4 { margin: 0; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.ficha dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; font-size: .875rem; }
+.ficha dt { color: var(--muted); }
+.ficha dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 /* Ingreso y creación de contraseña */
 .acceso { max-width: 26rem; width: 100%; justify-self: center; margin-top: 4vh; padding: 24px; gap: 16px; }
 .acceso .clave { display: flex; gap: 6px; align-items: center; }
@@ -1230,16 +1237,24 @@ function itemRevision(p, nombre) {
   chk.checked = S.sel.has(key);
   chk.addEventListener('change', () => { chk.checked ? S.sel.add(key) : S.sel.delete(key); renderRevision(); });
   el.append(h('div', { class: 'head' }, chk, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), h('span', { class: 'pill neutral' }, p.orfebre || 'Sin orfebre'),
-    h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.peso_obj ? ' · objetivo ' + g2(p.peso_obj) + ' g' : ''}`)));
+    h('span', { class: 'who2' }, fFecha(p.fecha) + (p.cotizacion ? ' · cotización ' + p.cotizacion : ''))));
   if (S.corrigiendo === key) { el.append(formCorreccion(p)); return el; }
-  el.append(h('div', { class: 'kv' },
-    h('span', {}, 'Objetivo ', h('b', {}, p.peso_obj ? g2(p.peso_obj) + ' g' : '—')), h('span', {}, 'Oro trabajado ', h('b', {}, g2(p.oro_trabajo) + ' g')),
-    h('span', {}, 'Peso final ', h('b', {}, g2(p.peso_final) + ' g')), h('span', {}, 'Devuelto ', h('b', {}, g2(p.oro_devuelto || 0) + ' g')),
-    h('span', {}, 'Merma ', h('b', {}, p.merma_g == null ? '—' : `${fDec2.format(p.merma_g)} g (${fDec.format(p.merma_pct)}%)`)),
-    h('span', {}, 'Trabajo ', h('b', {}, p.tipo + (p.garantia ? ', garantía' : ''))),
-    p.codigo_producto ? h('span', {}, 'Producto ', h('b', {}, p.codigo_producto)) : null));
+  // Ficha completa: lo que registró el supervisor y lo que completó el orfebre.
+  const gr = (v) => v == null || v === '' ? '—' : g2(v) + ' g';
+  const bloque = (titulo, filas) => h('div', { class: 'ficha' }, h('h4', {}, titulo),
+    h('dl', {}, ...filas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v == null || v === '' ? '—' : v)])));
+  el.append(h('div', { class: 'fichas' },
+    bloque('Registro del supervisor', [
+      ['Fecha', fFecha(p.fecha)], ['Orfebre', p.orfebre], ['Modelo', p.modelo], ['Tono', p.tono],
+      ['Código de producto', p.codigo_producto], ['N° de cotización', p.cotizacion], ['Tipo de trabajo', p.tipo],
+      ['Garantía', p.garantia ? 'Sí' : 'No'], ['Peso objetivo', gr(p.peso_obj)],
+    ]),
+    bloque('Completado por el orfebre', [
+      ['Oro trabajado', gr(p.oro_trabajo)], ['Peso final', gr(p.peso_final)], ['Oro devuelto', gr(p.oro_devuelto || 0)],
+      ['Merma', p.merma_g == null ? '—' : `${fDec2.format(p.merma_g)} g (${fDec.format(p.merma_pct)}%)`],
+      ['Observaciones', p.observaciones],
+    ])));
   if (S.modelos.length && p.modelo && !modeloDe(p.modelo)) flags.push(['neutral', 'Modelo que no está en el maestro']);
-  if (p.observaciones) el.append(h('p', { class: 'note' }, 'Observaciones: ' + p.observaciones));
   if (flags.length) el.append(h('div', { class: 'flags' }, ...flags.map(([c, t]) => h('span', { class: 'pill ' + c }, t))));
   if (S.rechazando === key) {
     const ta = h('textarea', { rows: 2, placeholder: 'Explica qué debe corregir el orfebre', 'aria-label': 'Motivo del rechazo' });
