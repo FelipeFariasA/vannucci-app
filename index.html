@@ -296,6 +296,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <div class="tile"><span class="k">Piezas definitivas</span><span class="v" id="k-piezas">—</span><span class="d" id="d-piezas"></span></div>
       <div class="tile"><span class="k">Piezas por jornada</span><span class="v" id="k-pj">—</span><span class="d" id="d-pj"></span></div>
       <div class="tile"><span class="k">Oro trabajado</span><span class="v" id="k-oro">—</span><span class="d" id="d-oro"></span></div>
+      <div class="tile"><span class="k">Oro devuelto</span><span class="v" id="k-dev">—</span><span class="d" id="d-dev"></span></div>
       <div class="tile"><span class="k">Merma</span><span class="v" id="k-merma">—</span><span class="d" id="d-merma"></span></div>
       <div class="tile"><span class="k">Piezas con merma ≤ 5%</span><span class="v" id="k-meta">—</span><span class="d" id="d-meta"></span></div>
       <div class="tile"><span class="k">Peso final a ±5% del objetivo</span><span class="v" id="k-prec">—</span><span class="d" id="d-prec"></span></div>
@@ -395,6 +396,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Código de producto <span class="unit">(opcional)</span><input id="i-prod" list="codigos" autocomplete="off" class="mono" placeholder="Ej. P05-DL-C0.30-BL"></label>
           <label class="field">N° de cotización<input id="i-cot" inputmode="numeric" placeholder="Ej. 4633"></label>
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
+          <label class="field" id="f-piedras" hidden><span>Cantidad de piedras<span class="req" aria-hidden="true">*</span></span><input id="i-piedras" type="number" step="1" min="1" inputmode="numeric" placeholder="Ej. 12"></label>
           <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Oro trabajado <span class="unit">(g, opcional)</span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Peso final <span class="unit">(g, opcional)</span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal"></label>
@@ -418,7 +420,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <p class="note">Piezas asignadas que aún no tienen visto bueno final. Puedes editar o eliminar las que el orfebre todavía no envía a revisión.</p>
       <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
       <div class="tbl"><table id="tb-mis"><thead><tr>
-        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Tono</th><th class="n">Piedras</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -629,7 +631,8 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     <div class="card">
       <h2>Cómo se calcula</h2>
       <ul class="defs">
-        <li><b>Merma</b>: oro trabajado − peso final − oro devuelto. El % es merma dividida por oro trabajado.</li>
+        <li><b>Merma</b>: oro trabajado − peso final − oro devuelto − oro recuperado en la máquina de pulido. El % es merma dividida por oro trabajado.</li>
+        <li><b>Oro devuelto</b>: suma del oro que los orfebres devolvieron en las piezas del período.</li>
         <li><b>Pieza válida</b>: con peso final y merma entre −5% y 25%. Fuera de ese rango es atípica y no entra al cálculo de merma.</li>
         <li><b>Jornada</b>: un día en que el orfebre tiene al menos una pieza.</li>
         <li><b>Precisión</b>: de las piezas con peso objetivo, la parte cuyo peso final quedó a ±5% del objetivo.</li>
@@ -721,7 +724,10 @@ const fMes = (m, largo) => {
 const fFecha = (f) => f ? f.split('-').reverse().join('/') : '';
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const num = (v) => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return isFinite(n) ? n : null; };
-const mermaDe = (ot, pf, od) => ot > 0 && pf != null ? { g: Math.round((ot - pf - (od || 0)) * 1000) / 1000, pct: Math.round((ot - pf - (od || 0)) / ot * 10000) / 100 } : { g: null, pct: null };
+// Merma = oro trabajado − peso final − oro devuelto − oro recuperado en máquina de pulido (igual que en la base de datos).
+const mermaDe = (ot, pf, od, mp) => { const m = ot - pf - (od || 0) - (mp || 0); return ot > 0 && pf != null ? { g: Math.round(m * 1000) / 1000, pct: Math.round(m / ot * 10000) / 100 } : { g: null, pct: null }; };
+// Tipos de trabajo con engaste: habilitan "Cantidad de piedras".
+const conEngaste = (tipo) => /engaste/i.test(tipo || '');
 const calidadDe = (pct) => pct == null ? 'incompleta' : (pct >= -5 && pct <= 25 ? 'válida' : 'atípica');
 const colorDe = (p) => { const todos = S.orfItems.map((x) => x.nombre), i = todos.indexOf(p); return css(SERIES[(i < 0 ? todos.length : i) % SERIES.length]); };
 const nuevoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -745,6 +751,7 @@ function pieza(r) {
     _id: r.id, id: r.id, persona: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre_id: r.orfebre_id, autor: r.autor,
     fecha: r.fecha, mes: (r.fecha || '').slice(0, 7), tono: r.tono, modelo: r.modelo, cotizacion: r.cotizacion, codigo_producto: r.codigo_producto, tipo: r.tipo,
     peso_obj: n2(r.peso_obj), oro_trabajo: n2(r.oro_trabajo), peso_final: n2(r.peso_final), oro_devuelto: n2(r.oro_devuelto), merma_g: n2(r.merma_g), merma_pct: n2(r.merma_pct),
+    maquina_pulido: n2(r.maquina_pulido) || 0, cantidad_piedras: r.cantidad_piedras ?? null,
     garantia: !!r.garantia, observaciones: r.observaciones, calidad: r.calidad || calidadDe(n2(r.merma_pct)), origen: r.origen === 'portal' ? 'Portal' : 'Planilla',
     estado: r.estado, comentario: r.comentario, corregida: r.corregida, revisado_por: r.revisado_por, revisado_en: r.revisado_en, creado_en: r.creado_en,
   };
@@ -864,6 +871,7 @@ function agregados() {
     out.set(k, {
       persona: g.persona, mes: g.mes, piezas: rs.length, jornadas, piezas_jornada: rs.length / jornadas,
       oro_g: suma(rs, 'oro_trabajo'), final_g: suma(rs, 'peso_final'), merma_g: suma(ok, 'merma_g'),
+      devuelto_g: suma(rs, 'oro_devuelto'), devuelto_pct: suma(rs, 'oro_trabajo') ? suma(rs, 'oro_devuelto') / suma(rs, 'oro_trabajo') : null,
       merma_pct: oroOk ? suma(ok, 'merma_g') / oroOk : null,
       en_meta: ok.length ? ok.filter((r) => r.merma_pct <= META).length / ok.length : null,
       precision: obj.length ? obj.filter((r) => Math.abs(r.peso_final / r.peso_obj - 1) <= 0.05).length / obj.length : null,
@@ -873,7 +881,7 @@ function agregados() {
   const anterior = (mes) => { if (mes.length === 4) return String(+mes - 1); const [y, m] = mes.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
   for (const r of out.values()) {
     const p = r.mes === 'Todos' ? null : out.get(r.persona + '|' + anterior(r.mes));
-    for (const f of ['piezas', 'piezas_jornada', 'oro_g', 'merma_pct', 'en_meta']) r['d_' + f] = p && p[f] != null && r[f] != null ? r[f] - p[f] : null;
+    for (const f of ['piezas', 'piezas_jornada', 'oro_g', 'devuelto_g', 'merma_pct', 'en_meta']) r['d_' + f] = p && p[f] != null && r[f] != null ? r[f] - p[f] : null;
   }
   const personas = [...new Set(rows.map((r) => r.persona))];
   const todos = S.orfItems.map((x) => x.nombre);
@@ -1003,6 +1011,7 @@ function renderPanel() {
     ['piezas', (v) => fNum.format(v), (v) => fNum.format(v), true],
     ['pj', (v) => fDec.format(v), (v) => fDec.format(v), true, 'piezas_jornada'],
     ['oro', (v) => fNum.format(v) + ' g', (v) => fNum.format(v) + ' g', true, 'oro_g'],
+    ['dev', (v) => fDec.format(v) + ' g', (v) => fDec.format(v) + ' g', true, 'devuelto_g'],
     ['merma', fPct, (v) => fDec.format(v * 100) + ' pp', false, 'merma_pct'],
     ['meta', fPct, (v) => fDec.format(v * 100) + ' pp', true, 'en_meta'],
   ];
@@ -1078,14 +1087,22 @@ function leerForm() {
   return {
     fecha: $('i-fecha').value, tono: $('i-tono').value, modelo: $('i-modelo').value.trim(), cotizacion: $('i-cot').value.trim() || null, codigo_producto: $('i-prod').value.trim() || null,
     tipo: $('i-tipo').value, peso_obj: num($('i-po').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
+    cantidad_piedras: conEngaste($('i-tipo').value) ? num($('i-piedras').value) : null,
     merma_g: m.g, merma_pct: m.pct, garantia: $('i-gar').checked, observaciones: $('i-obs').value.trim() || null,
   };
+}
+// "Cantidad de piedras" solo aparece en los tipos de trabajo con engaste.
+function alCambiarTipo() {
+  const ver = conEngaste($('i-tipo').value);
+  $('f-piedras').hidden = !ver;
+  if (!ver) { $('i-piedras').value = ''; errorCampo('i-piedras', ''); }
 }
 function llenarForm(p) {
   $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
   $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
   $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
+  $('i-piedras').value = p?.cantidad_piedras ?? ''; alCambiarTipo();
   const selO = $('i-orfebre');
   if (selO) {
     // Al editar un trabajo de un orfebre ya inactivo, se muestra igual para no perder la asignación.
@@ -1120,7 +1137,7 @@ function errorCampo(id, texto) {
   if (!e) { e = h('span', { class: 'ferr', id: id + '-err' }); lab.append(e); }
   e.textContent = texto; el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err');
 }
-function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf']) errorCampo(id, ''); }
+function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-piedras']) errorCampo(id, ''); }
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
 
 // ---------- supervisor: registrar y asignar ----------
@@ -1135,6 +1152,7 @@ async function enviar(ev) {
   if (!p.fecha) errs.push(['i-fecha', 'Ingresa la fecha.']); else if (p.fecha > hoy()) errs.push(['i-fecha', 'La fecha no puede ser futura.']);
   if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
   if (p.oro_trabajo != null && !(p.oro_trabajo > 0)) errs.push(['i-ot', 'Si lo ingresas, el oro trabajado debe ser mayor que 0.']);
+  if (conEngaste(p.tipo) && !(Number.isInteger(p.cantidad_piedras) && p.cantidad_piedras > 0)) errs.push(['i-piedras', 'Ingresa la cantidad de piedras a engastar (número entero mayor que 0).']);
   if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
   const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Guardando…');
   try {
@@ -1159,11 +1177,11 @@ function renderMis() {
     h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
   const tb = $('tb-mis').tBodies[0];
   const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
-  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 11, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 12, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
   tb.replaceChildren(...rs.map((p) => {
     const editable = p.estado === 'asignada' || p.estado === 'rechazada';
     return h('tr', {},
-      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.tono || ''), h('td', { class: 'n' }, p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
       h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)),
       h('td', { class: 'wrap' }, p.comentario || ''),
       h('td', {}, editable ? h('span', {},
@@ -1213,17 +1231,20 @@ function tarjetaTrabajo(p) {
   const el = h('div', { class: 'item' + (p.estado === 'rechazada' ? ' flag' : '') });
   el.append(h('div', { class: 'head' }, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), pillEstado(p.estado),
     h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.tipo ? ' · ' + p.tipo : ''}${p.garantia ? ' · garantía' : ''}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.codigo_producto ? ' · ' + p.codigo_producto : ''}`)));
-  if (p.peso_obj) el.append(h('div', { class: 'kv' }, h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g'))));
+  if (p.peso_obj || p.cantidad_piedras) el.append(h('div', { class: 'kv' },
+    p.peso_obj ? h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g')) : null,
+    p.cantidad_piedras ? h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras))) : null));
   if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
   const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
   const [lOt, iOt] = inp(h('span', {}, 'Oro trabajado ', h('span', { class: 'unit' }, '(g)')), 'oro_trabajo');
   const [lPf, iPf] = inp(h('span', {}, 'Peso final ', h('span', { class: 'unit' }, '(g)')), 'peso_final');
   const [lOd, iOd] = inp(h('span', {}, 'Oro devuelto ', h('span', { class: 'unit' }, '(g)')), 'oro_devuelto', { placeholder: '0', value: p.oro_devuelto || '' });
+  const [lMp, iMp] = inp(h('span', {}, 'Máquina pulido ', h('span', { class: 'unit' }, '(g)')), 'maquina_pulido', { placeholder: '0', value: p.maquina_pulido || '', title: 'Oro recuperado en la máquina de pulido; se descuenta de la merma' });
   const obs = h('textarea', { rows: 2 }); obs.value = p.observaciones || '';
   const calc = h('div', { class: 'calc', 'aria-live': 'polite' });
-  const valores = () => { const ot = num(iOt.value), pf = num(iPf.value), od = num(iOd.value) ?? 0; const m = mermaDe(ot, pf, od); return { ...p, oro_trabajo: ot, peso_final: pf, oro_devuelto: od, merma_g: m.g, merma_pct: m.pct, observaciones: obs.value.trim() || null }; };
+  const valores = () => { const ot = num(iOt.value), pf = num(iPf.value), od = num(iOd.value) ?? 0, mp = num(iMp.value) ?? 0; const m = mermaDe(ot, pf, od, mp); return { ...p, oro_trabajo: ot, peso_final: pf, oro_devuelto: od, maquina_pulido: mp, merma_g: m.g, merma_pct: m.pct, observaciones: obs.value.trim() || null }; };
   const recalc = () => calcEn(calc, valores());
-  for (const i of [iOt, iPf, iOd]) i.addEventListener('input', recalc);
+  for (const i of [iOt, iPf, iOd, iMp]) i.addEventListener('input', recalc);
   recalc();
   const m = h('span', { class: 'msg', role: 'status' });
   const guardar = async (enviarRevision) => {
@@ -1231,14 +1252,14 @@ function tarjetaTrabajo(p) {
     if (v.oro_trabajo != null && !(v.oro_trabajo > 0)) { m.textContent = 'El oro trabajado debe ser mayor que 0.'; m.className = 'msg bad'; iOt.focus(); return; }
     if (enviarRevision && !(v.oro_trabajo > 0)) { m.textContent = 'Para enviar a revisión ingresa el oro trabajado.'; m.className = 'msg bad'; iOt.focus(); return; }
     if (enviarRevision && v.peso_final == null) { m.textContent = 'Para enviar a revisión ingresa el peso final.'; m.className = 'msg bad'; iPf.focus(); return; }
-    const body = { oro_trabajo: v.oro_trabajo, peso_final: v.peso_final, oro_devuelto: v.oro_devuelto, observaciones: v.observaciones };
+    const body = { oro_trabajo: v.oro_trabajo, peso_final: v.peso_final, oro_devuelto: v.oro_devuelto, maquina_pulido: v.maquina_pulido, observaciones: v.observaciones };
     if (enviarRevision) body.estado = 'pendiente';
     const { error } = await sb.from('piezas').update(body).eq('id', p._id);
     if (error) { m.textContent = 'No se pudo guardar (' + (error.message || error.code) + ').'; m.className = 'msg bad'; return; }
     msg('m-tr', enviarRevision ? `${p.modelo} enviado a revisión del supervisor.` : `${p.modelo}: avance guardado.`, 'ok');
     cargarMis(); cargarPendientes();
   };
-  el.append(h('div', { class: 'fields' }, lOt, lPf, lOd, h('label', { class: 'field full' }, 'Observaciones', obs)), calc,
+  el.append(h('div', { class: 'fields' }, lOt, lPf, lOd, lMp, h('label', { class: 'field full' }, 'Observaciones', obs)), calc,
     h('div', { class: 'actions' },
       h('button', { type: 'button', class: 'btn primary', onclick: () => guardar(true) }, p.estado === 'rechazada' ? 'Reenviar a revisión' : 'Enviar a revisión'),
       h('button', { type: 'button', class: 'btn', onclick: () => guardar(false) }, 'Guardar sin enviar'), m));
@@ -1307,9 +1328,10 @@ function itemRevision(p, nombre) {
       ['Fecha', fFecha(p.fecha)], ['Orfebre', p.orfebre], ['Modelo', p.modelo], ['Tono', p.tono],
       ['Código de producto', p.codigo_producto], ['N° de cotización', p.cotizacion], ['Tipo de trabajo', p.tipo],
       ['Garantía', p.garantia ? 'Sí' : 'No'], ['Peso objetivo', gr(p.peso_obj)],
+      ...(conEngaste(p.tipo) || p.cantidad_piedras ? [['Cantidad de piedras', p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : null]] : []),
     ]),
     bloque('Completado por el orfebre', [
-      ['Oro trabajado', gr(p.oro_trabajo)], ['Peso final', gr(p.peso_final)], ['Oro devuelto', gr(p.oro_devuelto || 0)],
+      ['Oro trabajado', gr(p.oro_trabajo)], ['Peso final', gr(p.peso_final)], ['Oro devuelto', gr(p.oro_devuelto || 0)], ['Máquina pulido', gr(p.maquina_pulido || 0)],
       ['Merma', p.merma_g == null ? '—' : `${fDec2.format(p.merma_g)} g (${fDec.format(p.merma_pct)}%)`],
       ['Observaciones', p.observaciones],
     ])));
@@ -1332,13 +1354,16 @@ function formCorreccion(p) {
   const f = (label, key, val, type = 'number') => { const i = h('input', { type, step: '0.01', value: val ?? '' }); i.dataset.k = key; return h('label', { class: 'field' }, label, i); };
   const box = h('div', { class: 'fields' },
     f('Fecha', 'fecha', p.fecha, 'date'), f('Modelo', 'modelo', p.modelo, 'text'), f('Peso objetivo (g)', 'peso_obj', p.peso_obj), f('Oro trabajado (g)', 'oro_trabajo', p.oro_trabajo),
-    f('Peso final (g)', 'peso_final', p.peso_final), f('Oro devuelto (g)', 'oro_devuelto', p.oro_devuelto));
+    f('Peso final (g)', 'peso_final', p.peso_final), f('Oro devuelto (g)', 'oro_devuelto', p.oro_devuelto), f('Máquina pulido (g)', 'maquina_pulido', p.maquina_pulido),
+    ...(conEngaste(p.tipo) || p.cantidad_piedras ? [f('Cantidad de piedras', 'cantidad_piedras', p.cantidad_piedras)] : []));
   const out = h('div', { style: 'display:grid;gap:10px' }, box, h('div', { class: 'actions' },
     h('button', { type: 'button', class: 'btn ok', onclick: () => {
       const c = { ...p };
       for (const i of box.querySelectorAll('input')) c[i.dataset.k] = i.type === 'number' ? num(i.value) : i.value.trim();
       if (!c.fecha || !c.modelo || !(c.oro_trabajo > 0) || c.peso_final == null) { msg('m-rev', 'Completa fecha, modelo, oro trabajado y peso final.', 'bad'); return; }
-      const m = mermaDe(c.oro_trabajo, c.peso_final, c.oro_devuelto || 0); c.merma_g = m.g; c.merma_pct = m.pct; c.oro_devuelto = c.oro_devuelto || 0;
+      if (c.cantidad_piedras != null && !(Number.isInteger(c.cantidad_piedras) && c.cantidad_piedras > 0)) { msg('m-rev', 'La cantidad de piedras debe ser un número entero mayor que 0.', 'bad'); return; }
+      c.oro_devuelto = c.oro_devuelto || 0; c.maquina_pulido = c.maquina_pulido || 0;
+      const m = mermaDe(c.oro_trabajo, c.peso_final, c.oro_devuelto, c.maquina_pulido); c.merma_g = m.g; c.merma_pct = m.pct;
       aprobar([c], true);
     } }, 'Guardar y aprobar'),
     h('button', { type: 'button', class: 'btn link', onclick: () => { S.corrigiendo = null; renderRevision(); } }, 'Cancelar')));
@@ -1348,7 +1373,7 @@ async function aprobar(lista, corregido = false) {
   msg('m-rev', `Aprobando ${lista.length === 1 ? 'pieza' : lista.length + ' piezas'}…`);
   let ok = 0;
   for (const p of lista) {
-    const campos = ['fecha', 'modelo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto'];
+    const campos = ['fecha', 'modelo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto', 'maquina_pulido', 'cantidad_piedras'];
     const body = corregido ? { ...Object.fromEntries(campos.map((k) => [k, p[k] ?? null])), modelo_id: modeloDe(p.modelo)?._id ?? null, corregida: true } : {};
     try {
       const { error } = await sb.from('piezas').update({ ...body, estado: 'aprobada', comentario: corregido ? 'Aprobada con correcciones del supervisor.' : null }).eq('id', p._id);
@@ -2122,6 +2147,8 @@ function wire() {
   opcionesRegistro();
   $('i-fecha').max = hoy();
   $('i-modelo').addEventListener('change', alCambiarModelo);
+  $('i-tipo').addEventListener('change', alCambiarTipo);
+  $('i-piedras').addEventListener('input', () => errorCampo('i-piedras', ''));
   $('i-prod').addEventListener('change', alCambiarProducto);
   document.querySelectorAll('#m-sub button').forEach((b) => b.addEventListener('click', () => { S.msub = b.dataset.sub; renderMaestros(); }));
   document.querySelectorAll('#ind-sub button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.sub)));
