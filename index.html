@@ -318,6 +318,11 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <p class="note">Piezas divididas por los días con registros de cada orfebre.</p>
         <div class="chart" id="ch-ritmo"></div>
       </div>
+      <div class="card" id="c-devuelto">
+        <h2>Oro devuelto mensual</h2>
+        <p class="note">Gramos de oro que cada orfebre devolvió en sus piezas definitivas del mes.</p>
+        <div class="chart" id="ch-devuelto"></div>
+      </div>
       <div class="card wide" id="c-comp">
         <h2 id="h-comp">Comparativo por orfebre</h2>
         <div class="tbl free"><table id="tb-comp"><thead><tr>
@@ -1040,6 +1045,7 @@ function renderPanel() {
     drawStack($('ch-piezas'), A, meses, per);
     drawLines($('ch-merma'), A, meses, 'merma_pct', (v) => fDec.format(v * 100) + '%', META / 100, per);
     drawLines($('ch-ritmo'), A, meses, 'piezas_jornada', (v) => fDec.format(v), null, per);
+    drawLines($('ch-devuelto'), A, meses, 'devuelto_g', (v) => fDec.format(v) + ' g', null, per);
   }
 
   $('h-comp').textContent = `Comparativo por orfebre, ${fMes(per, true)}`;
