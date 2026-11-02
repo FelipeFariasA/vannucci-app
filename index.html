@@ -13,15 +13,18 @@
   --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
   --r: 10px; --shadow: 0 8px 24px rgb(29 27 22 / .12);
+  /* Movimiento: curvas fuertes y duraciones cortas para un panel de trabajo. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ring: 0 0 0 3px rgb(137 115 88 / .18);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0a0a0a; --panel: #151413; --ink: #f2eee8; --muted: #a39f99; --line: #2d2a26; --soft: #1e1c19;
   --gold: #c9ab80; --gold-ink: #c9ab80; --gold-soft: #2e271e; --ok: #7cc293; --ok-soft: #1c2c21; --warn: #e0b067; --warn-soft: #33291a; --bad: #e88b7c; --bad-soft: #36201c;
-  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); color-scheme: dark; } }
+  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); --ring: 0 0 0 3px rgb(201 171 128 / .22); color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0a0a0a; --panel: #151413; --ink: #f2eee8; --muted: #a39f99; --line: #2d2a26; --soft: #1e1c19;
   --gold: #c9ab80; --gold-ink: #c9ab80; --gold-soft: #2e271e; --ok: #7cc293; --ok-soft: #1c2c21; --warn: #e0b067; --warn-soft: #33291a; --bad: #e88b7c; --bad-soft: #36201c;
-  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); color-scheme: dark; }
+  --s1: #c9ab80; --s2: #ece7df; --s3: #8a8a8a; --s4: #a08664; --grid: #24221f; --ref: #6f6a62; --logo-filter: invert(1); --shadow: 0 8px 24px rgb(0 0 0 / .5); --ring: 0 0 0 3px rgb(201 171 128 / .22); color-scheme: dark; }
 
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
 .pv { max-width: 72rem; margin-inline: auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 22px; }
@@ -120,7 +123,6 @@ dialog.confirmar dd { margin: 0; font-weight: 500; }
 dialog.confirmar .aviso { font-size: .875rem; color: var(--muted); margin: 0; }
 dialog.confirmar .pie { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--bg); border-radius: 0 0 var(--r) var(--r); }
 .btn.peligro { background: var(--bad); border-color: var(--bad); color: var(--panel); }
-.btn.peligro:hover:not(:disabled) { filter: brightness(1.08); }
 .pill.aprobada, .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.rechazada, .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .pill.neutral { background: var(--soft); color: var(--muted); }
@@ -162,10 +164,32 @@ form.pieza { display: grid; gap: 14px; }
 .btn, .seg button, nav.tabs button, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 36px; }
 .btn.link { min-height: 32px; padding: 6px 8px; }
 input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
-.btn, .seg button, nav.tabs button { transition: background-color .15s, color .15s, border-color .15s; }
-.btn:hover:not(:disabled) { border-color: var(--gold); }
-.btn.primary:hover:not(:disabled), .btn.ok:hover:not(:disabled) { filter: brightness(1.08); }
-.btn.link:hover { color: var(--ink); }
+/* Botones: respuesta inmediata al presionar; el hover solo con mouse (en táctil queda "pegado"). */
+.btn { transition: transform 160ms var(--ease-out), background-color 150ms ease, color 150ms ease, border-color 150ms ease, filter 150ms ease; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.seg button, nav.tabs button { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
+.btn.link { text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) { border-color: var(--gold); }
+  .btn.primary:hover:not(:disabled), .btn.ok:hover:not(:disabled), .btn.peligro:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn.link:hover { color: var(--ink); text-decoration-color: currentColor; }
+  .seg button:hover:not([aria-pressed="true"]), nav.tabs button:hover:not([aria-current="page"]) { color: var(--ink); }
+  tbody tr:hover td { background: var(--soft); }
+}
+/* Campos: borde dorado y halo suave al enfocar. */
+select, input:not([type="checkbox"]):not([type="radio"]), textarea { transition: border-color 150ms ease, box-shadow 150ms ease; }
+select:focus-visible, input:not([type="checkbox"]):not([type="radio"]):focus-visible, textarea:focus-visible { outline: none; border-color: var(--gold); box-shadow: var(--ring); }
+.field [aria-invalid="true"]:focus-visible { border-color: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 20%, transparent); }
+/* Modal de confirmación: entra con fundido y escala leve desde el centro; el fondo se funde. */
+dialog.confirmar[open] { opacity: 1; transform: scale(1); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
+@starting-style {
+  dialog.confirmar[open] { opacity: 0; transform: scale(0.96); }
+  dialog.confirmar[open]::backdrop { opacity: 0; }
+}
+/* Tarjeta de ingreso: entrada única al abrir el portal. */
+.acceso:not([hidden]) { animation: entrar-acceso 280ms var(--ease-out) both; }
+@keyframes entrar-acceso { from { opacity: 0; transform: translateY(8px); } }
 @media (pointer: coarse) {
   .btn, .btn.link, .seg button, nav.tabs button, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
   input[type="checkbox"] { width: 22px; height: 22px; }
@@ -175,8 +199,13 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
 .ferr { color: var(--bad); font-size: .85rem; font-weight: 600; }
 .field [aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .btn.danger.armado, .btn.link.armado { color: var(--panel); background: var(--bad); border-color: var(--bad); text-decoration: none; border-radius: 6px; }
-@media (prefers-reduced-motion: reduce) { .btn, .seg button, nav.tabs button { transition: none; } }
-@media (prefers-reduced-motion: no-preference) { .item { transition: opacity .2s; } }
+/* Movimiento reducido: sin escalas ni desplazamientos; se mantienen solo los fundidos. */
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled) { transform: none; }
+  dialog.confirmar[open] { transform: none; transition: opacity 150ms ease; }
+  .acceso:not([hidden]) { animation-name: fundido; }
+  @keyframes fundido { from { opacity: 0; } }
+}
 </style>
 
 <div class="pv" id="app">
