@@ -331,8 +331,8 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <h2 id="h-comp">Comparativo por orfebre</h2>
           <div class="filtros-comp">
             <label class="field">Tipo de trabajo<select id="f-tipo"></select></label>
-            <label class="field">Año<select id="fc-anio"></select></label>
-            <label class="field">Mes<select id="fc-mes"></select></label>
+            <label class="field">Desde<select id="fc-desde" class="mono"></select></label>
+            <label class="field">Hasta<select id="fc-hasta" class="mono"></select></label>
           </div>
         </div>
         <div class="tbl free"><table id="tb-comp"><thead><tr>
@@ -705,7 +705,7 @@ const S = {
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
-  persona: 'Todos', anio: '2026', mes: '2026-09', tipo: '', cmp: { anio: null, mes: 'Todos' }, filtroEstado: 'todas', tab: 'panel', q: '',
+  persona: 'Todos', anio: '2026', mes: '2026-09', tipo: '', cmp: { desde: null, hasta: null }, filtroEstado: 'todas', tab: 'panel', q: '',
 };
 
 // ---------- utilidades ----------
@@ -864,6 +864,33 @@ async function cargarVentas() {
 // ---------- datos combinados ----------
 function filasDefinitivas() { return S.definitivas; }
 
+// Indicadores de un grupo de piezas (un orfebre o el taller, en un período).
+function metricas(persona, mes, rs) {
+  const suma = (xs, f) => xs.reduce((s, r) => s + (Number(r[f]) || 0), 0);
+  const ok = rs.filter((r) => r.calidad === 'válida');
+  const obj = rs.filter((r) => r.peso_obj > 0 && r.peso_final != null);
+  const jornadas = new Set(rs.map((r) => r.persona + r.fecha)).size;
+  const oroOk = suma(ok, 'oro_trabajo'), oro = suma(rs, 'oro_trabajo');
+  const cuenta = (f) => { const c = new Map(); for (const r of rs) c.set(r[f] || 'Sin dato', (c.get(r[f] || 'Sin dato') || 0) + 1); return [...c].map(([valor, n]) => ({ valor, n })); };
+  return {
+    persona, mes, piezas: rs.length, jornadas, piezas_jornada: jornadas ? rs.length / jornadas : null,
+    oro_g: oro, final_g: suma(rs, 'peso_final'), merma_g: suma(ok, 'merma_g'),
+    devuelto_g: suma(rs, 'oro_devuelto'), devuelto_pct: oro ? suma(rs, 'oro_devuelto') / oro : null,
+    merma_pct: oroOk ? suma(ok, 'merma_g') / oroOk : null,
+    en_meta: ok.length ? ok.filter((r) => r.merma_pct <= META).length / ok.length : null,
+    precision: obj.length ? obj.filter((r) => Math.abs(r.peso_final / r.peso_obj - 1) <= 0.05).length / obj.length : null,
+    obj_n: obj.length, atipicas: rs.filter((r) => r.calidad === 'atípica').length, tipos: cuenta('tipo'), tonos: cuenta('tono'),
+  };
+}
+// Comparativo por orfebre en un rango de meses (desde y hasta en formato AAAA-MM, inclusive).
+function comparativoRango(tipo, desde, hasta) {
+  const rs = filasDefinitivas().filter((r) => (!tipo || r.tipo === tipo) && r.mes >= desde && r.mes <= hasta);
+  const porPersona = new Map();
+  for (const r of rs) { if (!porPersona.has(r.persona)) porPersona.set(r.persona, []); porPersona.get(r.persona).push(r); }
+  const todos = S.orfItems.map((x) => x.nombre), personas = [...porPersona.keys()];
+  const orden = [...todos.filter((p) => personas.includes(p)), ...personas.filter((p) => !todos.includes(p))];
+  return rs.length ? [metricas('Todos', desde + '..' + hasta, rs), ...orden.map((p) => metricas(p, desde + '..' + hasta, porPersona.get(p)))] : [];
+}
 const cacheAgg = new Map();
 // tipo: si se indica, solo las piezas de ese tipo de trabajo (lo usa el comparativo por orfebre).
 function agregados(tipo = '') {
@@ -876,24 +903,8 @@ function agregados(tipo = '') {
     if (!grupos.has(k)) grupos.set(k, { persona: p, mes: m, rs: [] });
     grupos.get(k).rs.push(r);
   }
-  const suma = (rs, f) => rs.reduce((s, r) => s + (Number(r[f]) || 0), 0);
   const out = new Map();
-  for (const [k, g] of grupos) {
-    const rs = g.rs, ok = rs.filter((r) => r.calidad === 'válida');
-    const obj = rs.filter((r) => r.peso_obj > 0 && r.peso_final != null);
-    const jornadas = new Set(rs.map((r) => r.persona + r.fecha)).size;
-    const oroOk = suma(ok, 'oro_trabajo');
-    const cuenta = (f) => { const c = new Map(); for (const r of rs) c.set(r[f] || 'Sin dato', (c.get(r[f] || 'Sin dato') || 0) + 1); return [...c].map(([valor, n]) => ({ valor, n })); };
-    out.set(k, {
-      persona: g.persona, mes: g.mes, piezas: rs.length, jornadas, piezas_jornada: rs.length / jornadas,
-      oro_g: suma(rs, 'oro_trabajo'), final_g: suma(rs, 'peso_final'), merma_g: suma(ok, 'merma_g'),
-      devuelto_g: suma(rs, 'oro_devuelto'), devuelto_pct: suma(rs, 'oro_trabajo') ? suma(rs, 'oro_devuelto') / suma(rs, 'oro_trabajo') : null,
-      merma_pct: oroOk ? suma(ok, 'merma_g') / oroOk : null,
-      en_meta: ok.length ? ok.filter((r) => r.merma_pct <= META).length / ok.length : null,
-      precision: obj.length ? obj.filter((r) => Math.abs(r.peso_final / r.peso_obj - 1) <= 0.05).length / obj.length : null,
-      obj_n: obj.length, atipicas: rs.filter((r) => r.calidad === 'atípica').length, tipos: cuenta('tipo'), tonos: cuenta('tono'),
-    });
-  }
+  for (const [k, g] of grupos) out.set(k, metricas(g.persona, g.mes, g.rs));
   const anterior = (mes) => { if (mes.length === 4) return String(+mes - 1); const [y, m] = mes.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
   for (const r of out.values()) {
     const p = r.mes === 'Todos' ? null : out.get(r.persona + '|' + anterior(r.mes));
@@ -1068,27 +1079,32 @@ function renderPanel() {
     drawLines($('ch-devuelto'), A, meses, 'devuelto_g', (v) => fDec.format(v) + ' g', null, per);
   }
 
-  // Filtros propios del comparativo (tipo, año y mes): solo afectan a esta tabla.
-  const AC = agregados(S.tipo);
+  // Filtros propios del comparativo (tipo y rango de meses desde-hasta): solo afectan a esta tabla.
   const C = S.cmp;
-  const mesesC = agregados().meses, aniosC = [...new Set(mesesC.map((m) => m.slice(0, 4)))];
-  // Al llegar los datos, el comparativo parte con el mismo período que el panel; después es independiente.
-  if (C.anio == null && mesesC.length) { C.anio = S.anio; C.mes = S.mes; }
-  if (C.anio != null && C.anio !== 'Todos' && mesesC.length && !aniosC.includes(C.anio)) C.anio = aniosC[aniosC.length - 1];
-  const anioC = C.anio ?? 'Todos';
-  const mesesAnioC = anioC === 'Todos' ? mesesC : mesesC.filter((m) => m.startsWith(anioC));
-  if (C.mes !== 'Todos' && mesesC.length && !mesesAnioC.includes(C.mes)) C.mes = 'Todos';
-  $('fc-anio').replaceChildren(new Option('Todos los años', 'Todos'), ...aniosC.slice().reverse().map((a) => new Option(a, a))); $('fc-anio').value = anioC;
-  $('fc-mes').replaceChildren(new Option(anioC === 'Todos' ? 'Todos los meses' : `Todo ${anioC}`, 'Todos'), ...mesesAnioC.slice().reverse().map((m) => new Option(fMes(m, true), m))); $('fc-mes').value = C.mes;
-  const perC = C.mes !== 'Todos' ? C.mes : anioC;
-  $('h-comp').textContent = `Comparativo por orfebre, ${fMes(perC, true)}`;
-  const filasComp = ['Todos', ...AC.personas].map((p) => AC.map.get(p + '|' + perC)).filter(Boolean);
+  const mesesC = agregados().meses;
+  // Al llegar los datos, el rango parte con el período del panel; después es independiente.
+  if (C.desde == null && mesesC.length) {
+    const delPanel = S.mes !== 'Todos' ? [S.mes] : S.anio !== 'Todos' ? mesesC.filter((m) => m.startsWith(S.anio)) : mesesC;
+    const base = delPanel.length ? delPanel : mesesC;
+    C.desde = base[0]; C.hasta = base[base.length - 1];
+  }
+  if (C.desde != null && mesesC.length) {
+    if (!mesesC.includes(C.desde)) C.desde = mesesC.find((m) => m >= C.desde) || mesesC[mesesC.length - 1];
+    if (!mesesC.includes(C.hasta)) C.hasta = [...mesesC].reverse().find((m) => m <= C.hasta) || mesesC[0];
+    if (C.desde > C.hasta) [C.desde, C.hasta] = [C.hasta, C.desde];
+  }
+  const opcionesMes = mesesC.slice().reverse().map((m) => new Option(m, m));
+  $('fc-desde').replaceChildren(...opcionesMes.map((o) => o.cloneNode(true))); $('fc-desde').value = C.desde ?? '';
+  $('fc-hasta').replaceChildren(...opcionesMes); $('fc-hasta').value = C.hasta ?? '';
+  const rango = C.desde == null ? '' : C.desde === C.hasta ? C.desde : `${C.desde} a ${C.hasta}`;
+  $('h-comp').textContent = rango ? `Comparativo por orfebre, ${rango}` : 'Comparativo por orfebre';
+  const filasComp = C.desde == null ? [] : comparativoRango(S.tipo, C.desde, C.hasta);
   $('tb-comp').tBodies[0].replaceChildren(...(filasComp.length ? filasComp.map((r) => {
     const tr = h('tr', { class: r.persona === S.persona ? 'sel' : null });
     const vals = [r.persona === 'Todos' ? 'Todo el taller' : r.persona, fNum.format(r.piezas), fNum.format(r.jornadas), fDec.format(r.piezas_jornada), fDec.format(r.oro_g), fDec.format(r.final_g), fDec.format(r.devuelto_g), fDec.format(r.merma_g), null, fPct(r.en_meta), fPct(r.precision), fNum.format(r.atipicas)];
     vals.forEach((v, i) => tr.append(i === 8 ? h('td', { class: 'n' }, r.merma_pct == null ? '—' : h('span', { class: 'pill ' + (r.merma_pct > META / 100 ? 'bad' : 'ok') }, fPct(r.merma_pct))) : h('td', { class: i ? 'n' : null }, v)));
     return tr;
-  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, `Sin piezas${S.tipo ? ' de ' + S.tipo.toLowerCase() : ''} en ${fMes(perC, true)}.`))]));
+  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, `Sin piezas${S.tipo ? ' de ' + S.tipo.toLowerCase() : ''}${rango ? ' entre ' + rango.replace(' a ', ' y ') : ''}.`))]));
   const c = S.persona === 'Todos' ? css('--muted') : colorDe(S.persona);
   hbars($('hb-tipo'), cur ? cur.tipos : [], c);
   hbars($('hb-tono'), cur ? cur.tonos : [], c);
@@ -2184,8 +2200,9 @@ function wire() {
   $('f-anio').addEventListener('change', (e) => { S.anio = e.target.value; S.mes = 'Todos'; renderPanel(); });
   $('f-mes').addEventListener('change', (e) => { S.mes = e.target.value; renderPanel(); });
   $('f-tipo').addEventListener('change', (e) => { S.tipo = e.target.value; renderPanel(); });
-  $('fc-anio').addEventListener('change', (e) => { S.cmp.anio = e.target.value; S.cmp.mes = 'Todos'; renderPanel(); });
-  $('fc-mes').addEventListener('change', (e) => { S.cmp.mes = e.target.value; renderPanel(); });
+  // Si "desde" queda después de "hasta" (o al revés), el otro extremo se ajusta para que el rango siga siendo válido.
+  $('fc-desde').addEventListener('change', (e) => { S.cmp.desde = e.target.value; if (S.cmp.hasta < S.cmp.desde) S.cmp.hasta = S.cmp.desde; renderPanel(); });
+  $('fc-hasta').addEventListener('change', (e) => { S.cmp.hasta = e.target.value; if (S.cmp.desde > S.cmp.hasta) S.cmp.desde = S.cmp.hasta; renderPanel(); });
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRegistros(agregados(), S.mes !== 'Todos' ? S.mes : S.anio); });
   opcionesRegistro();
   $('i-fecha').max = hoy();
