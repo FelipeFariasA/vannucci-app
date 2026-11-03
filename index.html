@@ -291,7 +291,6 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <div class="seg" id="f-persona" role="group" aria-label="Orfebre"></div>
       <select id="f-anio" aria-label="Año"></select>
       <select id="f-mes" aria-label="Mes"></select>
-      <select id="f-tipo" aria-label="Tipo de trabajo"></select>
     </div>
     <div class="tiles">
       <div class="tile"><span class="k">Piezas definitivas</span><span class="v" id="k-piezas">—</span><span class="d" id="d-piezas"></span></div>
@@ -325,9 +324,12 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <div class="chart" id="ch-devuelto"></div>
       </div>
       <div class="card wide" id="c-comp">
-        <h2 id="h-comp">Comparativo por orfebre</h2>
+        <div class="actions" style="justify-content:space-between">
+          <h2 id="h-comp">Comparativo por orfebre</h2>
+          <select id="f-tipo" aria-label="Filtrar el comparativo por tipo de trabajo"></select>
+        </div>
         <div class="tbl free"><table id="tb-comp"><thead><tr>
-          <th>Orfebre</th><th class="n">Piezas</th><th class="n">Jornadas</th><th class="n">Piezas/jornada</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma (g)</th><th class="n">Merma %</th><th class="n">≤ 5%</th><th class="n">Precisión</th><th class="n">Atípicas</th>
+          <th>Orfebre</th><th class="n">Piezas</th><th class="n">Jornadas</th><th class="n">Piezas/jornada</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Devuelto (g)</th><th class="n">Merma (g)</th><th class="n">Merma %</th><th class="n">≤ 5%</th><th class="n">Precisión</th><th class="n">Atípicas</th>
         </tr></thead><tbody></tbody></table></div>
       </div>
       <div class="card" id="c-tipo"><h2>Tipo de trabajo</h2><div class="hbar" id="hb-tipo"></div></div>
@@ -855,12 +857,12 @@ async function cargarVentas() {
 // ---------- datos combinados ----------
 function filasDefinitivas() { return S.definitivas; }
 
-let cacheKey = null, cacheAgg = null;
-function agregados() {
-  // Filtro por tipo de trabajo: todo el panel (cuadros, gráficos, comparativo y registros) se calcula sobre esas piezas.
-  const rows = filasDefinitivas().filter((r) => !S.tipo || r.tipo === S.tipo);
-  const key = rows.length + '|' + S.defVer + '|' + S.tipo;
-  if (key === cacheKey) return cacheAgg;
+const cacheAgg = new Map();
+// tipo: si se indica, solo las piezas de ese tipo de trabajo (lo usa el comparativo por orfebre).
+function agregados(tipo = '') {
+  const rows = filasDefinitivas().filter((r) => !tipo || r.tipo === tipo);
+  const key = S.defVer + '|' + tipo;
+  if (cacheAgg.has(key)) return cacheAgg.get(key);
   const grupos = new Map();
   for (const r of rows) for (const p of [r.persona, 'Todos']) for (const m of [r.mes, r.mes.slice(0, 4), 'Todos']) {
     const k = p + '|' + m;
@@ -893,8 +895,10 @@ function agregados() {
   const personas = [...new Set(rows.map((r) => r.persona))];
   const todos = S.orfItems.map((x) => x.nombre);
   const orden = [...todos.filter((p) => personas.includes(p)), ...personas.filter((p) => !todos.includes(p))];
-  cacheKey = key; cacheAgg = { rows, map: out, personas: orden, meses: [...new Set(rows.map((r) => r.mes))].sort() };
-  return cacheAgg;
+  const agg = { rows, map: out, personas: orden, meses: [...new Set(rows.map((r) => r.mes))].sort() };
+  if (cacheAgg.size > 30) cacheAgg.clear();
+  cacheAgg.set(key, agg);
+  return agg;
 }
 
 // ---------- gráficos ----------
@@ -1043,7 +1047,7 @@ function renderPanel() {
   if (cargando) take.append(h('span', { class: 'skel' }, 'cargando'));
   else if (S.histStatus === 'error' && !A.rows.length) take.append('No se pudo cargar el histórico. Recarga la página.');
   else if (cur) {
-    take.append(`${S.persona === 'Todos' ? 'El taller' : S.persona} tiene `, h('b', {}, fNum.format(cur.piezas) + ' piezas definitivas'), S.tipo ? ` de ${S.tipo.toLowerCase()}` : '', ` en ${fMes(per, true)}, con una merma de `, h('b', {}, fPct(cur.merma_pct)),
+    take.append(`${S.persona === 'Todos' ? 'El taller' : S.persona} tiene `, h('b', {}, fNum.format(cur.piezas) + ' piezas definitivas'), ` en ${fMes(per, true)}, con una merma de `, h('b', {}, fPct(cur.merma_pct)),
       cur.merma_pct > META / 100 ? `, sobre la meta de ${META}%.` : `, dentro de la meta de ${META}%.`);
     const nPend = Object.values(S.pend).reduce((s, l) => s + l.length, 0);
     if (S.isSup && nPend) take.append(' ', h('b', {}, `${fNum.format(nPend)} piezas`), ' esperan tu aprobación.');
@@ -1058,12 +1062,15 @@ function renderPanel() {
   }
 
   $('h-comp').textContent = `Comparativo por orfebre, ${fMes(per, true)}`;
-  $('tb-comp').tBodies[0].replaceChildren(...['Todos', ...A.personas].map((p) => A.map.get(p + '|' + per)).filter(Boolean).map((r) => {
+  // El filtro de tipo de trabajo solo afecta a esta tabla.
+  const AC = agregados(S.tipo);
+  const filasComp = ['Todos', ...AC.personas].map((p) => AC.map.get(p + '|' + per)).filter(Boolean);
+  $('tb-comp').tBodies[0].replaceChildren(...(filasComp.length ? filasComp.map((r) => {
     const tr = h('tr', { class: r.persona === S.persona ? 'sel' : null });
-    const vals = [r.persona === 'Todos' ? 'Todo el taller' : r.persona, fNum.format(r.piezas), fNum.format(r.jornadas), fDec.format(r.piezas_jornada), fDec.format(r.oro_g), fDec.format(r.final_g), fDec.format(r.merma_g), null, fPct(r.en_meta), fPct(r.precision), fNum.format(r.atipicas)];
-    vals.forEach((v, i) => tr.append(i === 7 ? h('td', { class: 'n' }, r.merma_pct == null ? '—' : h('span', { class: 'pill ' + (r.merma_pct > META / 100 ? 'bad' : 'ok') }, fPct(r.merma_pct))) : h('td', { class: i ? 'n' : null }, v)));
+    const vals = [r.persona === 'Todos' ? 'Todo el taller' : r.persona, fNum.format(r.piezas), fNum.format(r.jornadas), fDec.format(r.piezas_jornada), fDec.format(r.oro_g), fDec.format(r.final_g), fDec.format(r.devuelto_g), fDec.format(r.merma_g), null, fPct(r.en_meta), fPct(r.precision), fNum.format(r.atipicas)];
+    vals.forEach((v, i) => tr.append(i === 8 ? h('td', { class: 'n' }, r.merma_pct == null ? '—' : h('span', { class: 'pill ' + (r.merma_pct > META / 100 ? 'bad' : 'ok') }, fPct(r.merma_pct))) : h('td', { class: i ? 'n' : null }, v)));
     return tr;
-  }));
+  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, `Sin piezas de ${S.tipo.toLowerCase()} en ${fMes(per, true)}.`))]));
   const c = S.persona === 'Todos' ? css('--muted') : colorDe(S.persona);
   hbars($('hb-tipo'), cur ? cur.tipos : [], c);
   hbars($('hb-tono'), cur ? cur.tonos : [], c);
