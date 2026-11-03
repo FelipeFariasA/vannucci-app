@@ -291,6 +291,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <div class="seg" id="f-persona" role="group" aria-label="Orfebre"></div>
       <select id="f-anio" aria-label="Año"></select>
       <select id="f-mes" aria-label="Mes"></select>
+      <select id="f-tipo" aria-label="Tipo de trabajo"></select>
     </div>
     <div class="tiles">
       <div class="tile"><span class="k">Piezas definitivas</span><span class="v" id="k-piezas">—</span><span class="d" id="d-piezas"></span></div>
@@ -695,7 +696,7 @@ const S = {
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
-  persona: 'Todos', anio: '2026', mes: '2026-09', filtroEstado: 'todas', tab: 'panel', q: '',
+  persona: 'Todos', anio: '2026', mes: '2026-09', tipo: '', filtroEstado: 'todas', tab: 'panel', q: '',
 };
 
 // ---------- utilidades ----------
@@ -856,8 +857,9 @@ function filasDefinitivas() { return S.definitivas; }
 
 let cacheKey = null, cacheAgg = null;
 function agregados() {
-  const rows = filasDefinitivas();
-  const key = rows.length + '|' + S.defVer;
+  // Filtro por tipo de trabajo: todo el panel (cuadros, gráficos, comparativo y registros) se calcula sobre esas piezas.
+  const rows = filasDefinitivas().filter((r) => !S.tipo || r.tipo === S.tipo);
+  const key = rows.length + '|' + S.defVer + '|' + S.tipo;
   if (key === cacheKey) return cacheAgg;
   const grupos = new Map();
   for (const r of rows) for (const p of [r.persona, 'Todos']) for (const m of [r.mes, r.mes.slice(0, 4), 'Todos']) {
@@ -1010,6 +1012,13 @@ function renderPanel() {
   selA.value = S.anio;
   selM.replaceChildren(new Option(S.anio === 'Todos' ? 'Todos los meses' : `Todo ${S.anio}`, 'Todos'), ...meses.slice().reverse().map((m) => new Option(fMes(m, true), m)));
   selM.value = S.mes;
+  // Tipos presentes en las piezas definitivas, del más usado al menos usado.
+  const cuentaTipos = new Map();
+  for (const r of filasDefinitivas()) if (r.tipo) cuentaTipos.set(r.tipo, (cuentaTipos.get(r.tipo) || 0) + 1);
+  const tipos = [...cuentaTipos].sort((a, b) => b[1] - a[1]);
+  if (S.tipo && !cuentaTipos.has(S.tipo)) S.tipo = '';
+  $('f-tipo').replaceChildren(new Option('Todos los tipos de trabajo', ''), ...tipos.map(([t, n]) => new Option(`${t} (${fNum.format(n)})`, t)));
+  $('f-tipo').value = S.tipo;
 
   const cur = A.map.get(S.persona + '|' + per);
   const T = [
@@ -1034,7 +1043,7 @@ function renderPanel() {
   if (cargando) take.append(h('span', { class: 'skel' }, 'cargando'));
   else if (S.histStatus === 'error' && !A.rows.length) take.append('No se pudo cargar el histórico. Recarga la página.');
   else if (cur) {
-    take.append(`${S.persona === 'Todos' ? 'El taller' : S.persona} tiene `, h('b', {}, fNum.format(cur.piezas) + ' piezas definitivas'), ` en ${fMes(per, true)}, con una merma de `, h('b', {}, fPct(cur.merma_pct)),
+    take.append(`${S.persona === 'Todos' ? 'El taller' : S.persona} tiene `, h('b', {}, fNum.format(cur.piezas) + ' piezas definitivas'), S.tipo ? ` de ${S.tipo.toLowerCase()}` : '', ` en ${fMes(per, true)}, con una merma de `, h('b', {}, fPct(cur.merma_pct)),
       cur.merma_pct > META / 100 ? `, sobre la meta de ${META}%.` : `, dentro de la meta de ${META}%.`);
     const nPend = Object.values(S.pend).reduce((s, l) => s + l.length, 0);
     if (S.isSup && nPend) take.append(' ', h('b', {}, `${fNum.format(nPend)} piezas`), ' esperan tu aprobación.');
@@ -2149,6 +2158,7 @@ function wire() {
   document.querySelectorAll('nav.tabs button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
   $('f-anio').addEventListener('change', (e) => { S.anio = e.target.value; S.mes = 'Todos'; renderPanel(); });
   $('f-mes').addEventListener('change', (e) => { S.mes = e.target.value; renderPanel(); });
+  $('f-tipo').addEventListener('change', (e) => { S.tipo = e.target.value; renderPanel(); });
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRegistros(agregados(), S.mes !== 'Todos' ? S.mes : S.anio); });
   opcionesRegistro();
   $('i-fecha').max = hoy();
