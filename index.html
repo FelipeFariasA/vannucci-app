@@ -96,6 +96,9 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Filtros propios del comparativo por orfebre */
+.filtros-comp { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; }
+.filtros-comp .field { font-size: .8rem; gap: 3px; }
 /* Ficha del trabajo en revisión */
 .fichas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 10px; }
 .ficha { background: var(--soft); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
@@ -324,9 +327,13 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <div class="chart" id="ch-devuelto"></div>
       </div>
       <div class="card wide" id="c-comp">
-        <div class="actions" style="justify-content:space-between">
+        <div class="actions" style="justify-content:space-between;align-items:flex-end">
           <h2 id="h-comp">Comparativo por orfebre</h2>
-          <select id="f-tipo" aria-label="Filtrar el comparativo por tipo de trabajo"></select>
+          <div class="filtros-comp">
+            <label class="field">Tipo de trabajo<select id="f-tipo"></select></label>
+            <label class="field">Año<select id="fc-anio"></select></label>
+            <label class="field">Mes<select id="fc-mes"></select></label>
+          </div>
         </div>
         <div class="tbl free"><table id="tb-comp"><thead><tr>
           <th>Orfebre</th><th class="n">Piezas</th><th class="n">Jornadas</th><th class="n">Piezas/jornada</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Devuelto (g)</th><th class="n">Merma (g)</th><th class="n">Merma %</th><th class="n">≤ 5%</th><th class="n">Precisión</th><th class="n">Atípicas</th>
@@ -698,7 +705,7 @@ const S = {
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
-  persona: 'Todos', anio: '2026', mes: '2026-09', tipo: '', filtroEstado: 'todas', tab: 'panel', q: '',
+  persona: 'Todos', anio: '2026', mes: '2026-09', tipo: '', cmp: { anio: null, mes: 'Todos' }, filtroEstado: 'todas', tab: 'panel', q: '',
 };
 
 // ---------- utilidades ----------
@@ -1061,16 +1068,27 @@ function renderPanel() {
     drawLines($('ch-devuelto'), A, meses, 'devuelto_g', (v) => fDec.format(v) + ' g', null, per);
   }
 
-  $('h-comp').textContent = `Comparativo por orfebre, ${fMes(per, true)}`;
-  // El filtro de tipo de trabajo solo afecta a esta tabla.
+  // Filtros propios del comparativo (tipo, año y mes): solo afectan a esta tabla.
   const AC = agregados(S.tipo);
-  const filasComp = ['Todos', ...AC.personas].map((p) => AC.map.get(p + '|' + per)).filter(Boolean);
+  const C = S.cmp;
+  const mesesC = agregados().meses, aniosC = [...new Set(mesesC.map((m) => m.slice(0, 4)))];
+  // Al llegar los datos, el comparativo parte con el mismo período que el panel; después es independiente.
+  if (C.anio == null && mesesC.length) { C.anio = S.anio; C.mes = S.mes; }
+  if (C.anio != null && C.anio !== 'Todos' && mesesC.length && !aniosC.includes(C.anio)) C.anio = aniosC[aniosC.length - 1];
+  const anioC = C.anio ?? 'Todos';
+  const mesesAnioC = anioC === 'Todos' ? mesesC : mesesC.filter((m) => m.startsWith(anioC));
+  if (C.mes !== 'Todos' && mesesC.length && !mesesAnioC.includes(C.mes)) C.mes = 'Todos';
+  $('fc-anio').replaceChildren(new Option('Todos los años', 'Todos'), ...aniosC.slice().reverse().map((a) => new Option(a, a))); $('fc-anio').value = anioC;
+  $('fc-mes').replaceChildren(new Option(anioC === 'Todos' ? 'Todos los meses' : `Todo ${anioC}`, 'Todos'), ...mesesAnioC.slice().reverse().map((m) => new Option(fMes(m, true), m))); $('fc-mes').value = C.mes;
+  const perC = C.mes !== 'Todos' ? C.mes : anioC;
+  $('h-comp').textContent = `Comparativo por orfebre, ${fMes(perC, true)}`;
+  const filasComp = ['Todos', ...AC.personas].map((p) => AC.map.get(p + '|' + perC)).filter(Boolean);
   $('tb-comp').tBodies[0].replaceChildren(...(filasComp.length ? filasComp.map((r) => {
     const tr = h('tr', { class: r.persona === S.persona ? 'sel' : null });
     const vals = [r.persona === 'Todos' ? 'Todo el taller' : r.persona, fNum.format(r.piezas), fNum.format(r.jornadas), fDec.format(r.piezas_jornada), fDec.format(r.oro_g), fDec.format(r.final_g), fDec.format(r.devuelto_g), fDec.format(r.merma_g), null, fPct(r.en_meta), fPct(r.precision), fNum.format(r.atipicas)];
     vals.forEach((v, i) => tr.append(i === 8 ? h('td', { class: 'n' }, r.merma_pct == null ? '—' : h('span', { class: 'pill ' + (r.merma_pct > META / 100 ? 'bad' : 'ok') }, fPct(r.merma_pct))) : h('td', { class: i ? 'n' : null }, v)));
     return tr;
-  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, `Sin piezas de ${S.tipo.toLowerCase()} en ${fMes(per, true)}.`))]));
+  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, `Sin piezas${S.tipo ? ' de ' + S.tipo.toLowerCase() : ''} en ${fMes(perC, true)}.`))]));
   const c = S.persona === 'Todos' ? css('--muted') : colorDe(S.persona);
   hbars($('hb-tipo'), cur ? cur.tipos : [], c);
   hbars($('hb-tono'), cur ? cur.tonos : [], c);
@@ -2166,6 +2184,8 @@ function wire() {
   $('f-anio').addEventListener('change', (e) => { S.anio = e.target.value; S.mes = 'Todos'; renderPanel(); });
   $('f-mes').addEventListener('change', (e) => { S.mes = e.target.value; renderPanel(); });
   $('f-tipo').addEventListener('change', (e) => { S.tipo = e.target.value; renderPanel(); });
+  $('fc-anio').addEventListener('change', (e) => { S.cmp.anio = e.target.value; S.cmp.mes = 'Todos'; renderPanel(); });
+  $('fc-mes').addEventListener('change', (e) => { S.cmp.mes = e.target.value; renderPanel(); });
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRegistros(agregados(), S.mes !== 'Todos' ? S.mes : S.anio); });
   opcionesRegistro();
   $('i-fecha').max = hoy();
