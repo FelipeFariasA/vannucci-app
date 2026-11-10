@@ -339,6 +339,17 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <th>Orfebre</th><th class="n">Piezas</th><th class="n">Jornadas</th><th class="n">Piezas/jornada</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Devuelto (g)</th><th class="n">Merma (g)</th><th class="n">Merma %</th><th class="n">≤ 5%</th><th class="n">Precisión</th><th class="n">Atípicas</th>
         </tr></thead><tbody></tbody></table></div>
       </div>
+      <div class="card wide" id="c-sold">
+        <h2>Rendimiento de la soldadura</h2>
+        <p class="note">Cada entrega de soldadura abre un período que dura hasta la siguiente entrega al mismo orfebre. Se cuentan las piezas registradas a ese orfebre en el período (terminadas y en curso). El resumen usa solo períodos cerrados; el período actual sigue sumando piezas hasta la próxima entrega.</p>
+        <div class="tbl free"><table id="tb-sold-res"><thead><tr>
+          <th>Orfebre</th><th class="n">Entregas</th><th class="n">Soldadura (g)</th><th class="n">Piezas</th><th class="n">Piezas por g</th><th class="n">g por pieza</th><th>Período actual</th>
+        </tr></thead><tbody></tbody></table></div>
+        <h3 style="margin-top:12px">Detalle por entrega</h3>
+        <div class="tbl"><table id="tb-sold"><thead><tr>
+          <th>Orfebre</th><th>Entrega</th><th>Hasta</th><th class="n">Días</th><th class="n">Soldadura (g)</th><th class="n">Terminadas</th><th class="n">En curso</th><th class="n">Piezas</th><th class="n">Piezas por g</th><th class="n">g por pieza</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
       <div class="card" id="c-tipo"><h2>Tipo de trabajo</h2><div class="hbar" id="hb-tipo"></div></div>
       <div class="card" id="c-tono"><h2>Tono del oro</h2><div class="hbar" id="hb-tono"></div></div>
       <div class="card wide" id="c-reg">
@@ -413,6 +424,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
           <label class="field" id="f-piedras" hidden><span>Cantidad de piedras<span class="req" aria-hidden="true">*</span></span><input id="i-piedras" type="number" step="1" min="1" inputmode="numeric" placeholder="Ej. 12"></label>
           <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Soldadura entregada <span class="unit">(g, opcional)</span><input id="i-sol" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Solo si entregas soldadura hoy"></label>
           <label class="field">Oro trabajado <span class="unit">(g, opcional)</span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Peso final <span class="unit">(g, opcional)</span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Oro devuelto <span class="unit">(g)</span><input id="i-od" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
@@ -651,6 +663,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <li><b>Pieza válida</b>: con peso final y merma entre −5% y 25%. Fuera de ese rango es atípica y no entra al cálculo de merma.</li>
         <li><b>Jornada</b>: un día en que el orfebre tiene al menos una pieza.</li>
         <li><b>Precisión</b>: de las piezas con peso objetivo, la parte cuyo peso final quedó a ±5% del objetivo.</li>
+        <li><b>Rendimiento de la soldadura</b>: cuando el supervisor anota "Soldadura entregada" al registrar una pieza, empieza un período para ese orfebre que dura hasta la siguiente entrega. Se cuentan las piezas registradas al orfebre en el período y se calculan las piezas por gramo y los gramos por pieza. El resumen usa solo períodos cerrados.</li>
         <li><b>Histórico</b>: las hojas JOSE LUIS, ANTONY, Milena y RUBEN de la planilla FABRICACION TALLER MARY (marzo 2025 a octubre 2026) se cargaron como registros ya aprobados.</li>
       </ul>
     </div>
@@ -766,7 +779,7 @@ function pieza(r) {
     _id: r.id, id: r.id, persona: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre: r.orfebre || nombreOrfebre(r.orfebre_id), orfebre_id: r.orfebre_id, autor: r.autor,
     fecha: r.fecha, mes: (r.fecha || '').slice(0, 7), tono: r.tono, modelo: r.modelo, cotizacion: r.cotizacion, codigo_producto: r.codigo_producto, tipo: r.tipo,
     peso_obj: n2(r.peso_obj), oro_trabajo: n2(r.oro_trabajo), peso_final: n2(r.peso_final), oro_devuelto: n2(r.oro_devuelto), merma_g: n2(r.merma_g), merma_pct: n2(r.merma_pct),
-    maquina_pulido: n2(r.maquina_pulido) || 0, cantidad_piedras: r.cantidad_piedras ?? null,
+    maquina_pulido: n2(r.maquina_pulido) || 0, cantidad_piedras: r.cantidad_piedras ?? null, soldadura_entregada: n2(r.soldadura_entregada),
     garantia: !!r.garantia, observaciones: r.observaciones, calidad: r.calidad || calidadDe(n2(r.merma_pct)), origen: r.origen === 'portal' ? 'Portal' : 'Planilla',
     estado: r.estado, comentario: r.comentario, corregida: r.corregida, revisado_por: r.revisado_por, revisado_en: r.revisado_en, creado_en: r.creado_en,
   };
@@ -780,6 +793,74 @@ async function cargarDefinitivas() {
     S.definitivas = rows.map(pieza); S.histStatus = 'ok';
   } catch (e) { S.histStatus = 'error'; }
   S.defVer++; modelosDatalist(); renderPanel();
+  cargarSoldadura();
+}
+// Soldadura: entregas registradas por el supervisor y las piezas de cada orfebre desde la primera entrega.
+async function cargarSoldadura() {
+  if (S.rolReal !== 'administrador') return;
+  try {
+    const ent = await todas(() => sb.from('piezas').select('orfebre_id,fecha,soldadura_entregada').not('soldadura_entregada', 'is', null).order('fecha').order('id'));
+    const desde = ent.length ? ent[0].fecha : null;
+    const pz = desde ? await todas(() => sb.from('piezas').select('orfebre_id,fecha,estado').gte('fecha', desde).order('fecha').order('id')) : [];
+    S.sold = { ent: ent.map((r) => ({ orfebre_id: r.orfebre_id, fecha: r.fecha, g: Number(r.soldadura_entregada) })), piezas: pz };
+    S.soldStatus = 'ok';
+  } catch (e) { S.soldStatus = /soldadura_entregada/.test(e.message || '') ? 'sin-columna' : 'error'; }
+  if (S.tab === 'panel') renderSoldadura();
+}
+// Un período por entrega: desde la fecha de entrega hasta el día anterior a la siguiente entrega al mismo orfebre.
+// Las entregas del mismo día al mismo orfebre se suman.
+function periodosSoldadura() {
+  const { ent = [], piezas = [] } = S.sold || {};
+  const porOrf = new Map();
+  for (const e of ent) {
+    if (!porOrf.has(e.orfebre_id)) porOrf.set(e.orfebre_id, new Map());
+    const m = porOrf.get(e.orfebre_id); m.set(e.fecha, (m.get(e.fecha) || 0) + e.g);
+  }
+  const dias = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+  const out = [];
+  for (const [orf, m] of porOrf) {
+    const fechas = [...m.keys()].sort();
+    const suyas = piezas.filter((p) => p.orfebre_id === orf);
+    fechas.forEach((desde, i) => {
+      const hasta = fechas[i + 1] || null; // exclusivo
+      const rs = suyas.filter((p) => p.fecha >= desde && (!hasta || p.fecha < hasta));
+      const terminadas = rs.filter((p) => p.estado === 'aprobada').length;
+      out.push({ orfebre_id: orf, orfebre: nombreOrfebre(orf), desde, hasta, abierto: !hasta, dias: hasta ? dias(desde, hasta) : dias(desde, hoy()) + 1,
+        g: Math.round(m.get(desde) * 1000) / 1000, terminadas, en_curso: rs.length - terminadas, piezas: rs.length });
+    });
+  }
+  return out;
+}
+function renderSoldadura() {
+  const tbR = $('tb-sold-res').tBodies[0], tbD = $('tb-sold').tBodies[0];
+  const vacio = (tb, cols, texto) => tb.replaceChildren(h('tr', {}, h('td', { colspan: cols, class: 'note' }, texto)));
+  if (S.soldStatus !== 'ok') {
+    const t = S.soldStatus === 'sin-columna' ? 'Falta crear el campo "Soldadura entregada" en la base de datos.' : S.soldStatus === 'error' ? 'No se pudieron cargar las entregas de soldadura.' : 'Cargando…';
+    vacio(tbR, 7, t); vacio(tbD, 10, t); return;
+  }
+  const todos = periodosSoldadura().filter((p) => S.persona === 'Todos' || p.orfebre === S.persona);
+  if (!todos.length) {
+    const t = `Aún no hay entregas de soldadura${S.persona !== 'Todos' ? ' a ' + S.persona : ''}. Regístralas en "Registrar pieza", campo Soldadura entregada.`;
+    vacio(tbR, 7, t); vacio(tbD, 10, t); return;
+  }
+  const ratio = (a, b) => b ? fDec2.format(a / b) : '—';
+  // Resumen: solo períodos cerrados (el abierto aún puede sumar piezas).
+  const nombres = [...new Set([...S.orfItems.map((o) => o.nombre), ...todos.map((p) => p.orfebre)])].filter((n) => todos.some((p) => p.orfebre === n));
+  tbR.replaceChildren(...nombres.map((n) => {
+    const ps = todos.filter((p) => p.orfebre === n), cer = ps.filter((p) => !p.abierto), ab = ps.find((p) => p.abierto);
+    const g = cer.reduce((s, p) => s + p.g, 0), pz = cer.reduce((s, p) => s + p.piezas, 0);
+    return h('tr', {}, h('td', {}, h('span', { class: 'sw', style: `background:${colorDe(n)};margin-right:6px` }), n),
+      h('td', { class: 'n' }, fNum.format(cer.length)), h('td', { class: 'n' }, cer.length ? g2(g) : '—'), h('td', { class: 'n' }, cer.length ? fNum.format(pz) : '—'),
+      h('td', { class: 'n' }, ratio(pz, g)), h('td', { class: 'n' }, ratio(g, pz)),
+      h('td', {}, ab ? `Desde ${fFecha(ab.desde)}: ${g2(ab.g)} g, ${fNum.format(ab.piezas)} ${ab.piezas === 1 ? 'pieza' : 'piezas'}` : '—'));
+  }));
+  const det = todos.slice().sort((a, b) => b.desde.localeCompare(a.desde) || a.orfebre.localeCompare(b.orfebre));
+  tbD.replaceChildren(...det.map((p) => h('tr', {},
+    h('td', {}, p.orfebre), h('td', {}, fFecha(p.desde)),
+    h('td', {}, p.abierto ? h('span', { class: 'pill asignada' }, 'En curso') : fFecha(new Date(Date.parse(p.hasta) - 86400000).toISOString().slice(0, 10))),
+    h('td', { class: 'n' }, fNum.format(p.dias)), h('td', { class: 'n' }, g2(p.g)),
+    h('td', { class: 'n' }, fNum.format(p.terminadas)), h('td', { class: 'n' }, fNum.format(p.en_curso)), h('td', { class: 'n' }, fNum.format(p.piezas)),
+    h('td', { class: 'n' }, ratio(p.piezas, p.g)), h('td', { class: 'n' }, ratio(p.g, p.piezas)))));
 }
 async function cargarOrfebres() {
   const { data, error } = await sb.from('orfebres').select('*').order('id');
@@ -1108,6 +1189,7 @@ function renderPanel() {
   const c = S.persona === 'Todos' ? css('--muted') : colorDe(S.persona);
   hbars($('hb-tipo'), cur ? cur.tipos : [], c);
   hbars($('hb-tono'), cur ? cur.tonos : [], c);
+  renderSoldadura();
   renderRegistros(A, per);
 }
 function renderRegistros(A, per) {
@@ -1142,7 +1224,7 @@ function leerForm() {
   const m = mermaDe(ot, pf, od);
   return {
     fecha: $('i-fecha').value, tono: $('i-tono').value, modelo: $('i-modelo').value.trim(), cotizacion: $('i-cot').value.trim() || null, codigo_producto: $('i-prod').value.trim() || null,
-    tipo: $('i-tipo').value, peso_obj: num($('i-po').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
+    tipo: $('i-tipo').value, peso_obj: num($('i-po').value), soldadura_entregada: num($('i-sol').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
     cantidad_piedras: conEngaste($('i-tipo').value) ? num($('i-piedras').value) : null,
     merma_g: m.g, merma_pct: m.pct, garantia: $('i-gar').checked, observaciones: $('i-obs').value.trim() || null,
   };
@@ -1156,7 +1238,7 @@ function alCambiarTipo() {
 function llenarForm(p) {
   $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
-  $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
+  $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-sol').value = p?.soldadura_entregada ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
   $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
   $('i-piedras').value = p?.cantidad_piedras ?? ''; alCambiarTipo();
   const selO = $('i-orfebre');
@@ -1193,7 +1275,7 @@ function errorCampo(id, texto) {
   if (!e) { e = h('span', { class: 'ferr', id: id + '-err' }); lab.append(e); }
   e.textContent = texto; el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err');
 }
-function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-piedras']) errorCampo(id, ''); }
+function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-piedras', 'i-sol']) errorCampo(id, ''); }
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
 
 // ---------- supervisor: registrar y asignar ----------
@@ -1208,16 +1290,21 @@ async function enviar(ev) {
   if (!p.fecha) errs.push(['i-fecha', 'Ingresa la fecha.']); else if (p.fecha > hoy()) errs.push(['i-fecha', 'La fecha no puede ser futura.']);
   if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
   if (p.oro_trabajo != null && !(p.oro_trabajo > 0)) errs.push(['i-ot', 'Si lo ingresas, el oro trabajado debe ser mayor que 0.']);
+  if (p.soldadura_entregada != null && !(p.soldadura_entregada > 0)) errs.push(['i-sol', 'Si la ingresas, la soldadura entregada debe ser mayor que 0.']);
   if (conEngaste(p.tipo) && !(Number.isInteger(p.cantidad_piedras) && p.cantidad_piedras > 0)) errs.push(['i-piedras', 'Ingresa la cantidad de piedras a engastar (número entero mayor que 0).']);
   if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
   const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Guardando…');
   try {
     const { merma_g, merma_pct, ...campos } = p;
     const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null };
+    // Sin soldadura no se envía la columna (salvo para borrar una ya registrada): el registro funciona aunque la base aún no la tenga.
+    const teniaSol = S.editando && (S.mis || []).find((x) => x._id === S.editando)?.soldadura_entregada != null;
+    if (body.soldadura_entregada == null && !teniaSol) delete body.soldadura_entregada;
     const r = S.editando
       ? await sb.from('piezas').update(body).eq('id', S.editando)
       : await sb.from('piezas').insert({ ...body, autor: S.uid, estado: 'asignada' });
     if (r.error) throw r.error;
+    cargarSoldadura();
     msg('m-form', S.editando ? 'Cambios guardados.' : `Trabajo asignado a ${nombreOrfebre(Number(orf))}. Lo verá en "Mis trabajos".`, 'ok');
     cargarMis();
     S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Asignar al orfebre';
@@ -1287,8 +1374,9 @@ function tarjetaTrabajo(p) {
   const el = h('div', { class: 'item' + (p.estado === 'rechazada' ? ' flag' : '') });
   el.append(h('div', { class: 'head' }, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), pillEstado(p.estado),
     h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.tipo ? ' · ' + p.tipo : ''}${p.garantia ? ' · garantía' : ''}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.codigo_producto ? ' · ' + p.codigo_producto : ''}`)));
-  if (p.peso_obj || p.cantidad_piedras) el.append(h('div', { class: 'kv' },
+  if (p.peso_obj || p.cantidad_piedras || p.soldadura_entregada) el.append(h('div', { class: 'kv' },
     p.peso_obj ? h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g')) : null,
+    p.soldadura_entregada ? h('span', {}, 'Soldadura entregada ', h('b', {}, g2(p.soldadura_entregada) + ' g')) : null,
     p.cantidad_piedras ? h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras))) : null));
   if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
   const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
@@ -1384,6 +1472,7 @@ function itemRevision(p, nombre) {
       ['Fecha', fFecha(p.fecha)], ['Orfebre', p.orfebre], ['Modelo', p.modelo], ['Tono', p.tono],
       ['Código de producto', p.codigo_producto], ['N° de cotización', p.cotizacion], ['Tipo de trabajo', p.tipo],
       ['Garantía', p.garantia ? 'Sí' : 'No'], ['Peso objetivo', gr(p.peso_obj)],
+      ...(p.soldadura_entregada ? [['Soldadura entregada', gr(p.soldadura_entregada)]] : []),
       ...(conEngaste(p.tipo) || p.cantidad_piedras ? [['Cantidad de piedras', p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : null]] : []),
     ]),
     bloque('Completado por el orfebre', [
