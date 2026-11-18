@@ -96,6 +96,14 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Registro: pagos. El segundo pago va en una fila nueva, debajo del primero (no al lado). */
+#pagos-box { grid-template-columns: minmax(8rem, 12rem) minmax(10rem, 16rem) minmax(10rem, 16rem); }
+#pagos-box #f-bol2 { grid-column: 2; }
+@media (max-width: 640px) {
+  #pagos-box { grid-template-columns: 1fr 1fr; }
+  #pagos-box > label:first-child { grid-column: 1 / -1; }
+  #pagos-box #f-bol2 { grid-column: 1; }
+}
 /* Registro: bloques de metal y piedras */
 .bloque-form { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 .piedras-pieza { display: grid; gap: 8px; }
