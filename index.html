@@ -96,6 +96,25 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
 .pill.pendiente { background: var(--warn-soft); color: var(--warn); }
 .pill.asignada { background: var(--gold-soft); color: var(--gold-ink); }
+/* Registro: bloques de metal y piedras */
+.bloque-form { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.piedras-pieza { display: grid; gap: 8px; }
+.piedra-fila { display: grid; grid-template-columns: 6.5rem minmax(10rem, 1.6fr) 6.5rem 6.5rem auto; gap: 8px; align-items: end; }
+.piedra-fila .pos { font-size: .875rem; font-weight: 600; padding-bottom: 9px; }
+.piedra-fila .cert { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; padding-bottom: 8px; white-space: nowrap; }
+@media (max-width: 640px) { .piedra-fila { grid-template-columns: 1fr 1fr; } .piedra-fila .pos { grid-column: 1 / -1; padding-bottom: 0; } }
+/* Inventario y costos */
+.inv-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr)); gap: 14px; }
+.inv-forms .card form { display: grid; gap: 10px; }
+.inv-forms .fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+.check-75 { font-size: .85rem; }
+tr.total td { font-weight: 600; border-top: 2px solid var(--line); }
+tr.clic { cursor: pointer; }
+.bajo { color: var(--bad); font-weight: 600; }
+.tabla-edit input { width: 8rem; text-align: right; }
+.resultado-cot { display: grid; gap: 4px; padding: 12px 14px; border-radius: 8px; background: var(--soft); font-size: .9rem; }
+.resultado-cot div { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.resultado-cot .tot { font-weight: 600; border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px; }
 /* Filtros propios del comparativo por orfebre */
 .filtros-comp { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; }
 .filtros-comp .field { font-size: .8rem; gap: 3px; }
@@ -275,6 +294,8 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     <button type="button" id="t-registrar" data-tab="registrar">Registrar pieza</button>
     <button type="button" id="t-trabajos" data-tab="trabajos" hidden>Mis trabajos <span class="count" id="n-tr" hidden>0</span></button>
     <button type="button" id="t-revision" data-tab="revision" hidden>Aprobaciones <span class="count" id="n-pend" hidden>0</span></button>
+    <button type="button" id="t-inventario" data-tab="inventario" hidden>Inventario</button>
+    <button type="button" id="t-costos" data-tab="costos" hidden>Costos</button>
     <button type="button" id="t-maestros" data-tab="maestros" hidden>Maestros</button>
     <button type="button" id="t-usuarios" data-tab="usuarios" hidden>Usuarios</button>
     <button type="button" id="t-ayuda" data-tab="ayuda">Cómo funciona</button>
@@ -422,7 +443,6 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Código de producto <span class="unit">(opcional)</span><input id="i-prod" list="codigos" autocomplete="off" class="mono" placeholder="Ej. P05-DL-C0.30-BL"></label>
           <label class="field">N° de cotización<input id="i-cot" inputmode="numeric" placeholder="Ej. 4633"></label>
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
-          <label class="field" id="f-piedras" hidden><span>Cantidad de piedras<span class="req" aria-hidden="true">*</span></span><input id="i-piedras" type="number" step="1" min="1" inputmode="numeric" placeholder="Ej. 12"></label>
           <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Soldadura entregada <span class="unit">(g, opcional)</span><input id="i-sol" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Solo si entregas soldadura hoy"></label>
           <label class="field">Oro trabajado <span class="unit">(g, opcional)</span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal"></label>
@@ -430,6 +450,19 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Oro devuelto <span class="unit">(g)</span><input id="i-od" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
           <label class="field full">Observaciones<textarea id="i-obs" rows="2" placeholder="Ej. Instrucciones para el orfebre: engaste, garantía, ajuste de talla"></textarea></label>
           <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="i-gar" style="width:auto"> Trabajo por garantía</label>
+        </div>
+        <div class="bloque-form">
+          <h3>Metal entregado al orfebre</h3>
+          <div class="fields">
+            <label class="field">Metal<select id="i-metal"></select></label>
+            <label class="field">Gramos entregados <span class="unit">(g)</span><input id="i-metal-g" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <p class="note" id="hint-metal" style="align-self:end"></p>
+          </div>
+        </div>
+        <div class="bloque-form">
+          <h3>Piedras</h3>
+          <p class="note">Para la piedra central y cada lateral eliges el tipo de piedra, los quilates y la cantidad. Se pueden mezclar tipos.</p>
+          <div class="piedras-pieza" id="i-piedras-box"></div>
         </div>
         <datalist id="modelos"></datalist>
         <datalist id="codigos"></datalist>
@@ -447,7 +480,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <p class="note">Piezas asignadas que aún no tienen visto bueno final. Puedes editar o eliminar las que el orfebre todavía no envía a revisión.</p>
       <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
       <div class="tbl"><table id="tb-mis"><thead><tr>
-        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Tono</th><th class="n">Piedras</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Metal</th><th class="n">Metal entregado (g)</th><th>Piedras</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -456,7 +489,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
   <section id="trabajos" class="pv-tab" hidden style="display:grid;gap:20px">
     <div style="display:grid;gap:6px">
       <h2>Mis trabajos</h2>
-      <p class="note">Trabajos que te asignó el supervisor. Completa oro trabajado, peso final, oro devuelto y observaciones, y envíalo a revisión. Puedes guardar sin enviar y seguir después.</p>
+      <p class="note">Trabajos que te asignó el supervisor, con el metal y las piedras que recibiste. Cuando termines, anota el oro trabajado, el peso final y lo que devuelves, y envíalo a revisión. Puedes guardar sin enviar y seguir después.</p>
       <label class="field" id="tr-orf-box" hidden style="max-width:18rem">Ver trabajos de (vista previa)<select id="tr-orf"></select></label>
       <span class="msg" id="m-tr" role="status"></span>
     </div>
@@ -464,7 +497,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     <div class="card">
       <h2>Enviados y terminados</h2>
       <div class="tbl"><table id="tb-tr"><thead><tr>
-        <th>Fecha</th><th>Modelo</th><th>Tono</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th>
+        <th>Fecha</th><th>N° cot.</th><th>Modelo</th><th>Metal</th><th class="n">Recibido (g)</th><th class="n">Peso final (g)</th><th class="n">Devuelto (g)</th><th class="n">Merma</th><th>Estado</th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -597,6 +630,180 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     </div>
   </section>
 
+  <!-- INVENTARIO (administrador y supervisor) -->
+  <section id="inventario" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div class="steps">
+      <div class="step"><span class="n">1 · Compra</span><b>Oro 18k a personas</b><span>Queda como "por refinar", con lo que pagaste por gramo.</span></div>
+      <div class="step"><span class="n">2 · Refinación</span><b>Sale oro fino 24k</b><span>El lingote va a la refinadora y vuelve como oro fino. El rendimiento muestra si el oro era 18k de verdad.</span></div>
+      <div class="step"><span class="n">3 · Aleación</span><b>Vuelve a 18k por tono</b><span>Oro fino más liga de cobre, plata o paladio. El portal revisa que dé 75%.</span></div>
+      <div class="step"><span class="n">4 · Taller</span><b>Al orfebre y de vuelta</b><span>Se entrega al registrar la pieza, vuelve lo que sobra al aprobarla y el oro de la máquina de pulido vuelve a refinar.</span></div>
+    </div>
+    <span class="msg" id="m-inv-g" role="status"></span>
+
+    <div class="card">
+      <h2>Metales en bodega</h2>
+      <p class="note">En taller: entregado a orfebres y todavía no devuelto ni convertido en pieza.</p>
+      <div class="tbl free"><table id="tb-metales"><thead><tr id="th-metales"></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="inv-forms">
+      <div class="card solo-admin" id="c-comprar">
+        <h2>Comprar</h2>
+        <form id="f-comprar" novalidate>
+          <div class="fields">
+            <label class="field">Qué compras<select id="co-metal"></select></label>
+            <label class="field">Gramos <span class="unit">(g)</span><input id="co-g" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Precio por gramo <span class="unit">($)</span><input id="co-precio" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field">Vendedor o nota<input id="co-nota" autocomplete="off"></label>
+          </div>
+          <p class="note" id="co-total"></p>
+          <div class="actions"><button type="submit" class="btn primary">Registrar compra</button><span class="msg" id="m-co" role="status"></span></div>
+        </form>
+      </div>
+      <div class="card solo-admin" id="c-refinar">
+        <h2>Refinar</h2>
+        <form id="f-refinar" novalidate>
+          <div class="fields">
+            <label class="field">Lingote enviado <span class="unit">(g por refinar)</span><input id="re-g" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Valor del lingote <span class="unit">($)</span><input id="re-valor" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field">Oro fino 24k recibido <span class="unit">(g)</span><input id="re-fino" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Costo de refinación por gramo <span class="unit">($/g enviado)</span><input id="re-costo" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field full">Refinadora<input id="re-prov" autocomplete="off"></label>
+          </div>
+          <p class="note" id="re-calc"></p>
+          <div class="actions"><button type="submit" class="btn primary">Registrar refinación</button><span class="msg" id="m-re" role="status"></span></div>
+        </form>
+      </div>
+      <div class="card solo-admin" id="c-alear">
+        <h2>Alear</h2>
+        <form id="f-alear" novalidate>
+          <div class="fields">
+            <label class="field">Tono que sale<select id="al-metal"></select></label>
+            <label class="field">Oro fino <span class="unit">(g)</span><input id="al-fino" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Cobre <span class="unit">(g)</span><input id="al-cobre" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Plata <span class="unit">(g)</span><input id="al-plata" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Paladio <span class="unit">(g)</span><input id="al-paladio" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
+          </div>
+          <p class="note check-75" id="al-calc"></p>
+          <div class="actions"><button type="submit" class="btn primary">Registrar aleación</button><span class="msg" id="m-al" role="status"></span></div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Otro movimiento</h2>
+        <form id="f-mov" novalidate>
+          <div class="fields">
+            <label class="field">Movimiento<select id="mv-tipo">
+              <option value="entrega">Entrega a orfebre</option>
+              <option value="devolucion">Devolución de orfebre</option>
+              <option value="recuperacion">Limalla a refinar</option>
+              <option value="ajuste+">Ajuste: entra a bodega</option>
+              <option value="ajuste-">Ajuste: sale de bodega</option>
+            </select></label>
+            <label class="field">Metal<select id="mv-metal"></select></label>
+            <label class="field">Gramos <span class="unit">(g)</span><input id="mv-g" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Orfebre<select id="mv-orf"></select></label>
+            <label class="field full">Nota<input id="mv-nota" autocomplete="off"></label>
+          </div>
+          <div class="actions"><button type="submit" class="btn primary">Registrar movimiento</button><span class="msg" id="m-mv" role="status"></span></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Oro por orfebre</h2>
+      <p class="note">La cuenta de metal de cada orfebre. Saldo = entregado − devuelto − metal en piezas terminadas − merma. Es el metal que tiene en su mesa.</p>
+      <div class="tbl free"><table id="tb-orf-oro"><thead><tr>
+        <th>Orfebre</th><th class="n">Entregado (g)</th><th class="n">Devuelto (g)</th><th class="n">En piezas (g)</th><th class="n">Merma (g)</th><th class="n">Saldo (g)</th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Piedras en stock</h2>
+      <p class="note">Las piedras se cuentan por tipo y quilates. Los diamantes con certificado van aparte de los que no lo tienen.</p>
+      <div class="tbl free"><table id="tb-piedras"><thead><tr id="th-piedras"></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Entrada o salida de piedras</h2>
+      <form id="f-piedra" novalidate>
+        <div class="fields">
+          <label class="field">Movimiento<select id="pi-tipo"></select></label>
+          <label class="field">Tipo de piedra<select id="pi-piedra"></select></label>
+          <label class="field">Quilates <span class="unit">(ct)</span><input id="pi-ct" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Cantidad<input id="pi-cant" type="number" step="1" min="1" inputmode="numeric"></label>
+          <label class="field solo-admin">Costo c/u <span class="unit">($)</span><input id="pi-costo" type="number" step="1" min="0" inputmode="numeric"></label>
+          <label class="field">Avisar si quedan menos de <span class="unit">(opcional)</span><input id="pi-min" type="number" step="1" min="0" inputmode="numeric"></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end"><input type="checkbox" id="pi-cert" style="width:auto"> Con certificado</label>
+          <label class="field full">Nota<input id="pi-nota" autocomplete="off"></label>
+        </div>
+        <div class="actions"><button type="submit" class="btn primary">Registrar</button><span class="msg" id="m-pi" role="status"></span></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Movimientos de inventario</h2>
+      <p class="note">Todo lo que entra y sale queda anotado: quién, cuándo, cuánto y para qué pieza. El stock no se edita a mano; se calcula con estos movimientos.</p>
+      <div class="tbl"><table id="tb-movs"><thead><tr id="th-movs"></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- COSTOS (solo administrador) -->
+  <section id="costos" class="pv-tab" hidden style="display:grid;gap:20px">
+    <span class="msg" id="m-cos-g" role="status"></span>
+    <div class="card">
+      <h2>Costo de piezas terminadas</h2>
+      <p class="note">Se calcula al aprobar una pieza que tiene metal entregado, con el peso final y lo que devolvió el orfebre, y queda guardado. Haz clic en una pieza para ver el detalle.</p>
+      <div class="tbl"><table id="tb-pcostos"><thead><tr>
+        <th>Fecha</th><th>Modelo</th><th>Metal</th><th>Orfebre</th><th class="n">Metal</th><th class="n">Merma</th><th class="n">Piedras</th><th class="n">Mano de obra</th><th class="n">Otros</th><th class="n">Costo total</th><th class="n">Precio neto</th><th class="n">Margen</th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Cotizador</h2>
+      <p class="note">Calcula cuánto cuesta hacer una pieza antes de fabricarla y qué precio cobrar para tener el margen que quieres.</p>
+      <form id="f-cot" novalidate style="display:grid;gap:12px">
+        <div class="fields">
+          <label class="field">Metal<select id="ct-metal"></select></label>
+          <label class="field">Tipo de trabajo<select id="ct-tipo"></select></label>
+          <label class="field">Peso final estimado <span class="unit">(g)</span><input id="ct-pf" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Merma estimada <span class="unit">(%)</span><input id="ct-merma" type="number" step="0.1" min="0" value="5" inputmode="decimal"></label>
+          <label class="field">Soldadura <span class="unit">(g)</span><input id="ct-sol" type="number" step="0.01" min="0" value="0" inputmode="decimal"></label>
+          <label class="field">Margen deseado <span class="unit">(%)</span><input id="ct-margen" type="number" step="1" min="0" max="95" value="50" inputmode="numeric"></label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end"><input type="checkbox" id="ct-rodio" checked style="width:auto"> Baño de rodio</label>
+          <label class="field" style="display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end"><input type="checkbox" id="ct-estuche" checked style="width:auto"> Estuche</label>
+        </div>
+        <h3>Piedras</h3>
+        <div class="piedras-pieza" id="ct-piedras"></div>
+      </form>
+      <div class="resultado-cot" id="ct-res" aria-live="polite"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Mano de obra con sueldo fijo</h2>
+        <p class="note">El costo mensual de cada orfebre (sueldo más leyes sociales) se reparte entre las piezas que hace en un mes. Una fabricación vale 1 punto; los otros trabajos valen más o menos según la tabla de puntos.</p>
+        <div class="tbl free tabla-edit"><table id="tb-mo-cost"><thead><tr>
+          <th>Orfebre</th><th class="n">Costo mensual ($)</th><th class="n">Piezas al mes (aprox.)</th><th class="n">Costo por punto</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="actions"><button type="button" class="btn primary" id="b-mo-cost">Guardar mano de obra</button><span class="msg" id="m-mo-cost" role="status"></span></div>
+      </div>
+      <div class="card">
+        <h2>Puntos por tipo de trabajo</h2>
+        <div class="tbl free tabla-edit"><table id="tb-puntos"><thead><tr><th>Tipo de trabajo</th><th class="n">Puntos</th></tr></thead><tbody></tbody></table></div>
+        <div class="actions"><button type="button" class="btn primary" id="b-puntos">Guardar puntos</button><span class="msg" id="m-puntos" role="status"></span></div>
+      </div>
+      <div class="card">
+        <h2>Otras tarifas</h2>
+        <div class="tbl free tabla-edit"><table id="tb-tarifas"><thead><tr><th>Concepto</th><th class="n">Valor ($)</th></tr></thead><tbody></tbody></table></div>
+        <div class="actions"><button type="button" class="btn primary" id="b-tarifas">Guardar tarifas</button><span class="msg" id="m-tarifas" role="status"></span></div>
+        <h3>Metales</h3>
+        <p class="note">Costo promedio por gramo. Sale solo de las compras, la refinación y la aleación.</p>
+        <div class="tbl free"><table id="tb-cg"><thead><tr><th>Metal</th><th class="n">Costo por g</th></tr></thead><tbody></tbody></table></div>
+        <p class="note">El costo de cada pieza se guarda al aprobarla. Si después sube el oro o cambia un sueldo, las piezas ya aprobadas no cambian; solo las nuevas.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- USUARIOS (administrador) -->
   <section id="usuarios" class="pv-tab" hidden style="display:grid;gap:20px">
     <div class="card">
@@ -627,9 +834,9 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     <div class="card">
       <h2>Qué ve cada rol</h2>
       <ul class="defs">
-        <li><b>Administrador</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones, Maestros y esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
-        <li><b>Supervisor de Taller</b>: Registrar pieza (la asigna a un orfebre) y Aprobaciones (entra directo ahí, da el visto bueno final).</li>
-        <li><b>Orfebre</b>: Mis trabajos. Completa oro trabajado, peso final, oro devuelto y observaciones de lo que le asignan y lo envía a revisión.</li>
+        <li><b>Administrador</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones, Inventario con valores en pesos, Costos, Maestros y esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
+        <li><b>Supervisor de Taller</b>: Registrar pieza (la asigna a un orfebre con el metal y las piedras), Aprobaciones (entra directo ahí, da el visto bueno final) e Inventario en gramos y piedras, sin costos ni valores en pesos. No registra compras.</li>
+        <li><b>Orfebre</b>: Mis trabajos, con el metal y las piedras que recibió. Completa oro trabajado, peso final, oro devuelto y observaciones y lo envía a revisión. No ve costos, precios, inventario ni los trabajos de otros.</li>
         <li><b>Lector</b>: sin acceso a datos; solo ve "Cómo funciona". Úsalo para quien todavía no tiene rol.</li>
       </ul>
     </div>
@@ -647,9 +854,9 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <h2>Quién puede hacer qué</h2>
       <ul class="defs">
         <li><b>Ingreso</b>: con correo y contraseña. Solo entran las personas que invita el Administrador, ya con su rol. La primera vez se entra con el enlace de invitación y se crea la contraseña. Si se olvida, se pide un enlace nuevo desde la pantalla de ingreso o al Administrador (Usuarios → Enlace de acceso).</li>
-        <li><b>Administrador</b>: ve los indicadores de productividad y ventas, aprueba piezas, administra los maestros, invita usuarios y asigna roles. Puede ver el portal como lo ve cada rol.</li>
-        <li><b>Supervisor de Taller</b>: registra las piezas, las asigna a los orfebres y da el visto bueno final.</li>
-        <li><b>Orfebre</b>: vinculado a su nombre del taller. Solo ve los trabajos que le asignan y solo puede completar oro trabajado, peso final, oro devuelto y observaciones.</li>
+        <li><b>Administrador</b>: ve los indicadores de productividad y ventas, aprueba piezas, registra compras, refinación y aleación, ve los costos, administra los maestros, invita usuarios y asigna roles. Puede ver el portal como lo ve cada rol.</li>
+        <li><b>Supervisor de Taller</b>: registra las piezas, entrega el metal y las piedras a los orfebres, ve el inventario en gramos y da el visto bueno final.</li>
+        <li><b>Orfebre</b>: vinculado a su nombre del taller. Solo ve los trabajos que le asignan, con el metal y las piedras que recibió, y solo puede completar oro trabajado, peso final, oro devuelto y observaciones.</li>
         <li><b>Lector</b>: sin acceso a datos hasta que el Administrador le asigne un rol.</li>
         <li><b>Maestros</b>: solo el Administrador ve la pestaña y cambia tonos, piedras, tipos de trabajo, categorías, orfebres, modelos y productos con sus precios. El catálogo partió de una copia de Bsale del 18-10-2026; lo que cambies aquí no modifica Bsale.</li>
         <li><b>Seguridad</b>: los permisos los aplica la base de datos (Supabase), no la página. Un orfebre no puede aprobar ni registrar a nombre de otro.</li>
@@ -660,6 +867,9 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <ul class="defs">
         <li><b>Merma</b>: oro trabajado − peso final − oro devuelto − oro recuperado en la máquina de pulido. El % es merma dividida por oro trabajado.</li>
         <li><b>Oro devuelto</b>: suma del oro que los orfebres devolvieron en las piezas del período.</li>
+        <li><b>Inventario</b>: el stock es la suma de los movimientos, nunca un número que se edita. Al registrar una pieza sale de bodega el metal y las piedras entregados; al aprobarla vuelve el oro devuelto y el de la máquina de pulido pasa a "por refinar".</li>
+        <li><b>Costo por gramo</b>: promedio ponderado de lo pagado. Refinación: (valor del lingote + gramos enviados × costo de refinación) ÷ oro fino recibido. Aleación: costo del fino y de la liga ÷ gramos que salen.</li>
+        <li><b>Costo de una pieza</b>: metal (peso final), merma, piedras, mano de obra (puntos del tipo de trabajo × costo por punto del orfebre) y otros (soldadura, rodio, estuche). Se guarda al aprobarla y se compara con el precio neto del catálogo.</li>
         <li><b>Pieza válida</b>: con peso final y merma entre −5% y 25%. Fuera de ese rango es atípica y no entra al cálculo de merma.</li>
         <li><b>Jornada</b>: un día en que el orfebre tiene al menos una pieza.</li>
         <li><b>Precisión</b>: de las piezas con peso objetivo, la parte cuyo peso final quedó a ±5% del objetivo.</li>
@@ -715,6 +925,8 @@ const S = {
   orfItems: toItems(DEFAULT_ORFEBRES), pEdit: null, modelos: [],
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
+  inv: { cargado: false, metales: [], ops: [], minimos: [], piezas: [], mcost: new Map(), pcost: new Map(), costosOrf: [], puntos: [], tarifas: [], pcostos: [] },
+  piezaPiedras: new Map(),
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
@@ -780,6 +992,7 @@ function pieza(r) {
     fecha: r.fecha, mes: (r.fecha || '').slice(0, 7), tono: r.tono, modelo: r.modelo, cotizacion: r.cotizacion, codigo_producto: r.codigo_producto, tipo: r.tipo,
     peso_obj: n2(r.peso_obj), oro_trabajo: n2(r.oro_trabajo), peso_final: n2(r.peso_final), oro_devuelto: n2(r.oro_devuelto), merma_g: n2(r.merma_g), merma_pct: n2(r.merma_pct),
     maquina_pulido: n2(r.maquina_pulido) || 0, cantidad_piedras: r.cantidad_piedras ?? null, soldadura_entregada: n2(r.soldadura_entregada),
+    metal_id: r.metal_id || null, metal_entregado: n2(r.metal_entregado), soldadura_g: n2(r.soldadura_g) || 0, rodio: !!r.rodio, estuche: !!r.estuche,
     garantia: !!r.garantia, observaciones: r.observaciones, calidad: r.calidad || calidadDe(n2(r.merma_pct)), origen: r.origen === 'portal' ? 'Portal' : 'Planilla',
     estado: r.estado, comentario: r.comentario, corregida: r.corregida, revisado_por: r.revisado_por, revisado_en: r.revisado_en, creado_en: r.creado_en,
   };
@@ -1225,22 +1438,78 @@ function leerForm() {
   return {
     fecha: $('i-fecha').value, tono: $('i-tono').value, modelo: $('i-modelo').value.trim(), cotizacion: $('i-cot').value.trim() || null, codigo_producto: $('i-prod').value.trim() || null,
     tipo: $('i-tipo').value, peso_obj: num($('i-po').value), soldadura_entregada: num($('i-sol').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
-    cantidad_piedras: conEngaste($('i-tipo').value) ? num($('i-piedras').value) : null,
+    metal_id: $('i-metal').value || null, metal_entregado: num($('i-metal-g').value),
     merma_g: m.g, merma_pct: m.pct, garantia: $('i-gar').checked, observaciones: $('i-obs').value.trim() || null,
   };
 }
-// "Cantidad de piedras" solo aparece en los tipos de trabajo con engaste.
-function alCambiarTipo() {
-  const ver = conEngaste($('i-tipo').value);
-  $('f-piedras').hidden = !ver;
-  if (!ver) { $('i-piedras').value = ''; errorCampo('i-piedras', ''); }
+// ---------- metal y piedras de la pieza ----------
+const POSICIONES = [['central', 'Central'], ['lateral1', 'Lateral 1'], ['lateral2', 'Lateral 2']];
+const nombreMetal = (id) => (S.inv.metales.find((m) => m.id === id) || {}).nombre || id || '';
+const metalPorTono = (tono) => (S.inv.metales.find((m) => m.grupo === 'oro_18k' && m.tono === tono) || S.inv.metales.find((m) => m.tono === tono) || {}).id || '';
+// Metales que se entregan a un orfebre: oro 18k por tono, oro fino, platino y plata (no la liga ni el oro por refinar).
+const metalesEntregables = () => S.inv.metales.filter((m) => m.activo !== false && ['oro_18k', 'oro_fino', 'platino', 'plata', 'otro'].includes(m.grupo));
+const fCt = (ct) => fDec2.format(ct).replace(/,?0+$/, '').replace(/,$/, '') + ' ct';
+function resumenPiedras(rows) {
+  return (rows || []).map((r) => `${fNum.format(r.cantidad)} × ${r.piedra} ${fCt(r.ct)}${r.certificado ? ' (cert.)' : ''}`).join(' · ');
+}
+function piedrasDe(piezaId) { return S.piezaPiedras.get(piezaId) || []; }
+function renderMaterialesForm() {
+  const sel = $('i-metal'), cur = sel.value;
+  sel.replaceChildren(new Option('Sin metal', ''), ...metalesEntregables().map((m) => new Option(m.nombre, m.id)));
+  if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+  const box = $('i-piedras-box');
+  const previas = leerPiedrasForm(true);
+  box.replaceChildren(...POSICIONES.map(([pos, etq]) => {
+    const tipo = h('select', { id: `pp-${pos}-tipo`, 'aria-label': `Tipo de piedra ${etq}` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)));
+    const ct = h('input', { id: `pp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal', 'aria-label': `Quilates ${etq}`, placeholder: 'ct' });
+    const cant = h('input', { id: `pp-${pos}-cant`, type: 'number', step: '1', min: '1', inputmode: 'numeric', 'aria-label': `Cantidad ${etq}`, placeholder: 'Cantidad' });
+    const cert = h('input', { id: `pp-${pos}-cert`, type: 'checkbox' });
+    return h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
+      h('label', { class: 'field' }, 'Tipo de piedra', tipo), h('label', { class: 'field' }, 'Quilates (ct)', ct), h('label', { class: 'field' }, 'Cantidad', cant),
+      h('label', { class: 'cert' }, cert, 'Con certificado'));
+  }));
+  llenarPiedrasForm(previas);
+  hintMetal();
+}
+function leerPiedrasForm(crudo = false) {
+  const out = [];
+  for (const [pos] of POSICIONES) {
+    const t = $(`pp-${pos}-tipo`); if (!t) continue;
+    const r = { posicion: pos, piedra: t.value, ct: num($(`pp-${pos}-ct`).value), cantidad: num($(`pp-${pos}-cant`).value), certificado: $(`pp-${pos}-cert`).checked };
+    if (crudo || r.piedra) out.push(r);
+  }
+  return out;
+}
+function llenarPiedrasForm(rows) {
+  for (const [pos] of POSICIONES) {
+    const r = (rows || []).find((x) => x.posicion === pos) || {};
+    if (!$(`pp-${pos}-tipo`)) continue;
+    const t = $(`pp-${pos}-tipo`);
+    if (r.piedra && ![...t.options].some((o) => o.value === r.piedra)) t.append(new Option(r.piedra, r.piedra));
+    t.value = r.piedra || ''; $(`pp-${pos}-ct`).value = r.ct ?? ''; $(`pp-${pos}-cant`).value = r.cantidad ?? ''; $(`pp-${pos}-cert`).checked = !!r.certificado;
+  }
+}
+function hintMetal() {
+  const id = $('i-metal').value, el = $('hint-metal');
+  if (!id || !S.inv.cargado) { el.textContent = ''; return; }
+  const b = stockMetal(id), g = num($('i-metal-g').value);
+  el.textContent = g > b + 0.001 ? `Ojo: en bodega hay solo ${g2(b)} g de ${nombreMetal(id)}; el stock quedará negativo.` : `En bodega: ${g2(b)} g de ${nombreMetal(id)}.`;
+}
+// Guarda las piedras de la pieza (reemplaza las anteriores). La base de datos descuenta el stock al entregarlas.
+async function guardarPiedrasPieza(piezaId, rows, habia) {
+  if (habia) { const d = await sb.from('pieza_piedras').delete().eq('pieza_id', piezaId); if (d.error) throw d.error; }
+  if (rows.length) {
+    const r = await sb.from('pieza_piedras').insert(rows.map((x) => ({ pieza_id: piezaId, posicion: x.posicion, piedra: x.piedra, ct: x.ct, certificado: x.certificado, cantidad: x.cantidad })));
+    if (r.error) throw r.error;
+  }
 }
 function llenarForm(p) {
   $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
   $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-sol').value = p?.soldadura_entregada ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
   $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
-  $('i-piedras').value = p?.cantidad_piedras ?? ''; alCambiarTipo();
+  $('i-metal').value = p?.metal_id || (p ? '' : metalPorTono($('i-tono').value)); $('i-metal-g').value = p?.metal_entregado ?? '';
+  llenarPiedrasForm(p ? piedrasDe(p._id) : []); hintMetal();
   const selO = $('i-orfebre');
   if (selO) {
     // Al editar un trabajo de un orfebre ya inactivo, se muestra igual para no perder la asignación.
@@ -1275,7 +1544,10 @@ function errorCampo(id, texto) {
   if (!e) { e = h('span', { class: 'ferr', id: id + '-err' }); lab.append(e); }
   e.textContent = texto; el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err');
 }
-function limpiarErrores() { for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-piedras', 'i-sol']) errorCampo(id, ''); }
+function limpiarErrores() {
+  for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-sol', 'i-metal', 'i-metal-g']) errorCampo(id, '');
+  for (const [pos] of POSICIONES) for (const k of ['tipo', 'ct', 'cant']) errorCampo(`pp-${pos}-${k}`, '');
+}
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
 
 // ---------- supervisor: registrar y asignar ----------
@@ -1291,20 +1563,31 @@ async function enviar(ev) {
   if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
   if (p.oro_trabajo != null && !(p.oro_trabajo > 0)) errs.push(['i-ot', 'Si lo ingresas, el oro trabajado debe ser mayor que 0.']);
   if (p.soldadura_entregada != null && !(p.soldadura_entregada > 0)) errs.push(['i-sol', 'Si la ingresas, la soldadura entregada debe ser mayor que 0.']);
-  if (conEngaste(p.tipo) && !(Number.isInteger(p.cantidad_piedras) && p.cantidad_piedras > 0)) errs.push(['i-piedras', 'Ingresa la cantidad de piedras a engastar (número entero mayor que 0).']);
+  if (p.metal_entregado != null && !(p.metal_entregado > 0)) errs.push(['i-metal-g', 'Si los ingresas, los gramos entregados deben ser mayores que 0.']);
+  if (p.metal_entregado > 0 && !p.metal_id) errs.push(['i-metal', 'Elige qué metal entregas.']);
+  const piedras = leerPiedrasForm();
+  for (const r of piedras) {
+    if (!(r.ct > 0)) errs.push([`pp-${r.posicion}-ct`, 'Indica los quilates.']);
+    if (!(Number.isInteger(r.cantidad) && r.cantidad > 0)) errs.push([`pp-${r.posicion}-cant`, 'Cantidad entera mayor que 0.']);
+  }
+  if (conEngaste(p.tipo) && !piedras.length) errs.push(['pp-central-tipo', 'Indica las piedras a engastar.']);
   if (errs.length) { errs.forEach(([id, t]) => errorCampo(id, t)); $(errs[0][0])?.focus(); msg('m-form', errs.length === 1 ? 'Revisa el campo marcado.' : `Revisa los ${errs.length} campos marcados.`, 'bad'); return; }
   const b = $('b-enviar'); b.disabled = true; msg('m-form', 'Guardando…');
   try {
     const { merma_g, merma_pct, ...campos } = p;
-    const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null };
-    // Sin soldadura no se envía la columna (salvo para borrar una ya registrada): el registro funciona aunque la base aún no la tenga.
+    const body = { ...campos, orfebre_id: Number(orf), modelo_id: modeloDe(p.modelo)?._id ?? null,
+      metal_id: p.metal_entregado > 0 ? p.metal_id : null, metal_entregado: p.metal_entregado > 0 ? p.metal_entregado : null,
+      cantidad_piedras: piedras.length ? piedras.reduce((s, r) => s + r.cantidad, 0) : null };
+    // Sin soldadura no se envía la columna (salvo para borrar una ya registrada).
     const teniaSol = S.editando && (S.mis || []).find((x) => x._id === S.editando)?.soldadura_entregada != null;
     if (body.soldadura_entregada == null && !teniaSol) delete body.soldadura_entregada;
     const r = S.editando
       ? await sb.from('piezas').update(body).eq('id', S.editando)
-      : await sb.from('piezas').insert({ ...body, autor: S.uid, estado: 'asignada' });
+      : await sb.from('piezas').insert({ ...body, autor: S.uid, estado: 'asignada' }).select('id').single();
     if (r.error) throw r.error;
-    cargarSoldadura();
+    const piezaId = S.editando || r.data.id;
+    await guardarPiedrasPieza(piezaId, piedras, !!S.editando);
+    cargarSoldadura(); cargarPiezaPiedras().then(() => cargarInventario());
     msg('m-form', S.editando ? 'Cambios guardados.' : `Trabajo asignado a ${nombreOrfebre(Number(orf))}. Lo verá en "Mis trabajos".`, 'ok');
     cargarMis();
     S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Asignar al orfebre';
@@ -1320,11 +1603,12 @@ function renderMis() {
     h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
   const tb = $('tb-mis').tBodies[0];
   const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
-  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 12, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 13, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
   tb.replaceChildren(...rs.map((p) => {
     const editable = p.estado === 'asignada' || p.estado === 'rechazada';
     return h('tr', {},
-      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.tono || ''), h('td', { class: 'n' }, p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.metal_id ? nombreMetal(p.metal_id) : (p.tono || '')), h('td', { class: 'n' }, g2(p.metal_entregado)),
+      h('td', { class: 'wrap' }, resumenPiedras(piedrasDe(p._id)) || (p.cantidad_piedras ? fNum.format(p.cantidad_piedras) : '')), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
       h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)),
       h('td', { class: 'wrap' }, p.comentario || ''),
       h('td', {}, editable ? h('span', {},
@@ -1366,18 +1650,23 @@ function renderTrabajos() {
   lista.replaceChildren(...(activos.length ? activos.map(tarjetaTrabajo) : [h('p', { class: 'empty' }, 'No tienes trabajos pendientes. Cuando el supervisor te asigne uno, aparecerá aquí.')]));
   const hist = S.trabajos.filter((p) => p.estado === 'pendiente' || p.estado === 'aprobada');
   $('tb-tr').tBodies[0].replaceChildren(...(hist.length ? hist.map((p) => h('tr', {},
-    h('td', {}, fFecha(p.fecha)), h('td', {}, p.modelo), h('td', {}, p.tono || ''), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
+    h('td', {}, fFecha(p.fecha)), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.modelo), h('td', {}, p.metal_id ? nombreMetal(p.metal_id) : (p.tono || '')),
+    h('td', { class: 'n' }, g2(p.metal_entregado ?? p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)), h('td', { class: 'n' }, g2(p.oro_devuelto)),
     h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)))) :
-    [h('tr', {}, h('td', { colspan: 7, class: 'note' }, 'Aún no envías trabajos a revisión.'))]));
+    [h('tr', {}, h('td', { colspan: 9, class: 'note' }, 'Aún no envías trabajos a revisión.'))]));
 }
 function tarjetaTrabajo(p) {
   const el = h('div', { class: 'item' + (p.estado === 'rechazada' ? ' flag' : '') });
   el.append(h('div', { class: 'head' }, h('h3', {}, `${p.modelo} · ${p.tono || 'sin tono'}`), pillEstado(p.estado),
     h('span', { class: 'who2' }, `${fFecha(p.fecha)}${p.tipo ? ' · ' + p.tipo : ''}${p.garantia ? ' · garantía' : ''}${p.cotizacion ? ' · cotización ' + p.cotizacion : ''}${p.codigo_producto ? ' · ' + p.codigo_producto : ''}`)));
-  if (p.peso_obj || p.cantidad_piedras || p.soldadura_entregada) el.append(h('div', { class: 'kv' },
+  const piedrasP = piedrasDe(p._id);
+  if (p.peso_obj || p.metal_entregado || p.soldadura_entregada) el.append(h('div', { class: 'kv' },
+    p.metal_entregado ? h('span', {}, 'Metal recibido ', h('b', {}, `${g2(p.metal_entregado)} g`), ` ${nombreMetal(p.metal_id)}`) : null,
     p.peso_obj ? h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g')) : null,
-    p.soldadura_entregada ? h('span', {}, 'Soldadura entregada ', h('b', {}, g2(p.soldadura_entregada) + ' g')) : null,
-    p.cantidad_piedras ? h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras))) : null));
+    p.soldadura_entregada ? h('span', {}, 'Soldadura entregada ', h('b', {}, g2(p.soldadura_entregada) + ' g')) : null));
+  if (piedrasP.length) el.append(h('div', { class: 'kv' }, ...piedrasP.map((r) =>
+    h('span', {}, `${(POSICIONES.find(([k]) => k === r.posicion) || [, ''])[1]}: `, h('b', {}, `${fNum.format(r.cantidad)} × ${r.piedra} ${fCt(r.ct)}`), r.certificado ? ' con certificado' : ''))));
+  else if (p.cantidad_piedras) el.append(h('div', { class: 'kv' }, h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras)))));
   if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
   const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
   const [lOt, iOt] = inp(h('span', {}, 'Oro trabajado ', h('span', { class: 'unit' }, '(g)')), 'oro_trabajo');
@@ -1473,10 +1762,13 @@ function itemRevision(p, nombre) {
       ['Código de producto', p.codigo_producto], ['N° de cotización', p.cotizacion], ['Tipo de trabajo', p.tipo],
       ['Garantía', p.garantia ? 'Sí' : 'No'], ['Peso objetivo', gr(p.peso_obj)],
       ...(p.soldadura_entregada ? [['Soldadura entregada', gr(p.soldadura_entregada)]] : []),
-      ...(conEngaste(p.tipo) || p.cantidad_piedras ? [['Cantidad de piedras', p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : null]] : []),
+      ...(p.metal_entregado ? [['Metal entregado', `${g2(p.metal_entregado)} g · ${nombreMetal(p.metal_id)}`]] : []),
+      ...(piedrasDe(p._id).length ? [['Piedras', resumenPiedras(piedrasDe(p._id))]]
+        : conEngaste(p.tipo) || p.cantidad_piedras ? [['Cantidad de piedras', p.cantidad_piedras != null ? fNum.format(p.cantidad_piedras) : null]] : []),
     ]),
     bloque('Completado por el orfebre', [
       ['Oro trabajado', gr(p.oro_trabajo)], ['Peso final', gr(p.peso_final)], ['Oro devuelto', gr(p.oro_devuelto || 0)], ['Máquina pulido', gr(p.maquina_pulido || 0)],
+      ...(p.soldadura_g || p.rodio || p.estuche ? [['Terminación', [p.soldadura_g ? `soldadura ${g2(p.soldadura_g)} g` : '', p.rodio ? 'baño de rodio' : '', p.estuche ? 'estuche' : ''].filter(Boolean).join(' · ')]] : []),
       ['Merma', p.merma_g == null ? '—' : `${fDec2.format(p.merma_g)} g (${fDec.format(p.merma_pct)}%)`],
       ['Observaciones', p.observaciones],
     ])));
@@ -1500,11 +1792,14 @@ function formCorreccion(p) {
   const box = h('div', { class: 'fields' },
     f('Fecha', 'fecha', p.fecha, 'date'), f('Modelo', 'modelo', p.modelo, 'text'), f('Peso objetivo (g)', 'peso_obj', p.peso_obj), f('Oro trabajado (g)', 'oro_trabajo', p.oro_trabajo),
     f('Peso final (g)', 'peso_final', p.peso_final), f('Oro devuelto (g)', 'oro_devuelto', p.oro_devuelto), f('Máquina pulido (g)', 'maquina_pulido', p.maquina_pulido),
-    ...(conEngaste(p.tipo) || p.cantidad_piedras ? [f('Cantidad de piedras', 'cantidad_piedras', p.cantidad_piedras)] : []));
+    f('Soldadura usada (g)', 'soldadura_g', p.soldadura_g || ''),
+    ...(!piedrasDe(p._id).length && (conEngaste(p.tipo) || p.cantidad_piedras) ? [f('Cantidad de piedras', 'cantidad_piedras', p.cantidad_piedras)] : []),
+    ...['rodio', 'estuche'].map((k) => { const c = h('input', { type: 'checkbox' }); c.checked = !!p[k]; c.dataset.k = k; return h('label', { class: 'field', style: 'display:flex;gap:8px;align-items:center;color:var(--ink)' }, c, k === 'rodio' ? 'Baño de rodio' : 'Estuche'); }));
   const out = h('div', { style: 'display:grid;gap:10px' }, box, h('div', { class: 'actions' },
     h('button', { type: 'button', class: 'btn ok', onclick: () => {
       const c = { ...p };
-      for (const i of box.querySelectorAll('input')) c[i.dataset.k] = i.type === 'number' ? num(i.value) : i.value.trim();
+      for (const i of box.querySelectorAll('input')) c[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.type === 'number' ? num(i.value) : i.value.trim();
+      c.soldadura_g = c.soldadura_g || 0;
       if (!c.fecha || !c.modelo || !(c.oro_trabajo > 0) || c.peso_final == null) { msg('m-rev', 'Completa fecha, modelo, oro trabajado y peso final.', 'bad'); return; }
       if (c.cantidad_piedras != null && !(Number.isInteger(c.cantidad_piedras) && c.cantidad_piedras > 0)) { msg('m-rev', 'La cantidad de piedras debe ser un número entero mayor que 0.', 'bad'); return; }
       c.oro_devuelto = c.oro_devuelto || 0; c.maquina_pulido = c.maquina_pulido || 0;
@@ -1518,7 +1813,7 @@ async function aprobar(lista, corregido = false) {
   msg('m-rev', `Aprobando ${lista.length === 1 ? 'pieza' : lista.length + ' piezas'}…`);
   let ok = 0;
   for (const p of lista) {
-    const campos = ['fecha', 'modelo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto', 'maquina_pulido', 'cantidad_piedras'];
+    const campos = ['fecha', 'modelo', 'peso_obj', 'oro_trabajo', 'peso_final', 'oro_devuelto', 'maquina_pulido', 'cantidad_piedras', 'soldadura_g', 'rodio', 'estuche'];
     const body = corregido ? { ...Object.fromEntries(campos.map((k) => [k, p[k] ?? null])), modelo_id: modeloDe(p.modelo)?._id ?? null, corregida: true } : {};
     try {
       const { error } = await sb.from('piezas').update({ ...body, estado: 'aprobada', comentario: corregido ? 'Aprobada con correcciones del supervisor.' : null }).eq('id', p._id);
@@ -1708,6 +2003,8 @@ function aplicarVista() {
   $('t-panel').hidden = !S.isAdmin;
   $('t-revision').hidden = !S.isSup;
   $('t-maestros').hidden = !S.isAdmin;
+  $('t-inventario').hidden = !S.isSup;
+  $('t-costos').hidden = !S.isAdmin;
   $('t-usuarios').hidden = !S.isAdmin;
   $('t-registrar').hidden = !S.isSup;
   $('t-trabajos').hidden = !S.canWrite;
@@ -2108,6 +2405,7 @@ function descargarCSV() {
 // ---------- maestros en el formulario ----------
 function opcionesRegistro() {
   setOptions($('i-tono'), TONOS()); setOptions($('i-tipo'), TIPOS());
+  renderMaterialesForm();
   const cur = $('i-modelo').value;
   const m = modeloDe(cur);
   const cods = productos().filter((p) => p.activo !== false && (!m || clave(p.modelo) === clave(m.nombre)));
@@ -2268,6 +2566,8 @@ function setTab(t) {
   if (t === 'revision' && !S.isSup) t = tabInicio();
   if (t === 'registrar' && !S.isSup) t = tabInicio();
   if (t === 'trabajos' && !S.canWrite) t = tabInicio();
+  if (t === 'inventario' && !S.isSup) t = tabInicio();
+  if (t === 'costos' && !S.isAdmin) t = tabInicio();
   S.tab = t;
   for (const sec of document.querySelectorAll('.pv-tab')) sec.hidden = sec.id !== t;
   const enIndicadores = t === 'panel' || t === 'ventas';
@@ -2281,6 +2581,8 @@ function setTab(t) {
   if (t === 'ventas') renderVentas();
   if (t === 'usuarios') renderUsuarios();
   if (t === 'trabajos') renderTrabajos();
+  if (t === 'inventario') renderInventario();
+  if (t === 'costos') renderCostos();
 }
 
 // ---------- arranque ----------
@@ -2296,8 +2598,10 @@ function wire() {
   opcionesRegistro();
   $('i-fecha').max = hoy();
   $('i-modelo').addEventListener('change', alCambiarModelo);
-  $('i-tipo').addEventListener('change', alCambiarTipo);
-  $('i-piedras').addEventListener('input', () => errorCampo('i-piedras', ''));
+  // Al cambiar el tono se propone el metal 18k de ese tono, si aún no se anotaron gramos.
+  $('i-tono').addEventListener('change', () => { if (!$('i-metal-g').value) { const m = metalPorTono($('i-tono').value); if (m) $('i-metal').value = m; hintMetal(); } });
+  $('i-metal').addEventListener('change', () => { errorCampo('i-metal', ''); hintMetal(); });
+  $('i-metal-g').addEventListener('input', () => { errorCampo('i-metal-g', ''); hintMetal(); });
   $('i-prod').addEventListener('change', alCambiarProducto);
   document.querySelectorAll('#m-sub button').forEach((b) => b.addEventListener('click', () => { S.msub = b.dataset.sub; renderMaestros(); }));
   document.querySelectorAll('#ind-sub button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.sub)));
@@ -2336,6 +2640,7 @@ function wire() {
     i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
   }));
   $('f-inv').addEventListener('submit', invitarUsuario);
+  wireInventario();
   $('h-orf').addEventListener('change', (e) => { S.hf.orf = e.target.value; renderRevision(); });
   $('h-anio').addEventListener('change', (e) => { S.hf.anio = e.target.value; S.hf.mes = ''; renderRevision(); });
   $('h-mes').addEventListener('change', (e) => { S.hf.mes = e.target.value; renderRevision(); });
@@ -2354,6 +2659,420 @@ function wire() {
 function modelosDatalist() {
   const ms = (S.modelos.length ? S.modelos.filter((m) => m.activo !== false).map((m) => m.nombre) : [...new Set(filasDefinitivas().map((r) => r.modelo).filter(Boolean))]).sort((a, b) => a.localeCompare(b, 'es'));
   $('modelos').replaceChildren(...ms.map((m) => h('option', { value: m })));
+}
+
+// ---------- inventario y costos ----------
+// El stock es la suma de los movimientos (+ entra a bodega, − sale). Los costos viven en tablas que solo lee el administrador.
+const fPeso = (v) => v == null || !isFinite(v) ? '—' : '$' + fNum.format(Math.round(v));
+const ETQ_OP = { compra: 'Compra', refinacion: 'Refinación', aleacion: 'Aleación', entrega: 'Entrega a orfebre', devolucion: 'Devolución de orfebre', recuperacion: 'Limalla a refinar', ajuste: 'Ajuste' };
+const verCostos = () => S.isAdmin && S.rolReal === 'administrador';
+const nombrePerfil = (uid) => { const p = S.perfiles.find((x) => x.user_id === uid); return p ? (p.nombre || p.email) : ''; };
+
+async function cargarMetales() {
+  const { data, error } = await sb.from('metales').select('*').order('orden');
+  if (!error) S.inv.metales = data;
+  renderMaterialesForm(); llenarSelectsInv();
+}
+async function cargarPiezaPiedras() {
+  try {
+    const rows = await todas(() => sb.from('pieza_piedras').select('*').order('id'));
+    S.piezaPiedras = new Map();
+    for (const r of rows) { r.ct = Number(r.ct); if (!S.piezaPiedras.has(r.pieza_id)) S.piezaPiedras.set(r.pieza_id, []); S.piezaPiedras.get(r.pieza_id).push(r); }
+  } catch (e) { /* sin piedras visibles */ }
+  renderMis(); renderTrabajos(); renderRevision();
+}
+async function cargarInventario() {
+  if (!(S.rolReal === 'administrador' || S.rolReal === 'supervisor')) return;
+  try {
+    const [ops, min, pz] = await Promise.all([
+      todas(() => sb.from('inv_operaciones').select('*, metal_movimientos(*), piedra_movimientos(*)').eq('anulada', false).order('fecha', { ascending: false }).order('id', { ascending: false })),
+      sb.from('piedras_minimos').select('*'),
+      todas(() => sb.from('piezas').select('id,orfebre_id,metal_id,metal_entregado,peso_final,oro_devuelto,maquina_pulido,merma_g,estado,modelo,cotizacion,fecha,tipo,codigo_producto').not('metal_id', 'is', null).order('id')),
+    ]);
+    S.inv.ops = ops; S.inv.minimos = (min.data || []).map((m) => ({ ...m, ct: Number(m.ct) })); S.inv.piezas = pz;
+    if (S.rolReal === 'administrador') {
+      const [mc, pc, co, pt, ta, pk] = await Promise.all([
+        todas(() => sb.from('metal_costos').select('*').order('movimiento_id')),
+        todas(() => sb.from('piedra_costos').select('*').order('movimiento_id')),
+        sb.from('costos_orfebre').select('*'), sb.from('puntos_tipo').select('*'), sb.from('tarifas').select('*').order('clave'),
+        todas(() => sb.from('pieza_costos').select('*').eq('anulado', false).order('pieza_id')),
+      ]);
+      S.inv.mcost = new Map(mc.map((r) => [r.movimiento_id, Number(r.costo)]));
+      S.inv.pcost = new Map(pc.map((r) => [r.movimiento_id, Number(r.costo_unit)]));
+      S.inv.costosOrf = co.data || []; S.inv.puntos = pt.data || []; S.inv.tarifas = ta.data || []; S.inv.pcostos = pk;
+    }
+    S.inv.cargado = true;
+  } catch (e) { msg('m-inv-g', 'No se pudo cargar el inventario (' + (e.message || e.code) + ').', 'bad'); }
+  hintMetal();
+  if (S.tab === 'inventario') renderInventario();
+  if (S.tab === 'costos') renderCostos();
+}
+
+// --- cálculos ---
+function lineasMetal() { const out = []; for (const o of S.inv.ops) for (const m of o.metal_movimientos || []) out.push({ ...m, gramos: Number(m.gramos), op: o }); return out; }
+function lineasPiedra() { const out = []; for (const o of S.inv.ops) for (const m of o.piedra_movimientos || []) out.push({ ...m, ct: Number(m.ct), op: o }); return out; }
+function stockMetal(id) { return lineasMetal().filter((l) => l.metal_id === id).reduce((s, l) => s + l.gramos, 0); }
+// Costo promedio ponderado: lo pagado por lo que entró (compras, refinación, aleación) dividido por esos gramos.
+function costoGramo(id) {
+  let c = 0, g = 0;
+  for (const l of lineasMetal()) if (l.metal_id === id && l.gramos > 0 && S.inv.mcost.has(l.id)) { c += S.inv.mcost.get(l.id); g += l.gramos; }
+  return g ? c / g : null;
+}
+const clavePiedra = (p, ct, cert) => `${p}|${Number(ct)}|${cert ? 1 : 0}`;
+function costoPiedra(p, ct, cert) {
+  let c = 0, n = 0;
+  for (const l of lineasPiedra()) if (clavePiedra(l.piedra, l.ct, l.certificado) === clavePiedra(p, ct, cert) && l.cantidad > 0 && S.inv.pcost.has(l.id)) { c += S.inv.pcost.get(l.id) * l.cantidad; n += l.cantidad; }
+  return n ? c / n : null;
+}
+// Cuenta de metal por orfebre y por metal: entregado − devuelto − en piezas terminadas − merma.
+function cuentasTaller() {
+  const porOrf = new Map(), porMetal = new Map();
+  const add = (map, k, f, v) => { if (k == null) return; if (!map.has(k)) map.set(k, { entregado: 0, devuelto: 0, piezas: 0, merma: 0 }); map.get(k)[f] += v; };
+  const piezaDe = (id) => S.inv.piezas.find((p) => p.id === id);
+  for (const l of lineasMetal()) {
+    const o = l.op; if (!o.orfebre_id) continue;
+    if (o.tipo === 'entrega') { add(porOrf, o.orfebre_id, 'entregado', -l.gramos); add(porMetal, l.metal_id, 'entregado', -l.gramos); }
+    else if (o.tipo === 'devolucion' || o.tipo === 'recuperacion') {
+      add(porOrf, o.orfebre_id, 'devuelto', l.gramos);
+      const pz = o.pieza_id ? piezaDe(o.pieza_id) : null;
+      add(porMetal, o.tipo === 'recuperacion' && pz ? pz.metal_id : l.metal_id, 'devuelto', l.gramos);
+    }
+  }
+  for (const p of S.inv.piezas) if (p.estado === 'aprobada' && p.metal_entregado) {
+    const pf = Number(p.peso_final) || 0, me = Number(p.merma_g) || 0;
+    add(porOrf, p.orfebre_id, 'piezas', pf); add(porOrf, p.orfebre_id, 'merma', me);
+    add(porMetal, p.metal_id, 'piezas', pf); add(porMetal, p.metal_id, 'merma', me);
+  }
+  const saldo = (c) => c.entregado - c.devuelto - c.piezas - c.merma;
+  return { porOrf, porMetal, saldo };
+}
+
+// --- selects de los formularios ---
+function llenarSelectsInv() {
+  const ms = S.inv.metales.filter((m) => m.activo !== false);
+  const set = (id, opciones, valorDef) => { const s = $(id); if (!s) return; const cur = s.value; s.replaceChildren(...opciones); s.value = [...s.options].some((o) => o.value === cur) && cur ? cur : (valorDef ?? s.options[0]?.value ?? ''); };
+  set('co-metal', ms.map((m) => new Option(m.nombre, m.id)), 'oro_por_refinar');
+  set('al-metal', ms.filter((m) => m.grupo === 'oro_18k').map((m) => new Option(m.nombre, m.id)));
+  set('mv-metal', ms.map((m) => new Option(m.nombre, m.id)));
+  set('mv-orf', [new Option('—', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id)))]);
+  set('pi-piedra', PIEDRAS().map((p) => new Option(p, p)));
+  set('pi-tipo', (verCostos() ? [['compra', 'Entrada (compra)']] : []).concat([['salida', 'Salida o ajuste (sale de stock)'], ['ajuste+', 'Ajuste (entra a stock)']]).map(([v, t]) => new Option(t, v)));
+  set('ct-metal', metalesEntregables().map((m) => new Option(m.nombre, m.id)), 'oro18_amarillo');
+  set('ct-tipo', TIPOS().map((t) => new Option(t, t)));
+}
+
+// --- vista de inventario ---
+function renderInventario() {
+  const admin = verCostos();
+  document.querySelectorAll('#inventario .solo-admin').forEach((e) => { e.hidden = !admin; });
+  llenarSelectsInv(); alCambiarMov();
+  if (!S.inv.cargado) { msg('m-inv-g', 'Cargando inventario…'); return; }
+  msg('m-inv-g', '');
+  const { porOrf, porMetal, saldo } = cuentasTaller();
+  // Metales en bodega
+  $('th-metales').replaceChildren(...['Metal', 'En bodega (g)', 'En taller (g)', ...(admin ? ['Costo por g', 'Valor en bodega'] : [])].map((t, i) => h('th', { class: i ? 'n' : null }, t)));
+  let total = 0;
+  const filasM = S.inv.metales.filter((m) => m.activo !== false).map((m) => {
+    const b = stockMetal(m.id), t = porMetal.has(m.id) ? saldo(porMetal.get(m.id)) : 0, cg = admin ? costoGramo(m.id) : null;
+    const valor = cg != null ? b * cg : null; if (valor) total += valor;
+    return h('tr', {}, h('td', {}, m.nombre), h('td', { class: 'n' + (b < -0.001 ? ' bajo' : '') }, g2(b)), h('td', { class: 'n' }, g2(t)),
+      ...(admin ? [h('td', { class: 'n' }, cg != null ? fPeso(cg) : '—'), h('td', { class: 'n' }, valor != null ? fPeso(valor) : '—')] : []));
+  });
+  if (admin) filasM.push(h('tr', { class: 'total' }, h('td', {}, 'Total'), h('td', {}), h('td', {}), h('td', {}), h('td', { class: 'n' }, fPeso(total))));
+  $('tb-metales').tBodies[0].replaceChildren(...filasM);
+  // Oro por orfebre
+  const ids = [...new Set([...S.orfItems.filter((o) => o.activo !== false).map((o) => o.id), ...porOrf.keys()])];
+  $('tb-orf-oro').tBodies[0].replaceChildren(...ids.map((id) => {
+    const c = porOrf.get(id) || { entregado: 0, devuelto: 0, piezas: 0, merma: 0 }, s = saldo(c);
+    return h('tr', {}, h('td', {}, nombreOrfebre(id)), h('td', { class: 'n' }, g2(c.entregado)), h('td', { class: 'n' }, g2(c.devuelto)),
+      h('td', { class: 'n' }, g2(c.piezas)), h('td', { class: 'n' }, g2(c.merma)), h('td', { class: 'n' }, h('b', {}, g2(s))));
+  }));
+  // Piedras en stock
+  const stock = new Map();
+  for (const l of lineasPiedra()) { const k = clavePiedra(l.piedra, l.ct, l.certificado); stock.set(k, (stock.get(k) || 0) + l.cantidad); }
+  for (const m of S.inv.minimos) { const k = clavePiedra(m.piedra, m.ct, m.certificado); if (!stock.has(k)) stock.set(k, 0); }
+  $('th-piedras').replaceChildren(...['Tipo de piedra', 'Quilates', 'Certificado', 'En stock', 'Mínimo', ...(admin ? ['Costo c/u', 'Valor'] : [])].map((t, i) => h('th', { class: i >= 3 ? 'n' : null }, t)));
+  const filasP = [...stock].map(([k, n]) => { const [p, ct, cert] = k.split('|'); return { p, ct: Number(ct), cert: cert === '1', n }; })
+    .sort((a, b) => a.p.localeCompare(b.p, 'es') || a.ct - b.ct || Number(a.cert) - Number(b.cert));
+  $('tb-piedras').tBodies[0].replaceChildren(...(filasP.length ? filasP.map((r) => {
+    const min = S.inv.minimos.find((m) => clavePiedra(m.piedra, m.ct, m.certificado) === clavePiedra(r.p, r.ct, r.cert));
+    const cu = admin ? costoPiedra(r.p, r.ct, r.cert) : null, bajo = min && r.n < min.minimo;
+    return h('tr', {}, h('td', {}, r.p), h('td', {}, fCt(r.ct)), h('td', {}, r.cert ? 'Sí' : 'No'),
+      h('td', { class: 'n' + (bajo || r.n < 0 ? ' bajo' : '') }, fNum.format(r.n), bajo ? ' · bajo el mínimo' : ''), h('td', { class: 'n' }, min ? fNum.format(min.minimo) : '—'),
+      ...(admin ? [h('td', { class: 'n' }, cu != null ? fPeso(cu) : '—'), h('td', { class: 'n' }, cu != null ? fPeso(cu * r.n) : '—')] : []));
+  }) : [h('tr', {}, h('td', { colspan: admin ? 7 : 5, class: 'note' }, 'Aún no hay piedras registradas. Usa "Entrada o salida de piedras".'))]));
+  // Movimientos
+  $('th-movs').replaceChildren(...['Fecha', 'Material', 'Movimiento', 'Detalle', 'Cantidad', ...(admin ? ['Valor'] : []), 'Pieza', 'Registró'].map((t) => h('th', { class: t === 'Cantidad' || t === 'Valor' ? 'n' : null }, t)));
+  const filas = [];
+  for (const o of S.inv.ops) {
+    const pz = o.pieza_id ? S.inv.piezas.find((p) => p.id === o.pieza_id) : null;
+    const detalle = [o.orfebre_id ? nombreOrfebre(o.orfebre_id) : '', o.proveedor || '', o.nota && o.nota !== o.proveedor ? o.nota : ''].filter(Boolean).join(' · ');
+    const pieza = pz ? `${pz.modelo}${pz.cotizacion ? ' · cot. ' + pz.cotizacion : ''}` : (o.pieza_id ? `Pieza ${o.pieza_id}` : '');
+    for (const m of o.metal_movimientos || []) filas.push([o, nombreMetal(m.metal_id), `${Number(m.gramos) > 0 ? '+' : '−'}${g2(Math.abs(m.gramos))} g`, S.inv.mcost.get(m.id), detalle, pieza]);
+    for (const m of o.piedra_movimientos || []) filas.push([o, `${m.piedra} ${fCt(m.ct)}${m.certificado ? ' (cert.)' : ''}`, `${m.cantidad > 0 ? '+' : '−'}${fNum.format(Math.abs(m.cantidad))} u`, S.inv.pcost.has(m.id) ? S.inv.pcost.get(m.id) * Math.abs(m.cantidad) : undefined, detalle, pieza]);
+  }
+  const shown = filas.slice(0, 400);
+  $('tb-movs').tBodies[0].replaceChildren(...(shown.length ? shown.map(([o, mat, cant, valor, det, pieza]) => h('tr', {},
+    h('td', {}, fFecha(o.fecha)), h('td', {}, mat), h('td', {}, ETQ_OP[o.tipo] || o.tipo), h('td', { class: 'wrap' }, det), h('td', { class: 'n mono' }, cant),
+    ...(admin ? [h('td', { class: 'n' }, valor != null ? fPeso(valor) : '')] : []), h('td', {}, pieza), h('td', {}, nombrePerfil(o.autor)))) :
+    [h('tr', {}, h('td', { colspan: admin ? 8 : 7, class: 'note' }, 'Aún no hay movimientos. Registra una compra o una entrada de piedras para empezar.'))]));
+  calcComprar(); calcRefinar(); calcAlear();
+}
+
+// --- operaciones ---
+async function crearOperacion(op, metales = [], piedras = []) {
+  const { data: o, error } = await sb.from('inv_operaciones').insert(op).select('id').single();
+  if (error) throw error;
+  if (metales.length) {
+    const { data, error: e } = await sb.from('metal_movimientos').insert(metales.map((m) => ({ operacion_id: o.id, metal_id: m.metal_id, gramos: m.gramos }))).select('id');
+    if (e) throw e;
+    const costos = data.map((r, i) => ({ movimiento_id: r.id, costo: metales[i].costo })).filter((x) => x.costo != null);
+    if (costos.length) { const c = await sb.from('metal_costos').insert(costos); if (c.error) throw c.error; }
+  }
+  if (piedras.length) {
+    const { data, error: e } = await sb.from('piedra_movimientos').insert(piedras.map((p) => ({ operacion_id: o.id, piedra: p.piedra, ct: p.ct, certificado: p.certificado, cantidad: p.cantidad }))).select('id');
+    if (e) throw e;
+    const costos = data.map((r, i) => ({ movimiento_id: r.id, costo_unit: piedras[i].costo_unit })).filter((x) => x.costo_unit != null);
+    if (costos.length) { const c = await sb.from('piedra_costos').insert(costos); if (c.error) throw c.error; }
+  }
+}
+async function ejecutar(msgId, fn, ok, form) {
+  try { await fn(); msg(msgId, ok, 'ok'); if (form) form.reset(); await cargarInventario(); }
+  catch (e) { msg(msgId, e.code === '42501' ? 'No tienes permiso para registrar este movimiento.' : 'No se pudo registrar (' + (e.message || e.code) + ').', 'bad'); }
+}
+function calcComprar() {
+  const g = num($('co-g').value), p = num($('co-precio').value);
+  $('co-total').textContent = g > 0 && p >= 0 && p != null ? `Total: ${fPeso(g * p)}` : '';
+}
+function calcRefinar() {
+  const g = num($('re-g').value), fino = num($('re-fino').value), cr = num($('re-costo').value) || 0;
+  const cg = costoGramo('oro_por_refinar');
+  const v = $('re-valor');
+  if (!v.dataset.manual) v.value = g > 0 && cg != null ? Math.round(g * cg) : '';
+  const valor = num(v.value);
+  const partes = [];
+  const enBodega = stockMetal('oro_por_refinar');
+  if (g > 0) partes.push(g > enBodega + 0.001 ? `Ojo: en bodega por refinar hay solo ${g2(enBodega)} g; el stock quedará negativo.` : `En bodega por refinar: ${g2(enBodega)} g.`);
+  if (g > 0 && fino > 0) partes.push(`Rendimiento: ${fDec.format(fino / (g * 0.75) * 100)}% del fino esperado si fuera 18k (75%).`);
+  if (g > 0 && fino > 0 && valor != null) partes.push(`Costo del oro fino: ${fPeso((valor + g * cr) / fino)} por gramo (lingote ${fPeso(valor)} + refinación ${fPeso(g * cr)}).`);
+  $('re-calc').textContent = partes.join(' ');
+}
+function leerAleacion() {
+  const v = (id) => num($(id).value) || 0;
+  const fino = v('al-fino'), cobre = v('al-cobre'), plata = v('al-plata'), paladio = v('al-paladio');
+  const total = fino + cobre + plata + paladio;
+  return { fino, cobre, plata, paladio, total, pct: total ? fino / total * 100 : null };
+}
+function calcAlear() {
+  const a = leerAleacion(), el = $('al-calc');
+  if (!a.total) { el.textContent = 'El oro fino debe ser el 75% del total para que salga 18k.'; return; }
+  const ok = a.pct >= 74.5 && a.pct <= 75.5;
+  el.replaceChildren(`Sale ${g2(a.total)} g · oro fino ${fDec.format(a.pct)}% `, h('span', { class: 'pill ' + (ok ? 'ok' : 'bad') }, ok ? 'Da 18k' : 'No da 75%'),
+    a.fino && !ok ? ` Para 18k con ${g2(a.fino)} g de fino, la liga debe sumar ${g2(a.fino / 3)} g.` : '');
+}
+function alCambiarMov() {
+  const t = $('mv-tipo').value, conOrf = t === 'entrega' || t === 'devolucion' || t === 'recuperacion';
+  $('mv-orf').closest('label').hidden = !conOrf;
+  $('mv-metal').disabled = t === 'recuperacion';
+  if (t === 'recuperacion') $('mv-metal').value = 'oro_por_refinar';
+}
+function wireInventario() {
+  for (const id of ['co-g', 'co-precio']) $(id).addEventListener('input', calcComprar);
+  for (const id of ['re-g', 're-fino', 're-costo']) $(id).addEventListener('input', calcRefinar);
+  $('re-valor').addEventListener('input', (e) => { e.target.dataset.manual = e.target.value ? '1' : ''; calcRefinar(); });
+  for (const id of ['al-fino', 'al-cobre', 'al-plata', 'al-paladio']) $(id).addEventListener('input', calcAlear);
+  $('mv-tipo').addEventListener('change', alCambiarMov);
+
+  $('f-comprar').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const metal = $('co-metal').value, g = num($('co-g').value), p = num($('co-precio').value), nota = $('co-nota').value.trim() || null;
+    if (!(g > 0)) return msg('m-co', 'Ingresa los gramos.', 'bad');
+    if (p == null || p < 0) return msg('m-co', 'Ingresa el precio por gramo.', 'bad');
+    ejecutar('m-co', () => crearOperacion({ tipo: 'compra', proveedor: nota, nota }, [{ metal_id: metal, gramos: g, costo: Math.round(g * p) }]),
+      `Compra registrada: ${g2(g)} g de ${nombreMetal(metal)} por ${fPeso(g * p)}.`, ev.target);
+  });
+  $('f-refinar').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const g = num($('re-g').value), fino = num($('re-fino').value), valor = num($('re-valor').value), cr = num($('re-costo').value) || 0, prov = $('re-prov').value.trim() || null;
+    if (!(g > 0)) return msg('m-re', 'Ingresa los gramos del lingote enviado.', 'bad');
+    if (!(fino > 0)) return msg('m-re', 'Ingresa el oro fino 24k recibido.', 'bad');
+    if (fino > g) return msg('m-re', 'El oro fino recibido no puede ser mayor que el lingote enviado.', 'bad');
+    if (valor == null || valor < 0) return msg('m-re', 'Ingresa el valor del lingote.', 'bad');
+    ejecutar('m-re', () => crearOperacion({ tipo: 'refinacion', proveedor: prov, nota: `Refinación por ${fPeso(cr)} el gramo` },
+      [{ metal_id: 'oro_por_refinar', gramos: -g }, { metal_id: 'oro_fino', gramos: fino, costo: Math.round(valor + g * cr) }]),
+      `Refinación registrada: ${g2(g)} g enviados, ${g2(fino)} g de oro fino recibidos.`, ev.target).then(() => { $('re-valor').dataset.manual = ''; });
+  });
+  $('f-alear').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const a = leerAleacion(), destino = $('al-metal').value;
+    if (!(a.fino > 0)) return msg('m-al', 'Ingresa el oro fino.', 'bad');
+    if (!(a.pct >= 74.5 && a.pct <= 75.5)) return msg('m-al', `El oro fino es el ${fDec.format(a.pct)}% del total; para 18k debe ser 75%. Ajusta la liga.`, 'bad');
+    const entradas = [['oro_fino', a.fino], ['cobre', a.cobre], ['plata', a.plata], ['paladio', a.paladio]].filter(([, g]) => g > 0);
+    const costo = entradas.reduce((s, [m, g]) => s + g * (costoGramo(m) || 0), 0);
+    ejecutar('m-al', () => crearOperacion({ tipo: 'aleacion', nota: `${fDec.format(a.pct)}% de oro fino` },
+      [...entradas.map(([m, g]) => ({ metal_id: m, gramos: -g })), { metal_id: destino, gramos: a.total, costo: Math.round(costo) }]),
+      `Aleación registrada: ${g2(a.total)} g de ${nombreMetal(destino)}.`, ev.target);
+  });
+  $('f-mov').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const t = $('mv-tipo').value, metal = t === 'recuperacion' ? 'oro_por_refinar' : $('mv-metal').value, g = num($('mv-g').value), orf = $('mv-orf').value, nota = $('mv-nota').value.trim() || null;
+    if (!(g > 0)) return msg('m-mv', 'Ingresa los gramos.', 'bad');
+    const conOrf = t === 'entrega' || t === 'devolucion' || t === 'recuperacion';
+    if (conOrf && !orf) return msg('m-mv', 'Elige el orfebre.', 'bad');
+    if (t.startsWith('ajuste') && !nota) return msg('m-mv', 'Explica el ajuste en la nota.', 'bad');
+    const tipo = t.startsWith('ajuste') ? 'ajuste' : t, signo = t === 'entrega' || t === 'ajuste-' ? -1 : 1;
+    ejecutar('m-mv', () => crearOperacion({ tipo, orfebre_id: conOrf ? Number(orf) : null, nota }, [{ metal_id: metal, gramos: signo * g }]),
+      `${ETQ_OP[tipo]} registrada: ${g2(g)} g de ${nombreMetal(metal)}.`, ev.target).then(alCambiarMov);
+  });
+  $('f-piedra').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const t = $('pi-tipo').value, piedra = $('pi-piedra').value, ct = num($('pi-ct').value), n = num($('pi-cant').value), cert = $('pi-cert').checked;
+    const costo = num($('pi-costo').value), min = num($('pi-min').value), nota = $('pi-nota').value.trim() || null;
+    if (!(ct > 0)) return msg('m-pi', 'Indica los quilates.', 'bad');
+    if (!(Number.isInteger(n) && n > 0)) return msg('m-pi', 'Indica una cantidad entera mayor que 0.', 'bad');
+    if (t === 'compra' && (costo == null || costo < 0)) return msg('m-pi', 'Indica el costo de cada piedra.', 'bad');
+    if (t !== 'compra' && !nota) return msg('m-pi', 'Explica la salida o el ajuste en la nota.', 'bad');
+    ejecutar('m-pi', async () => {
+      await crearOperacion({ tipo: t === 'compra' ? 'compra' : 'ajuste', nota }, [], [{ piedra, ct, certificado: cert, cantidad: t === 'salida' ? -n : n, costo_unit: t === 'compra' ? costo : null }]);
+      if (min != null) { const r = await sb.from('piedras_minimos').upsert({ piedra, ct, certificado: cert, minimo: min }); if (r.error) throw r.error; }
+    }, `${t === 'compra' ? 'Entrada' : t === 'salida' ? 'Salida' : 'Ajuste'} registrada: ${fNum.format(n)} × ${piedra} ${fCt(ct)}.`, ev.target);
+  });
+
+  // Costos
+  $('f-cot').addEventListener('input', calcCotizador);
+  $('f-cot').addEventListener('change', calcCotizador);
+  $('b-mo-cost').addEventListener('click', guardarManoObra);
+  $('b-puntos').addEventListener('click', guardarPuntos);
+  $('b-tarifas').addEventListener('click', guardarTarifas);
+}
+
+// --- vista de costos (solo administrador) ---
+const puntosDe = (tipo) => { const p = S.inv.puntos.find((x) => x.tipo === tipo); return p ? Number(p.puntos) : 1; };
+const costoPunto = (c) => c && Number(c.piezas_mes) > 0 ? Number(c.costo_mensual) / Number(c.piezas_mes) : null;
+function renderCostos() {
+  if (!verCostos()) return;
+  llenarSelectsInv();
+  if (!S.inv.cargado) { msg('m-cos-g', 'Cargando costos…'); return; }
+  msg('m-cos-g', '');
+  // Costo de piezas terminadas
+  const filas = S.inv.pcostos.map((c) => ({ c, p: S.inv.piezas.find((x) => x.id === c.pieza_id) })).filter((x) => x.p)
+    .sort((a, b) => (b.p.fecha || '').localeCompare(a.p.fecha || ''));
+  $('tb-pcostos').tBodies[0].replaceChildren(...(filas.length ? filas.map(({ c, p }) => {
+    const precio = c.precio_neto != null ? Number(c.precio_neto) : null, total = Number(c.costo_total);
+    const margen = precio ? (precio - total) / precio : null;
+    return h('tr', { class: 'clic', title: 'Ver detalle', onclick: () => detalleCosto(c, p) },
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.modelo), h('td', {}, nombreMetal(p.metal_id)), h('td', {}, nombreOrfebre(p.orfebre_id)),
+      ...['costo_metal', 'costo_merma', 'costo_piedras', 'costo_mano_obra', 'costo_otros'].map((k) => h('td', { class: 'n' }, fPeso(Number(c[k])))),
+      h('td', { class: 'n' }, h('b', {}, fPeso(total))), h('td', { class: 'n' }, precio != null ? fPeso(precio) : '—'),
+      h('td', { class: 'n' }, margen == null ? '—' : h('span', { class: 'pill ' + (margen < 0 ? 'bad' : 'ok') }, fPct(margen))));
+  }) : [h('tr', {}, h('td', { colspan: 12, class: 'note' }, 'Aún no hay piezas terminadas con metal entregado. El costo se calcula al aprobarlas.'))]));
+  // Mano de obra
+  $('tb-mo-cost').tBodies[0].replaceChildren(...S.orfItems.filter((o) => o.activo !== false).map((o) => {
+    const c = S.inv.costosOrf.find((x) => x.orfebre_id === o.id) || {};
+    const cm = h('input', { type: 'number', step: '1000', min: '0', value: c.costo_mensual ?? '', 'aria-label': 'Costo mensual de ' + o.nombre }); cm.dataset.orf = o.id; cm.dataset.k = 'costo_mensual';
+    const pm = h('input', { type: 'number', step: '1', min: '0', value: c.piezas_mes ?? '', 'aria-label': 'Piezas al mes de ' + o.nombre }); pm.dataset.orf = o.id; pm.dataset.k = 'piezas_mes';
+    const cp = h('td', { class: 'n' }, fPeso(costoPunto(c)));
+    const recalc = () => { cp.textContent = fPeso(costoPunto({ costo_mensual: num(cm.value), piezas_mes: num(pm.value) })); };
+    cm.addEventListener('input', recalc); pm.addEventListener('input', recalc);
+    return h('tr', {}, h('td', {}, o.nombre), h('td', { class: 'n' }, cm), h('td', { class: 'n' }, pm), cp);
+  }));
+  // Puntos
+  $('tb-puntos').tBodies[0].replaceChildren(...TIPOS().map((t) => {
+    const i = h('input', { type: 'number', step: '0.25', min: '0', value: puntosDe(t), 'aria-label': 'Puntos de ' + t }); i.dataset.tipo = t;
+    return h('tr', {}, h('td', {}, t), h('td', { class: 'n' }, i));
+  }));
+  // Tarifas
+  $('tb-tarifas').tBodies[0].replaceChildren(...S.inv.tarifas.map((t) => {
+    const i = h('input', { type: 'number', step: '100', min: '0', value: Number(t.valor), 'aria-label': t.nombre }); i.dataset.clave = t.clave;
+    return h('tr', {}, h('td', {}, t.nombre), h('td', { class: 'n' }, i));
+  }));
+  $('tb-cg').tBodies[0].replaceChildren(...S.inv.metales.filter((m) => m.activo !== false).map((m) => h('tr', {}, h('td', {}, m.nombre), h('td', { class: 'n' }, fPeso(costoGramo(m.id))))));
+  renderPiedrasCot(); calcCotizador();
+}
+async function guardarFilas(msgId, tabla, filas, onConflict, texto) {
+  const { error } = await sb.from(tabla).upsert(filas, { onConflict });
+  if (error) { msg(msgId, 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad'); return; }
+  msg(msgId, texto, 'ok'); await cargarInventario();
+}
+function guardarManoObra() {
+  const porOrf = new Map();
+  document.querySelectorAll('#tb-mo-cost input').forEach((i) => { const id = Number(i.dataset.orf); if (!porOrf.has(id)) porOrf.set(id, { orfebre_id: id }); porOrf.get(id)[i.dataset.k] = num(i.value) || 0; });
+  guardarFilas('m-mo-cost', 'costos_orfebre', [...porOrf.values()], 'orfebre_id', 'Mano de obra guardada. Se aplica a las piezas que se aprueben desde ahora.');
+}
+function guardarPuntos() {
+  const filas = [...document.querySelectorAll('#tb-puntos input')].map((i) => ({ tipo: i.dataset.tipo, puntos: num(i.value) ?? 1 }));
+  guardarFilas('m-puntos', 'puntos_tipo', filas, 'tipo', 'Puntos guardados.');
+}
+function guardarTarifas() {
+  const filas = [...document.querySelectorAll('#tb-tarifas input')].map((i) => ({ clave: i.dataset.clave, nombre: (S.inv.tarifas.find((t) => t.clave === i.dataset.clave) || {}).nombre, valor: num(i.value) || 0 }));
+  guardarFilas('m-tarifas', 'tarifas', filas, 'clave', 'Tarifas guardadas.');
+}
+function detalleCosto(c, p) {
+  const d = c.detalle || {}, precio = c.precio_neto != null ? Number(c.precio_neto) : null, total = Number(c.costo_total);
+  const filas = [
+    ['Metal', `${g2(d.peso_final)} g × ${fPeso(d.costo_gramo)}/g`, c.costo_metal],
+    ['Merma', `${g2(d.merma_g)} g × ${fPeso(d.costo_gramo)}/g`, c.costo_merma],
+    ['Piedras', (d.piedras || []).map((x) => `${x.cantidad} × ${x.piedra} ${fCt(Number(x.ct))} a ${fPeso(x.costo_unit)}`).join(' · ') || 'Sin piedras', c.costo_piedras],
+    ['Mano de obra', `${fDec2.format(d.puntos || 0)} puntos × ${fPeso(d.costo_punto)}`, c.costo_mano_obra],
+    ['Otros', [d.soldadura_g ? `soldadura ${g2(d.soldadura_g)} g` : '', d.rodio ? `rodio ${fPeso(d.tarifa_rodio)}` : '', d.estuche ? `estuche ${fPeso(d.tarifa_estuche)}` : ''].filter(Boolean).join(' · ') || '—', c.costo_otros],
+  ];
+  const recalc = h('button', { type: 'button', class: 'btn' }, 'Recalcular con costos actuales');
+  const cerrar = h('button', { type: 'button', class: 'btn primary', autofocus: true }, 'Cerrar');
+  const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-costo' },
+    h('div', { class: 'cuerpo' },
+      h('h2', { id: 'dlg-costo' }, `${p.modelo}${p.cotizacion ? ' · cot. ' + p.cotizacion : ''}`),
+      h('p', { class: 'aviso' }, `${nombreOrfebre(p.orfebre_id)} · ${nombreMetal(p.metal_id)} · ${fFecha(p.fecha)} · calculado el ${new Date(c.calculado_en).toLocaleDateString('es-CL')}`),
+      h('dl', {}, ...filas.flatMap(([k, det, v]) => [h('dt', {}, k), h('dd', {}, fPeso(Number(v)), h('div', { class: 'note' }, det))]),
+        h('dt', {}, 'Costo total'), h('dd', {}, h('b', {}, fPeso(total))),
+        h('dt', {}, 'Precio neto'), h('dd', {}, precio != null ? `${fPeso(precio)} · margen ${fPct((precio - total) / precio)}` : 'Sin producto de catálogo')),
+      h('span', { class: 'msg', id: 'm-dlg-costo', role: 'status' })),
+    h('div', { class: 'pie' }, recalc, cerrar));
+  const fin = () => { dlg.close(); dlg.remove(); };
+  cerrar.addEventListener('click', fin);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); fin(); });
+  recalc.addEventListener('click', async () => {
+    const { error } = await sb.rpc('recalcular_costo_pieza', { p_pieza: p.id });
+    if (error) { msg('m-dlg-costo', 'No se pudo recalcular (' + (error.message || error.code) + ').', 'bad'); return; }
+    fin(); await cargarInventario(); msg('m-cos-g', `Costo de ${p.modelo} recalculado.`, 'ok');
+  });
+  document.body.append(dlg); dlg.showModal();
+}
+// --- cotizador ---
+function renderPiedrasCot() {
+  const box = $('ct-piedras'); if (box.children.length) return;
+  box.replaceChildren(...POSICIONES.map(([pos, etq]) => h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
+    h('label', { class: 'field' }, 'Tipo de piedra', h('select', { id: `ctp-${pos}-tipo` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)))),
+    h('label', { class: 'field' }, 'Quilates (ct)', h('input', { id: `ctp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal' })),
+    h('label', { class: 'field' }, 'Cantidad', h('input', { id: `ctp-${pos}-cant`, type: 'number', step: '1', min: '0', inputmode: 'numeric' })),
+    h('label', { class: 'cert' }, h('input', { id: `ctp-${pos}-cert`, type: 'checkbox' }), 'Con certificado'))));
+}
+function calcCotizador() {
+  if (!verCostos() || !S.inv.cargado) return;
+  const metal = $('ct-metal').value, tipo = $('ct-tipo').value, pf = num($('ct-pf').value) || 0, mp = Math.min(num($('ct-merma').value) || 0, 90);
+  const sol = num($('ct-sol').value) || 0, margen = Math.min(num($('ct-margen').value) || 0, 95);
+  const cg = costoGramo(metal), cgv = cg || 0;
+  const oroTrab = pf / (1 - mp / 100), mermaG = oroTrab - pf;
+  let piedras = 0; const sinCosto = [];
+  for (const [pos] of POSICIONES) {
+    const p = $(`ctp-${pos}-tipo`)?.value; if (!p) continue;
+    const ct = num($(`ctp-${pos}-ct`).value), n = num($(`ctp-${pos}-cant`).value) || 0, cert = $(`ctp-${pos}-cert`).checked;
+    const cu = costoPiedra(p, ct, cert); if (cu == null) sinCosto.push(`${p} ${ct ? fCt(ct) : ''}`); piedras += n * (cu || 0);
+  }
+  const conPunto = S.inv.costosOrf.map(costoPunto).filter((x) => x != null);
+  const cpProm = conPunto.length ? conPunto.reduce((s, x) => s + x, 0) / conPunto.length : 0;
+  const mo = puntosDe(tipo) * cpProm;
+  const tarifa = (k) => Number((S.inv.tarifas.find((t) => t.clave === k) || {}).valor) || 0;
+  const otros = sol * cgv + ($('ct-rodio').checked ? tarifa('rodio') : 0) + ($('ct-estuche').checked ? tarifa('estuche') : 0);
+  const total = pf * cgv + mermaG * cgv + piedras + mo + otros;
+  const precio = margen < 100 ? total / (1 - margen / 100) : null;
+  const fila = (k, v, cls) => h('div', { class: cls || null }, h('span', {}, k), h('span', {}, v));
+  $('ct-res').replaceChildren(
+    fila(`Metal (${g2(pf)} g)`, fPeso(pf * cgv)), fila(`Merma (${g2(mermaG)} g)`, fPeso(mermaG * cgv)), fila('Piedras', fPeso(piedras)),
+    fila(`Mano de obra (${fDec2.format(puntosDe(tipo))} puntos)`, fPeso(mo)), fila('Otros (soldadura, rodio, estuche)', fPeso(otros)),
+    fila('Costo total', fPeso(total), 'tot'), fila(`Precio neto sugerido (margen ${fNum.format(margen)}%)`, fPeso(precio)), fila('Precio con IVA', fPeso(precio != null ? precio * (1 + IVA) : null)),
+    ...(cg == null ? [h('p', { class: 'note' }, `${nombreMetal(metal)} aún no tiene costo: registra una compra, refinación o aleación.`)] : []),
+    ...(sinCosto.length ? [h('p', { class: 'note' }, 'Sin costo registrado para: ' + sinCosto.join(', ') + '.')] : []),
+    ...(!conPunto.length ? [h('p', { class: 'note' }, 'Completa "Mano de obra con sueldo fijo" para incluir la mano de obra.')] : []));
 }
 
 // ---------- sesión ----------
@@ -2451,7 +3170,7 @@ async function entrar(session) {
   iniciado = true;
   pantalla('portal');
   S.uid = session.user.id; S.me = { id: S.uid, email: session.user.email };
-  await Promise.all([cargarOrfebres(), cargarParametros(), cargarModelos()]);
+  await Promise.all([cargarOrfebres(), cargarParametros(), cargarModelos(), cargarMetales()]);
   await cargarPerfiles();
   const rol = S.perfil?.rol || null;
   S.rolReal = rol; S.vista = rol || 'lector';
@@ -2461,9 +3180,9 @@ async function entrar(session) {
   else if (rol === 'orfebre' && !S.perfil.orfebre_id) avisoError('Tu usuario no está vinculado a un orfebre del taller. Pide al Administrador que lo vincule en la pestaña Usuarios.');
   $('vista-box').hidden = rol !== 'administrador';
   const ini = location.hash.slice(1);
-  S.tab = ['panel', 'ventas', 'registrar', 'trabajos', 'revision', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
+  S.tab = ['panel', 'ventas', 'registrar', 'trabajos', 'revision', 'inventario', 'costos', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
   aplicarVista();
-  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas()]);
+  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas(), cargarPiezaPiedras(), cargarInventario()]);
   // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { cargarMis(); cargarPendientes(); } });
 }
