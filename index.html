@@ -112,6 +112,7 @@ td.wrap { white-space: normal; min-width: 12rem; }
 .piedra-fila .cert { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; padding-bottom: 8px; white-space: nowrap; }
 @media (max-width: 640px) { .piedra-fila { grid-template-columns: 1fr 1fr; } .piedra-fila .pos { grid-column: 1 / -1; padding-bottom: 0; } }
 /* Inventario y costos */
+.inv-sub-panel:not([hidden]) { display: grid; gap: 20px; }
 .inv-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr)); gap: 14px; }
 .inv-forms .card form { display: grid; gap: 10px; }
 .inv-forms .fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
@@ -646,6 +647,11 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
 
   <!-- INVENTARIO (administrador y supervisor) -->
   <section id="inventario" class="pv-tab" hidden style="display:grid;gap:20px">
+    <div class="seg" id="inv-sub" role="group" aria-label="Inventario" style="justify-self:start">
+      <button type="button" data-sub="insumos">Insumos</button>
+      <button type="button" data-sub="terminadas">Piezas terminadas</button>
+    </div>
+    <div id="inv-insumos" class="inv-sub-panel">
     <div class="steps">
       <div class="step"><span class="n">1 · Compra</span><b>Oro 18k a personas</b><span>Queda como "por refinar", con lo que pagaste por gramo.</span></div>
       <div class="step"><span class="n">2 · Refinación</span><b>Sale oro fino 24k</b><span>El lingote va a la refinadora y vuelve como oro fino. El rendimiento muestra si el oro era 18k de verdad.</span></div>
@@ -758,6 +764,63 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <h2>Movimientos de inventario</h2>
       <p class="note">Todo lo que entra y sale queda anotado: quién, cuándo, cuánto y para qué pieza. El stock no se edita a mano; se calcula con estos movimientos.</p>
       <div class="tbl"><table id="tb-movs"><thead><tr id="th-movs"></tr></thead><tbody></tbody></table></div>
+    </div>
+    </div>
+
+    <!-- Piezas terminadas -->
+    <div id="inv-terminadas" class="inv-sub-panel" hidden>
+      <div class="tiles" id="pt-tiles"></div>
+
+      <div class="card" id="c-pt-form">
+        <h2 id="h-pt">Agregar pieza terminada</h2>
+        <form id="f-pt" class="pieza" novalidate>
+          <div class="fields">
+            <label class="field"><span>Tipo de producto<span class="req" aria-hidden="true">*</span></span><select id="pt-tipo"></select></label>
+            <label class="field full"><span>Nombre producto<span class="req" aria-hidden="true">*</span></span><input id="pt-nombre" autocomplete="off"></label>
+            <label class="field">Variante<input id="pt-variante" autocomplete="off" placeholder="Ej. Talla 7"></label>
+            <label class="field">Tono<select id="pt-tono"></select></label>
+            <label class="field">Código de barra<input id="pt-barra" autocomplete="off" class="mono"></label>
+            <label class="field"><span>SKU<span class="req" aria-hidden="true">*</span></span><input id="pt-sku" autocomplete="off" class="mono"></label>
+            <label class="field">Peso <span class="unit">(g)</span><input id="pt-peso" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field solo-admin">Costo neto <span class="unit">($)</span><input id="pt-costo" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field"><span>Stock<span class="req" aria-hidden="true">*</span></span><input id="pt-stock" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field">Precio venta <span class="unit">($)</span><input id="pt-precio" type="number" step="1" min="0" inputmode="numeric"></label>
+            <label class="field"><span>Sucursal<span class="req" aria-hidden="true">*</span></span><select id="pt-sucursal"></select></label>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn primary" id="b-pt">Agregar pieza</button>
+            <button type="button" class="btn" id="b-pt-cancelar" hidden>Cancelar edición</button>
+            <span class="msg" id="m-pt" role="status"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Cargar desde Excel</h2>
+        <p class="note">Usa la plantilla con las mismas columnas del formulario. La carga es incremental: no borra nada. Si el SKU ya existe en esa sucursal se actualiza; si no, se agrega. Antes de aplicar verás qué filas son nuevas, cuáles se actualizan y cuáles tienen errores.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="b-pt-plantilla">Descargar plantilla</button>
+          <label class="btn" style="display:inline-flex;align-items:center">Elegir archivo Excel<input type="file" id="pt-archivo" accept=".xlsx,.xls,.csv" hidden></label>
+          <span class="msg" id="m-pt-carga" role="status"></span>
+        </div>
+        <div id="pt-preview" hidden style="display:grid;gap:10px">
+          <p class="note" id="pt-preview-res"></p>
+          <div class="tbl"><table id="tb-pt-preview"><thead><tr id="th-pt-preview"></tr></thead><tbody></tbody></table></div>
+          <div class="actions"><button type="button" class="btn primary" id="b-pt-aplicar">Aplicar carga</button><button type="button" class="btn link" id="b-pt-descartar">Descartar</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Piezas terminadas en stock</h2>
+        <div class="filters">
+          <input type="search" id="ptf-q" placeholder="Buscar nombre, SKU o código de barra" aria-label="Buscar pieza terminada" style="min-width:16rem">
+          <select id="ptf-sucursal" aria-label="Filtrar por sucursal"></select>
+          <select id="ptf-tipo" aria-label="Filtrar por tipo de producto"></select>
+          <select id="ptf-tono" aria-label="Filtrar por tono"></select>
+        </div>
+        <p class="note" id="n-pt"></p>
+        <div class="tbl"><table id="tb-pt"><thead><tr id="th-pt"></tr></thead><tbody></tbody></table></div>
+      </div>
     </div>
   </section>
 
@@ -882,6 +945,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <li><b>Merma</b>: oro trabajado − peso final − oro devuelto − oro recuperado en la máquina de pulido. El % es merma dividida por oro trabajado.</li>
         <li><b>Oro devuelto</b>: suma del oro que los orfebres devolvieron en las piezas del período.</li>
         <li><b>Inventario</b>: el stock es la suma de los movimientos, nunca un número que se edita. Al registrar una pieza sale de bodega el metal y las piedras entregados; al aprobarla vuelve el oro devuelto y el de la máquina de pulido pasa a "por refinar".</li>
+        <li><b>Piezas terminadas</b> (en Inventario): stock de piezas listas para la venta por sucursal. Se agregan una a una o con un Excel (descarga la plantilla). La carga es incremental: si el SKU ya existe en esa sucursal se actualiza; si no, se agrega. Nada se borra. El costo neto solo lo ve y carga el Administrador.</li>
         <li><b>Costo por gramo</b>: promedio ponderado de lo pagado. Refinación: (valor del lingote + gramos enviados × costo de refinación) ÷ oro fino recibido. Aleación: costo del fino y de la liga ÷ gramos que salen.</li>
         <li><b>Costo de una pieza</b>: metal (peso final), merma, piedras, mano de obra (puntos del tipo de trabajo × costo por punto del orfebre) y otros (soldadura, rodio, estuche). Se guarda al aprobarla y se compara con el precio neto del catálogo.</li>
         <li><b>Pieza válida</b>: con peso final y merma entre −5% y 25%. Fuera de ese rango es atípica y no entra al cálculo de merma.</li>
@@ -941,6 +1005,7 @@ const S = {
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
   inv: { cargado: false, metales: [], ops: [], minimos: [], piezas: [], mcost: new Map(), pcost: new Map(), costosOrf: [], puntos: [], tarifas: [], pcostos: [] },
   piezaPiedras: new Map(), piezaPagos: new Map(),
+  pt: { sub: 'insumos', cargado: false, rows: [], costos: new Map(), f: { q: '', suc: '', tipo: '', tono: '' }, editando: null, carga: null },
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
@@ -2704,7 +2769,7 @@ function wire() {
     i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
   }));
   $('f-inv').addEventListener('submit', invitarUsuario);
-  wireInventario();
+  wireInventario(); wirePT();
   $('h-orf').addEventListener('change', (e) => { S.hf.orf = e.target.value; renderRevision(); });
   $('h-anio').addEventListener('change', (e) => { S.hf.anio = e.target.value; S.hf.mes = ''; renderRevision(); });
   $('h-mes').addEventListener('change', (e) => { S.hf.mes = e.target.value; renderRevision(); });
@@ -2829,6 +2894,7 @@ function llenarSelectsInv() {
 
 // --- vista de inventario ---
 function renderInventario() {
+  setInvSub(S.pt.sub);
   const admin = verCostos();
   document.querySelectorAll('#inventario .solo-admin').forEach((e) => { e.hidden = !admin; });
   llenarSelectsInv(); alCambiarMov();
@@ -3141,6 +3207,272 @@ function calcCotizador() {
     ...(!conPunto.length ? [h('p', { class: 'note' }, 'Completa "Mano de obra con sueldo fijo" para incluir la mano de obra.')] : []));
 }
 
+// ---------- inventario: piezas terminadas ----------
+// Stock de piezas listas para la venta por sucursal. Clave: SKU + sucursal. El costo neto solo lo ve el administrador.
+const PT_TIPOS = ['Anillo', 'Cadena', 'Colgante', 'Pulsera', 'Piercing', 'Collar', 'Aros'];
+const PT_TONOS = ['Miel', 'Blanco', 'Amarillo', 'Rose'];
+const PT_SUCURSALES = ['Santiago', 'Las Condes'];
+const PT_COLS = [['tipo_producto', 'Tipo de producto'], ['nombre', 'Nombre producto'], ['variante', 'Variante'], ['tono', 'Tono'], ['codigo_barra', 'Código de barra'],
+  ['sku', 'SKU'], ['peso', 'Peso'], ['costo_neto', 'Costo neto'], ['stock', 'Stock'], ['precio_venta', 'Precio venta'], ['sucursal', 'Sucursal']];
+const clavePT = (sku, suc) => `${String(sku).trim().toLowerCase()}|${suc}`;
+
+async function cargarPT() {
+  if (!(S.rolReal === 'administrador' || S.rolReal === 'supervisor')) return;
+  try {
+    S.pt.rows = await todas(() => sb.from('piezas_terminadas').select('*').order('nombre').order('id'));
+    if (S.rolReal === 'administrador') {
+      const cs = await todas(() => sb.from('pt_costos').select('*').order('pieza_terminada_id'));
+      S.pt.costos = new Map(cs.map((c) => [c.pieza_terminada_id, Number(c.costo_neto)]));
+    }
+    S.pt.cargado = true;
+  } catch (e) { msg('m-pt', 'No se pudieron cargar las piezas terminadas (' + (e.message || e.code) + ').', 'bad'); }
+  if (S.tab === 'inventario' && S.pt.sub === 'terminadas') renderPT();
+}
+function setInvSub(sub) {
+  S.pt.sub = sub;
+  $('inv-insumos').hidden = sub !== 'insumos';
+  $('inv-terminadas').hidden = sub !== 'terminadas';
+  document.querySelectorAll('#inv-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === sub)));
+  if (sub === 'terminadas') renderPT();
+}
+function opcionesPT() {
+  const set = (id, primera, valores) => { const s = $(id), cur = s.value; s.replaceChildren(...(primera != null ? [new Option(primera, '')] : []), ...valores.map((v) => new Option(v, v))); if ([...s.options].some((o) => o.value === cur)) s.value = cur; };
+  set('pt-tipo', null, PT_TIPOS); set('pt-tono', 'Sin tono', PT_TONOS); set('pt-sucursal', null, PT_SUCURSALES);
+  set('ptf-sucursal', 'Todas las sucursales', PT_SUCURSALES); set('ptf-tipo', 'Todos los tipos', PT_TIPOS); set('ptf-tono', 'Todos los tonos', PT_TONOS);
+}
+function renderPT() {
+  const admin = verCostos();
+  document.querySelectorAll('#inventario .solo-admin').forEach((e) => { e.hidden = !admin; });
+  opcionesPT();
+  if (!S.pt.cargado) { $('n-pt').textContent = 'Cargando…'; return; }
+  const F = S.pt.f, q = F.q.trim().toLowerCase();
+  const rs = S.pt.rows.filter((r) => (!F.suc || r.sucursal === F.suc) && (!F.tipo || r.tipo_producto === F.tipo) && (!F.tono || r.tono === F.tono)
+    && (!q || [r.nombre, r.sku, r.codigo_barra, r.variante].some((v) => v && String(v).toLowerCase().includes(q))));
+  // Resumen del filtro
+  const unidades = rs.reduce((s, r) => s + (r.stock || 0), 0);
+  const venta = rs.reduce((s, r) => s + (r.stock || 0) * (Number(r.precio_venta) || 0), 0);
+  const conCosto = rs.filter((r) => S.pt.costos.has(r.id));
+  const costo = conCosto.reduce((s, r) => s + (r.stock || 0) * S.pt.costos.get(r.id), 0);
+  const tile = (k, v, d) => h('div', { class: 'tile' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v), h('span', { class: 'd' }, d || ''));
+  $('pt-tiles').replaceChildren(
+    tile('Piezas en stock', fNum.format(unidades), `${fNum.format(rs.length)} ${rs.length === 1 ? 'producto' : 'productos'}`),
+    tile('Valor a precio de venta', fPeso(venta)),
+    ...(admin ? [tile('Valor a costo neto', fPeso(costo), conCosto.length < rs.length ? `${fNum.format(rs.length - conCosto.length)} sin costo` : '')] : []),
+    ...PT_SUCURSALES.map((s) => tile(`Stock ${s}`, fNum.format(rs.filter((r) => r.sucursal === s).reduce((a, r) => a + (r.stock || 0), 0)))));
+  // Tabla
+  const cols = ['Tipo de producto', 'Nombre producto', 'Variante', 'Tono', 'Código de barra', 'SKU', 'Peso (g)', ...(admin ? ['Costo neto'] : []), 'Stock', 'Precio venta', 'Sucursal', ''];
+  $('th-pt').replaceChildren(...cols.map((c) => h('th', { class: ['Peso (g)', 'Costo neto', 'Stock', 'Precio venta'].includes(c) ? 'n' : null }, c)));
+  const shown = rs.slice(0, 500);
+  $('n-pt').textContent = rs.length > shown.length ? `Se muestran ${shown.length} de ${fNum.format(rs.length)} productos; usa la búsqueda o los filtros.` : '';
+  $('tb-pt').tBodies[0].replaceChildren(...(shown.length ? shown.map((r) => h('tr', {},
+    h('td', {}, r.tipo_producto), h('td', { class: 'wrap' }, r.nombre), h('td', {}, r.variante || ''), h('td', {}, r.tono || ''), h('td', { class: 'mono' }, r.codigo_barra || ''),
+    h('td', { class: 'mono' }, r.sku), h('td', { class: 'n' }, g2(n2(r.peso))),
+    ...(admin ? [h('td', { class: 'n' }, S.pt.costos.has(r.id) ? fPeso(S.pt.costos.get(r.id)) : '—')] : []),
+    h('td', { class: 'n' }, fNum.format(r.stock || 0)), h('td', { class: 'n' }, r.precio_venta != null ? fPeso(Number(r.precio_venta)) : '—'), h('td', {}, r.sucursal),
+    h('td', {}, h('button', { type: 'button', class: 'btn link', onclick: () => editarPT(r) }, 'Editar'), h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarPT(r) }, 'Eliminar')))) :
+    [h('tr', {}, h('td', { colspan: cols.length, class: 'note' }, S.pt.rows.length ? 'Ningún producto coincide con el filtro.' : 'Aún no hay piezas terminadas. Agrégalas con el formulario o carga un Excel.'))]));
+}
+
+// --- formulario ---
+function leerPT() {
+  return {
+    tipo_producto: $('pt-tipo').value, nombre: $('pt-nombre').value.trim(), variante: $('pt-variante').value.trim() || null, tono: $('pt-tono').value || null,
+    codigo_barra: $('pt-barra').value.trim() || null, sku: $('pt-sku').value.trim(), peso: num($('pt-peso').value), stock: num($('pt-stock').value),
+    precio_venta: num($('pt-precio').value), sucursal: $('pt-sucursal').value, costo_neto: num($('pt-costo').value),
+  };
+}
+function llenarPT(r) {
+  $('pt-tipo').value = r?.tipo_producto || PT_TIPOS[0]; $('pt-nombre').value = r?.nombre || ''; $('pt-variante').value = r?.variante || ''; $('pt-tono').value = r?.tono || '';
+  $('pt-barra').value = r?.codigo_barra || ''; $('pt-sku').value = r?.sku || ''; $('pt-peso').value = r?.peso ?? ''; $('pt-stock').value = r?.stock ?? '';
+  $('pt-precio').value = r?.precio_venta ?? ''; $('pt-sucursal').value = r?.sucursal || PT_SUCURSALES[0]; $('pt-costo').value = r && S.pt.costos.has(r.id) ? S.pt.costos.get(r.id) : '';
+}
+function errorPT(r) {
+  if (!PT_TIPOS.includes(r.tipo_producto)) return 'Elige el tipo de producto.';
+  if (!r.nombre) return 'Escribe el nombre del producto.';
+  if (!r.sku) return 'Escribe el SKU.';
+  if (!PT_SUCURSALES.includes(r.sucursal)) return 'Elige la sucursal.';
+  if (!(Number.isInteger(r.stock) && r.stock >= 0)) return 'El stock debe ser un número entero de 0 o más.';
+  for (const [k, t] of [['peso', 'El peso'], ['precio_venta', 'El precio de venta'], ['costo_neto', 'El costo neto']]) if (r[k] != null && r[k] < 0) return `${t} no puede ser negativo.`;
+  return null;
+}
+async function guardarCostoPT(id, costo) {
+  if (!verCostos()) return;
+  const r = costo != null ? await sb.from('pt_costos').upsert({ pieza_terminada_id: id, costo_neto: Math.round(costo) }) : await sb.from('pt_costos').delete().eq('pieza_terminada_id', id);
+  if (r.error) throw r.error;
+}
+async function enviarPT(ev) {
+  ev.preventDefault();
+  const r = leerPT(), err = errorPT(r);
+  if (err) { msg('m-pt', err, 'bad'); return; }
+  const { costo_neto, ...fila } = r;
+  fila.precio_venta = fila.precio_venta != null ? Math.round(fila.precio_venta) : null;
+  try {
+    const res = S.pt.editando
+      ? await sb.from('piezas_terminadas').update({ ...fila, actualizado_en: new Date().toISOString() }).eq('id', S.pt.editando).select('id').single()
+      : await sb.from('piezas_terminadas').insert(fila).select('id').single();
+    if (res.error) throw res.error;
+    await guardarCostoPT(res.data.id, costo_neto);
+    msg('m-pt', S.pt.editando ? `${fila.nombre} actualizado.` : `${fila.nombre} agregado a ${fila.sucursal}.`, 'ok');
+    cancelarPT(true); await cargarPT();
+  } catch (e) {
+    msg('m-pt', e.code === '23505' ? `El SKU ${fila.sku} ya existe en ${fila.sucursal}. Edítalo en la tabla.` : 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad');
+  }
+}
+function editarPT(r) {
+  S.pt.editando = r.id; llenarPT(r);
+  $('h-pt').textContent = 'Editar pieza terminada'; $('b-pt').textContent = 'Guardar cambios'; $('b-pt-cancelar').hidden = false; msg('m-pt', '');
+  $('c-pt-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function cancelarPT(conservarMsg) {
+  S.pt.editando = null; llenarPT(null);
+  $('h-pt').textContent = 'Agregar pieza terminada'; $('b-pt').textContent = 'Agregar pieza'; $('b-pt-cancelar').hidden = true; if (!conservarMsg) msg('m-pt', '');
+}
+async function eliminarPT(r) {
+  const ok = await confirmar({ titulo: 'Eliminar pieza terminada', datos: [['Producto', r.nombre + (r.variante ? ' · ' + r.variante : '')], ['SKU', r.sku], ['Sucursal', r.sucursal], ['Stock', fNum.format(r.stock || 0)]],
+    aviso: 'Se elimina este producto del stock de la sucursal. Esta acción no se puede deshacer.', aceptar: 'Eliminar definitivamente' });
+  if (!ok) return;
+  const { error } = await sb.from('piezas_terminadas').delete().eq('id', r.id);
+  if (error) { msg('m-pt', 'No se pudo eliminar (' + (error.message || error.code) + ').', 'bad'); return; }
+  msg('m-pt', `${r.nombre} eliminado de ${r.sucursal}.`, 'ok'); if (S.pt.editando === r.id) cancelarPT(true); await cargarPT();
+}
+
+// --- Excel ---
+let xlsxListo = null;
+function cargarXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxListo) xlsxListo = new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => ok(window.XLSX); s.onerror = () => { xlsxListo = null; mal(new Error('No se pudo cargar el lector de Excel.')); };
+    document.head.append(s);
+  });
+  return xlsxListo;
+}
+async function descargarPlantillaPT() {
+  try {
+    const X = await cargarXLSX();
+    const libro = X.utils.book_new();
+    const ej = ['Anillo', 'Brasilia', 'Talla 7', 'Miel', '7801234567890', 'P27-DL-C0.30-MI-7', 3.2, 180000, 2, 590000, 'Santiago'];
+    X.utils.book_append_sheet(libro, X.utils.aoa_to_sheet([PT_COLS.map(([, t]) => t), ej]), 'Piezas terminadas');
+    const n = Math.max(PT_TIPOS.length, PT_TONOS.length, PT_SUCURSALES.length);
+    X.utils.book_append_sheet(libro, X.utils.aoa_to_sheet([['Tipo de producto', 'Tono', 'Sucursal'],
+      ...Array.from({ length: n }, (_, i) => [PT_TIPOS[i] || '', PT_TONOS[i] || '', PT_SUCURSALES[i] || ''])]), 'Valores permitidos');
+    X.writeFile(libro, 'plantilla-piezas-terminadas.xlsx');
+  } catch (e) { msg('m-pt-carga', e.message, 'bad'); }
+}
+// Normaliza textos y números que vienen del Excel.
+const sinTildes = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const elegir = (v, lista, alias = {}) => { const k = sinTildes(v); if (!k) return null; return lista.find((x) => sinTildes(x) === k) || alias[k] || undefined; };
+function numeroExcel(v) {
+  if (v === '' || v == null) return null;
+  if (typeof v === 'number') return v;
+  let s = String(v).replace(/\$|\s/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 90.000 = noventa mil
+  const n = Number(s); return isFinite(n) ? n : NaN;
+}
+const textoExcel = (v) => v === '' || v == null ? null : (typeof v === 'number' ? (Number.isInteger(v) ? String(v) : String(v)) : String(v).trim()) || null;
+async function leerArchivoPT(file) {
+  msg('m-pt-carga', 'Leyendo archivo…'); $('pt-preview').hidden = true;
+  try {
+    const X = await cargarXLSX();
+    const libro = X.read(await file.arrayBuffer(), { type: 'array' });
+    const hoja = libro.Sheets[libro.SheetNames[0]];
+    const filas = X.utils.sheet_to_json(hoja, { header: 1, raw: true, defval: '' }).filter((f) => f.some((c) => String(c).trim() !== ''));
+    if (filas.length < 2) throw new Error('El archivo no tiene filas de datos.');
+    // Columnas por nombre (sin importar tildes ni mayúsculas).
+    const cab = filas[0].map(sinTildes), idx = {};
+    for (const [k, t] of PT_COLS) idx[k] = cab.indexOf(sinTildes(t));
+    const faltan = PT_COLS.filter(([k]) => idx[k] < 0 && k !== 'costo_neto' && k !== 'variante' && k !== 'codigo_barra' && k !== 'peso' && k !== 'precio_venta' && k !== 'tono').map(([, t]) => t);
+    if (faltan.length) throw new Error('Faltan columnas: ' + faltan.join(', ') + '. Usa la plantilla.');
+    const existentes = new Map(S.pt.rows.map((r) => [clavePT(r.sku, r.sucursal), r]));
+    const vistos = new Set(), out = [];
+    filas.slice(1).forEach((f, i) => {
+      const v = (k) => idx[k] >= 0 ? f[idx[k]] : '';
+      const r = {
+        tipo_producto: elegir(v('tipo_producto'), PT_TIPOS, { aro: 'Aros', anillos: 'Anillo', cadenas: 'Cadena', colgantes: 'Colgante', pulseras: 'Pulsera', piercings: 'Piercing', collares: 'Collar' }),
+        nombre: textoExcel(v('nombre')), variante: textoExcel(v('variante')),
+        tono: elegir(v('tono'), PT_TONOS, { rosado: 'Rose', rosa: 'Rose' }), codigo_barra: textoExcel(v('codigo_barra')), sku: textoExcel(v('sku')),
+        peso: numeroExcel(v('peso')), costo_neto: numeroExcel(v('costo_neto')), stock: numeroExcel(v('stock')), precio_venta: numeroExcel(v('precio_venta')),
+        sucursal: elegir(v('sucursal'), PT_SUCURSALES, { lascondes: 'Las Condes', manquehue: 'Las Condes', santiago346: 'Santiago' }),
+      };
+      const errs = [];
+      if (r.tipo_producto === undefined || r.tipo_producto == null) errs.push(`tipo de producto "${v('tipo_producto')}" no válido`);
+      if (r.tono === undefined) errs.push(`tono "${v('tono')}" no válido`);
+      if (!r.nombre) errs.push('falta el nombre');
+      if (!r.sku) errs.push('falta el SKU');
+      if (r.sucursal === undefined || r.sucursal == null) errs.push(`sucursal "${v('sucursal')}" no válida`);
+      if (!(Number.isInteger(r.stock) && r.stock >= 0)) errs.push('stock debe ser entero de 0 o más');
+      for (const [k, t] of [['peso', 'peso'], ['precio_venta', 'precio de venta'], ['costo_neto', 'costo neto']]) if (Number.isNaN(r[k]) || (r[k] != null && r[k] < 0)) errs.push(`${t} no válido`);
+      const clave = r.sku && r.sucursal ? clavePT(r.sku, r.sucursal) : null;
+      if (clave && vistos.has(clave)) errs.push('SKU repetido en el archivo para esa sucursal');
+      if (clave) vistos.add(clave);
+      const existe = clave ? existentes.get(clave) : null;
+      if (existe) r.sku = existe.sku; // mismo SKU aunque cambien mayúsculas
+      out.push({ fila: i + 2, r, errs, existe });
+    });
+    S.pt.carga = out;
+    mostrarPreviewPT();
+    msg('m-pt-carga', '');
+  } catch (e) { S.pt.carga = null; msg('m-pt-carga', e.message || 'No se pudo leer el archivo.', 'bad'); }
+}
+function mostrarPreviewPT() {
+  const c = S.pt.carga || [], admin = verCostos();
+  const nuevas = c.filter((x) => !x.errs.length && !x.existe).length, act = c.filter((x) => !x.errs.length && x.existe).length, mal = c.filter((x) => x.errs.length).length;
+  const conCosto = c.some((x) => x.r.costo_neto != null);
+  $('pt-preview-res').textContent = `${fNum.format(c.length)} filas: ${fNum.format(nuevas)} nuevas, ${fNum.format(act)} actualizan productos existentes y ${fNum.format(mal)} con errores (no se cargan).`
+    + (!admin && conCosto ? ' El costo neto se ignora: solo el Administrador puede cargarlo.' : '');
+  $('th-pt-preview').replaceChildren(...['Fila', 'Resultado', 'Tipo', 'Nombre', 'Variante', 'Tono', 'SKU', 'Stock', 'Sucursal', 'Detalle'].map((t) => h('th', {}, t)));
+  const orden = c.slice().sort((a, b) => (b.errs.length > 0) - (a.errs.length > 0) || a.fila - b.fila).slice(0, 300);
+  $('tb-pt-preview').tBodies[0].replaceChildren(...orden.map((x) => h('tr', {},
+    h('td', { class: 'n' }, x.fila),
+    h('td', {}, h('span', { class: 'pill ' + (x.errs.length ? 'bad' : x.existe ? 'pendiente' : 'ok') }, x.errs.length ? 'Error' : x.existe ? 'Actualiza' : 'Nueva')),
+    h('td', {}, x.r.tipo_producto || ''), h('td', { class: 'wrap' }, x.r.nombre || ''), h('td', {}, x.r.variante || ''), h('td', {}, x.r.tono || ''),
+    h('td', { class: 'mono' }, x.r.sku || ''), h('td', { class: 'n' }, Number.isFinite(x.r.stock) ? fNum.format(x.r.stock) : ''), h('td', {}, x.r.sucursal || ''),
+    h('td', { class: 'wrap' }, x.errs.length ? x.errs.join('; ') : x.existe ? `stock actual ${fNum.format(x.existe.stock || 0)} → ${fNum.format(x.r.stock)}` : ''))));
+  $('b-pt-aplicar').disabled = !(nuevas + act);
+  $('b-pt-aplicar').textContent = nuevas + act ? `Aplicar carga (${fNum.format(nuevas + act)} filas)` : 'Aplicar carga';
+  $('pt-preview').hidden = false;
+}
+async function aplicarCargaPT() {
+  const validas = (S.pt.carga || []).filter((x) => !x.errs.length);
+  if (!validas.length) return;
+  const b = $('b-pt-aplicar'); b.disabled = true; msg('m-pt-carga', 'Cargando…');
+  const ahora = new Date().toISOString();
+  try {
+    let n = 0;
+    for (let i = 0; i < validas.length; i += 500) {
+      const lote = validas.slice(i, i + 500);
+      const filas = lote.map(({ r }) => ({ tipo_producto: r.tipo_producto, nombre: r.nombre, variante: r.variante, tono: r.tono, codigo_barra: r.codigo_barra, sku: r.sku,
+        peso: r.peso, stock: r.stock, precio_venta: r.precio_venta != null ? Math.round(r.precio_venta) : null, sucursal: r.sucursal, actualizado_en: ahora }));
+      const { data, error } = await sb.from('piezas_terminadas').upsert(filas, { onConflict: 'sku,sucursal' }).select('id,sku,sucursal');
+      if (error) throw error;
+      if (verCostos()) {
+        const porClave = new Map(data.map((d) => [clavePT(d.sku, d.sucursal), d.id]));
+        const costos = lote.filter(({ r }) => r.costo_neto != null).map(({ r }) => ({ pieza_terminada_id: porClave.get(clavePT(r.sku, r.sucursal)), costo_neto: Math.round(r.costo_neto) })).filter((x) => x.pieza_terminada_id);
+        if (costos.length) { const c = await sb.from('pt_costos').upsert(costos); if (c.error) throw c.error; }
+      }
+      n += lote.length;
+    }
+    S.pt.carga = null; $('pt-preview').hidden = true; $('pt-archivo').value = '';
+    msg('m-pt-carga', `Carga aplicada: ${fNum.format(n)} productos agregados o actualizados.`, 'ok');
+    await cargarPT();
+  } catch (e) { msg('m-pt-carga', 'No se pudo aplicar la carga (' + (e.message || e.code) + '). Revisa el archivo y vuelve a intentar.', 'bad'); }
+  finally { b.disabled = false; }
+}
+function wirePT() {
+  document.querySelectorAll('#inv-sub button').forEach((b) => b.addEventListener('click', () => setInvSub(b.dataset.sub)));
+  $('f-pt').addEventListener('submit', enviarPT);
+  $('b-pt-cancelar').addEventListener('click', () => cancelarPT());
+  $('ptf-q').addEventListener('input', (e) => { S.pt.f.q = e.target.value; renderPT(); });
+  for (const [id, k] of [['ptf-sucursal', 'suc'], ['ptf-tipo', 'tipo'], ['ptf-tono', 'tono']]) $(id).addEventListener('change', (e) => { S.pt.f[k] = e.target.value; renderPT(); });
+  $('b-pt-plantilla').addEventListener('click', descargarPlantillaPT);
+  $('pt-archivo').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) leerArchivoPT(f); });
+  $('b-pt-aplicar').addEventListener('click', aplicarCargaPT);
+  $('b-pt-descartar').addEventListener('click', () => { S.pt.carga = null; $('pt-preview').hidden = true; $('pt-archivo').value = ''; msg('m-pt-carga', ''); });
+  opcionesPT(); llenarPT(null);
+}
+
 // ---------- sesión ----------
 const correoOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 function pantalla(cual) {
@@ -3248,7 +3580,7 @@ async function entrar(session) {
   const ini = location.hash.slice(1);
   S.tab = ['panel', 'ventas', 'registrar', 'trabajos', 'revision', 'inventario', 'costos', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
   aplicarVista();
-  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas(), cargarPiezaPiedras(), cargarPagos(), cargarInventario()]);
+  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas(), cargarPiezaPiedras(), cargarPagos(), cargarInventario(), cargarPT()]);
   // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { cargarMis(); cargarPendientes(); } });
 }
