@@ -434,6 +434,13 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <h2 id="h-form">Nueva pieza</h2>
         <p class="note">Registra el trabajo y asígnalo a un orfebre. El orfebre lo verá en "Mis trabajos", completará oro trabajado, peso final, oro devuelto y observaciones, y te lo enviará a revisión. Los pesos son opcionales aquí.</p>
       </div>
+      <div class="fields" id="pagos-box">
+        <label class="field">Pagos<select id="i-npagos"><option value="1">1 pago</option><option value="2">2 pagos</option></select></label>
+        <label class="field">N° de boleta<input id="i-bol1" autocomplete="off" inputmode="numeric" placeholder="Ej. 22405"></label>
+        <label class="field">Monto <span class="unit">($)</span><input id="i-mon1" type="number" step="1" min="0" inputmode="numeric"></label>
+        <label class="field" id="f-bol2" hidden>N° de boleta <span class="unit">(pago 2)</span><input id="i-bol2" autocomplete="off" inputmode="numeric"></label>
+        <label class="field" id="f-mon2" hidden>Monto <span class="unit">(pago 2, $)</span><input id="i-mon2" type="number" step="1" min="0" inputmode="numeric"></label>
+      </div>
       <div id="perfil-box" class="fields"></div>
       <form class="pieza" id="form" novalidate>
         <div class="fields">
@@ -445,7 +452,6 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Tipo de trabajo<select id="i-tipo"></select></label>
           <label class="field">Peso objetivo <span class="unit">(g)</span><input id="i-po" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Soldadura entregada <span class="unit">(g, opcional)</span><input id="i-sol" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Solo si entregas soldadura hoy"></label>
-          <label class="field">Oro trabajado <span class="unit">(g, opcional)</span><input id="i-ot" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Peso final <span class="unit">(g, opcional)</span><input id="i-pf" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Oro devuelto <span class="unit">(g)</span><input id="i-od" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
           <label class="field full">Observaciones<textarea id="i-obs" rows="2" placeholder="Ej. Instrucciones para el orfebre: engaste, garantía, ajuste de talla"></textarea></label>
@@ -480,7 +486,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <p class="note">Piezas asignadas que aún no tienen visto bueno final. Puedes editar o eliminar las que el orfebre todavía no envía a revisión.</p>
       <div class="filters"><div class="seg" id="f-estado" role="group" aria-label="Estado"></div></div>
       <div class="tbl"><table id="tb-mis"><thead><tr>
-        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Metal</th><th class="n">Metal entregado (g)</th><th>Piedras</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
+        <th>Fecha</th><th>Orfebre</th><th>Modelo</th><th>N° cotización</th><th>Boleta</th><th>Metal</th><th class="n">Metal entregado (g)</th><th>Piedras</th><th class="n">Oro (g)</th><th class="n">Final (g)</th><th class="n">Merma %</th><th>Estado</th><th>Comentario</th><th></th>
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -926,7 +932,7 @@ const S = {
   ventas: [], ventasStatus: 'loading', ventasDesde: null, ventasHasta: null, ventasFuente: null, v: { anio: '2026', mes: '2026-09', suc: 'Todas' }, prods: [], prodStatus: 'loading',
   msub: 'parametros', moEdit: null, prEdit: null, moQ: '', pr: { q: '', cat: '', modelo: '', tono: '', piedra: '', estado: 'activos' },
   inv: { cargado: false, metales: [], ops: [], minimos: [], piezas: [], mcost: new Map(), pcost: new Map(), costosOrf: [], puntos: [], tarifas: [], pcostos: [] },
-  piezaPiedras: new Map(),
+  piezaPiedras: new Map(), piezaPagos: new Map(),
   pGrupo: 'tonos', hf: { orf: '', anio: '', mes: '' }, me: null, uid: null, isSup: false, canWrite: false, isAdmin: false, rolReal: null, vista: null,
   definitivas: [], defVer: 0, histStatus: 'loading', aprobadas: [], mis: [], trabajos: [], trOrf: null, perfil: null, orfebres: DEFAULT_ORFEBRES.slice(),
   pend: {}, perfiles: [], editando: null, corrigiendo: null, rechazando: null, sel: new Set(),
@@ -1433,11 +1439,12 @@ function renderPerfil() {
   sel.addEventListener('change', () => errorCampo('i-orfebre', ''));
 }
 function leerForm() {
-  const ot = num($('i-ot').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
+  // El oro trabajado lo anota el orfebre; aquí la merma estimada se calcula con el metal entregado.
+  const ot = num($('i-metal-g').value), pf = num($('i-pf').value), od = num($('i-od').value) ?? 0;
   const m = mermaDe(ot, pf, od);
   return {
     fecha: $('i-fecha').value, tono: $('i-tono').value, modelo: $('i-modelo').value.trim(), cotizacion: $('i-cot').value.trim() || null, codigo_producto: $('i-prod').value.trim() || null,
-    tipo: $('i-tipo').value, peso_obj: num($('i-po').value), soldadura_entregada: num($('i-sol').value), oro_trabajo: ot, peso_final: pf, oro_devuelto: od,
+    tipo: $('i-tipo').value, peso_obj: num($('i-po').value), soldadura_entregada: num($('i-sol').value), peso_final: pf, oro_devuelto: od,
     metal_id: $('i-metal').value || null, metal_entregado: num($('i-metal-g').value),
     merma_g: m.g, merma_pct: m.pct, garantia: $('i-gar').checked, observaciones: $('i-obs').value.trim() || null,
   };
@@ -1495,6 +1502,45 @@ function hintMetal() {
   const b = stockMetal(id), g = num($('i-metal-g').value);
   el.textContent = g > b + 0.001 ? `Ojo: en bodega hay solo ${g2(b)} g de ${nombreMetal(id)}; el stock quedará negativo.` : `En bodega: ${g2(b)} g de ${nombreMetal(id)}.`;
 }
+// ---------- pagos de la pieza (N° de boleta y monto; solo supervisor y administrador) ----------
+function alCambiarPagos() {
+  const dos = $('i-npagos').value === '2';
+  $('f-bol2').hidden = !dos; $('f-mon2').hidden = !dos;
+  if (!dos) { $('i-bol2').value = ''; $('i-mon2').value = ''; errorCampo('i-bol2', ''); errorCampo('i-mon2', ''); }
+}
+// Con 1 pago, la boleta es opcional (si se anota algo, se pide boleta y monto). Con 2 pagos, ambos son obligatorios.
+function leerPagos() {
+  const n = $('i-npagos').value === '2' ? 2 : 1, filas = [];
+  for (let i = 1; i <= n; i++) {
+    const boleta = $(`i-bol${i}`).value.trim(), monto = num($(`i-mon${i}`).value);
+    if (n === 2 || boleta || monto != null) filas.push({ orden: i, boleta, monto });
+  }
+  return { n, filas };
+}
+function pagosDe(piezaId) { return S.piezaPagos.get(piezaId) || []; }
+const resumenPagos = (rows) => rows.map((r) => `N° ${r.boleta} · ${fPeso(Number(r.monto))}`).join(' / ');
+function llenarPagos(rows) {
+  rows = (rows || []).slice().sort((a, b) => a.orden - b.orden);
+  $('i-npagos').value = rows.length === 2 ? '2' : '1';
+  for (const i of [1, 2]) { const r = rows.find((x) => x.orden === i) || {}; $(`i-bol${i}`).value = r.boleta || ''; $(`i-mon${i}`).value = r.monto != null ? Number(r.monto) : ''; }
+  alCambiarPagos();
+}
+async function guardarPagosPieza(piezaId, filas, habia) {
+  if (habia) { const d = await sb.from('pieza_pagos').delete().eq('pieza_id', piezaId); if (d.error) throw d.error; }
+  if (filas.length) {
+    const r = await sb.from('pieza_pagos').insert(filas.map((f) => ({ pieza_id: piezaId, orden: f.orden, boleta: f.boleta, monto: f.monto })));
+    if (r.error) throw r.error;
+  }
+}
+async function cargarPagos() {
+  if (!(S.rolReal === 'administrador' || S.rolReal === 'supervisor')) return;
+  try {
+    const rows = await todas(() => sb.from('pieza_pagos').select('*').order('pieza_id').order('orden'));
+    S.piezaPagos = new Map();
+    for (const r of rows) { if (!S.piezaPagos.has(r.pieza_id)) S.piezaPagos.set(r.pieza_id, []); S.piezaPagos.get(r.pieza_id).push(r); }
+  } catch (e) { /* sin pagos visibles */ }
+  renderMis(); renderRevision();
+}
 // Guarda las piedras de la pieza (reemplaza las anteriores). La base de datos descuenta el stock al entregarlas.
 async function guardarPiedrasPieza(piezaId, rows, habia) {
   if (habia) { const d = await sb.from('pieza_piedras').delete().eq('pieza_id', piezaId); if (d.error) throw d.error; }
@@ -1506,10 +1552,11 @@ async function guardarPiedrasPieza(piezaId, rows, habia) {
 function llenarForm(p) {
   $('i-fecha').value = p?.fecha || hoy(); $('i-tono').value = p?.tono || TONOS()[0]; $('i-modelo').value = p?.modelo || ''; $('i-cot').value = p?.cotizacion || '';
   $('i-prod').value = p?.codigo_producto || ''; $('hint-modelo').textContent = '';
-  $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-sol').value = p?.soldadura_entregada ?? ''; $('i-ot').value = p?.oro_trabajo ?? ''; $('i-pf').value = p?.peso_final ?? '';
+  $('i-tipo').value = p?.tipo || TIPOS()[0]; $('i-po').value = p?.peso_obj ?? ''; $('i-sol').value = p?.soldadura_entregada ?? ''; $('i-pf').value = p?.peso_final ?? '';
   $('i-od').value = p?.oro_devuelto || ''; $('i-gar').checked = !!p?.garantia; $('i-obs').value = p?.observaciones || '';
   $('i-metal').value = p?.metal_id || (p ? '' : metalPorTono($('i-tono').value)); $('i-metal-g').value = p?.metal_entregado ?? '';
   llenarPiedrasForm(p ? piedrasDe(p._id) : []); hintMetal();
+  llenarPagos(p ? pagosDe(p._id) : []);
   const selO = $('i-orfebre');
   if (selO) {
     // Al editar un trabajo de un orfebre ya inactivo, se muestra igual para no perder la asignación.
@@ -1545,7 +1592,7 @@ function errorCampo(id, texto) {
   e.textContent = texto; el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err');
 }
 function limpiarErrores() {
-  for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-ot', 'i-pf', 'i-sol', 'i-metal', 'i-metal-g']) errorCampo(id, '');
+  for (const id of ['i-orfebre', 'i-fecha', 'i-modelo', 'i-pf', 'i-sol', 'i-metal', 'i-metal-g', 'i-bol1', 'i-mon1', 'i-bol2', 'i-mon2']) errorCampo(id, '');
   for (const [pos] of POSICIONES) for (const k of ['tipo', 'ct', 'cant']) errorCampo(`pp-${pos}-${k}`, '');
 }
 function msg(id, text, kind) { const el = $(id); el.textContent = text; el.className = 'msg ' + (kind || ''); }
@@ -1561,7 +1608,12 @@ async function enviar(ev) {
   if (!orf) errs.push(['i-orfebre', 'Elige a qué orfebre asignas el trabajo.']);
   if (!p.fecha) errs.push(['i-fecha', 'Ingresa la fecha.']); else if (p.fecha > hoy()) errs.push(['i-fecha', 'La fecha no puede ser futura.']);
   if (!p.modelo) errs.push(['i-modelo', 'Escribe el modelo.']);
-  if (p.oro_trabajo != null && !(p.oro_trabajo > 0)) errs.push(['i-ot', 'Si lo ingresas, el oro trabajado debe ser mayor que 0.']);
+  // Pagos: uno o dos, cada uno con N° de boleta y monto.
+  const pagos = leerPagos();
+  for (const pg of pagos.filas) {
+    if (!pg.boleta) errs.push([`i-bol${pg.orden}`, 'Ingresa el N° de boleta.']);
+    if (pg.monto == null || pg.monto < 0 || !Number.isInteger(pg.monto)) errs.push([`i-mon${pg.orden}`, 'Ingresa el monto en pesos.']);
+  }
   if (p.soldadura_entregada != null && !(p.soldadura_entregada > 0)) errs.push(['i-sol', 'Si la ingresas, la soldadura entregada debe ser mayor que 0.']);
   if (p.metal_entregado != null && !(p.metal_entregado > 0)) errs.push(['i-metal-g', 'Si los ingresas, los gramos entregados deben ser mayores que 0.']);
   if (p.metal_entregado > 0 && !p.metal_id) errs.push(['i-metal', 'Elige qué metal entregas.']);
@@ -1587,7 +1639,8 @@ async function enviar(ev) {
     if (r.error) throw r.error;
     const piezaId = S.editando || r.data.id;
     await guardarPiedrasPieza(piezaId, piedras, !!S.editando);
-    cargarSoldadura(); cargarPiezaPiedras().then(() => cargarInventario());
+    await guardarPagosPieza(piezaId, pagos.filas, !!S.editando);
+    cargarSoldadura(); cargarPagos(); cargarPiezaPiedras().then(() => cargarInventario());
     msg('m-form', S.editando ? 'Cambios guardados.' : `Trabajo asignado a ${nombreOrfebre(Number(orf))}. Lo verá en "Mis trabajos".`, 'ok');
     cargarMis();
     S.editando = null; $('h-form').textContent = 'Nueva pieza'; $('b-cancelar').hidden = true; $('b-enviar').textContent = 'Asignar al orfebre';
@@ -1603,11 +1656,11 @@ function renderMis() {
     h('button', { type: 'button', 'aria-pressed': String(S.filtroEstado === e), onclick: () => { S.filtroEstado = e; renderMis(); } }, `${t} (${cuenta(e)})`)));
   const tb = $('tb-mis').tBodies[0];
   const rs = S.mis.filter((p) => S.filtroEstado === 'todas' || p.estado === S.filtroEstado);
-  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 13, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
+  if (!rs.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 14, class: 'note' }, S.mis.length ? 'Nada con ese estado.' : 'No hay trabajos en curso. Registra una pieza arriba para asignarla.'))); return; }
   tb.replaceChildren(...rs.map((p) => {
     const editable = p.estado === 'asignada' || p.estado === 'rechazada';
     return h('tr', {},
-      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', {}, p.metal_id ? nombreMetal(p.metal_id) : (p.tono || '')), h('td', { class: 'n' }, g2(p.metal_entregado)),
+      h('td', {}, fFecha(p.fecha)), h('td', {}, p.orfebre), h('td', {}, p.modelo), h('td', { class: 'mono' }, p.cotizacion || '—'), h('td', { class: 'mono' }, pagosDe(p._id).map((r) => r.boleta).join(' / ') || '—'), h('td', {}, p.metal_id ? nombreMetal(p.metal_id) : (p.tono || '')), h('td', { class: 'n' }, g2(p.metal_entregado)),
       h('td', { class: 'wrap' }, resumenPiedras(piedrasDe(p._id)) || (p.cantidad_piedras ? fNum.format(p.cantidad_piedras) : '')), h('td', { class: 'n' }, g2(p.oro_trabajo)), h('td', { class: 'n' }, g2(p.peso_final)),
       h('td', { class: 'n' }, p.merma_pct == null ? '' : fDec.format(p.merma_pct) + '%'), h('td', {}, pillEstado(p.estado)),
       h('td', { class: 'wrap' }, p.comentario || ''),
@@ -1669,7 +1722,8 @@ function tarjetaTrabajo(p) {
   else if (p.cantidad_piedras) el.append(h('div', { class: 'kv' }, h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras)))));
   if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
   const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
-  const [lOt, iOt] = inp(h('span', {}, 'Oro trabajado ', h('span', { class: 'unit' }, '(g)')), 'oro_trabajo');
+  // El oro trabajado parte con los gramos entregados; el orfebre lo corrige si trabajó otra cantidad.
+  const [lOt, iOt] = inp(h('span', {}, 'Oro trabajado ', h('span', { class: 'unit' }, '(g)')), 'oro_trabajo', { value: p.oro_trabajo ?? p.metal_entregado ?? '' });
   const [lPf, iPf] = inp(h('span', {}, 'Peso final ', h('span', { class: 'unit' }, '(g)')), 'peso_final');
   const [lOd, iOd] = inp(h('span', {}, 'Oro devuelto ', h('span', { class: 'unit' }, '(g)')), 'oro_devuelto', { placeholder: '0', value: p.oro_devuelto || '' });
   const [lMp, iMp] = inp(h('span', {}, 'Máquina pulido ', h('span', { class: 'unit' }, '(g)')), 'maquina_pulido', { placeholder: '0', value: p.maquina_pulido || '', title: 'Oro recuperado en la máquina de pulido; se descuenta de la merma' });
@@ -1758,7 +1812,8 @@ function itemRevision(p, nombre) {
     h('dl', {}, ...filas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v == null || v === '' ? '—' : v)])));
   el.append(h('div', { class: 'fichas' },
     bloque('Registro del supervisor', [
-      ['Fecha', fFecha(p.fecha)], ['Orfebre', p.orfebre], ['Modelo', p.modelo], ['Tono', p.tono],
+      ['Fecha', fFecha(p.fecha)], ...(pagosDe(p._id).length ? [[pagosDe(p._id).length === 2 ? 'Boletas (2 pagos)' : 'Boleta', resumenPagos(pagosDe(p._id))]] : []),
+      ['Orfebre', p.orfebre], ['Modelo', p.modelo], ['Tono', p.tono],
       ['Código de producto', p.codigo_producto], ['N° de cotización', p.cotizacion], ['Tipo de trabajo', p.tipo],
       ['Garantía', p.garantia ? 'Sí' : 'No'], ['Peso objetivo', gr(p.peso_obj)],
       ...(p.soldadura_entregada ? [['Soldadura entregada', gr(p.soldadura_entregada)]] : []),
@@ -2623,8 +2678,9 @@ function wire() {
   $('pr-precio').addEventListener('input', calcNeto);
   $('b-aj').addEventListener('click', ajustarPrecios);
   $('b-pr-csv').addEventListener('click', descargarCSV);
-  for (const id of ['i-ot', 'i-pf', 'i-od', 'i-po']) $(id).addEventListener('input', renderCalc);
-  for (const id of ['i-fecha', 'i-modelo', 'i-ot', 'i-pf']) $(id).addEventListener('input', () => errorCampo(id, ''));
+  for (const id of ['i-metal-g', 'i-pf', 'i-od', 'i-po']) $(id).addEventListener('input', renderCalc);
+  for (const id of ['i-fecha', 'i-modelo', 'i-pf', 'i-bol1', 'i-mon1', 'i-bol2', 'i-mon2']) $(id).addEventListener('input', () => errorCampo(id, ''));
+  $('i-npagos').addEventListener('change', alCambiarPagos);
   $('form').addEventListener('submit', enviar);
   $('b-cancelar').addEventListener('click', cancelarEdicion);
   $('sel-all').addEventListener('change', (e) => { S.sel = new Set(e.target.checked ? listaPend().map(claveRev) : []); renderRevision(); });
@@ -2672,6 +2728,8 @@ async function cargarMetales() {
   const { data, error } = await sb.from('metales').select('*').order('orden');
   if (!error) S.inv.metales = data;
   renderMaterialesForm(); llenarSelectsInv();
+  // El formulario se arma antes de que lleguen los metales: en una pieza nueva se propone el 18k del tono elegido.
+  if (!S.editando && !$('i-metal').value) { $('i-metal').value = metalPorTono($('i-tono').value); hintMetal(); }
 }
 async function cargarPiezaPiedras() {
   try {
@@ -3182,7 +3240,7 @@ async function entrar(session) {
   const ini = location.hash.slice(1);
   S.tab = ['panel', 'ventas', 'registrar', 'trabajos', 'revision', 'inventario', 'costos', 'maestros', 'usuarios', 'ayuda'].includes(ini) ? ini : 'panel';
   aplicarVista();
-  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas(), cargarPiezaPiedras(), cargarInventario()]);
+  await Promise.all([cargarDefinitivas(), cargarProductos(), cargarMis(), cargarPendientes(), cargarAprobadasPortal(), cargarVentas(), cargarPiezaPiedras(), cargarPagos(), cargarInventario()]);
   // Al volver a la pestaña se refrescan las piezas por si alguien registró o aprobó algo.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { cargarMis(); cargarPendientes(); } });
 }
