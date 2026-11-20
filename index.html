@@ -107,7 +107,7 @@ td.wrap { white-space: normal; min-width: 12rem; }
 /* Registro: bloques de metal y piedras */
 .bloque-form { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 .piedras-pieza { display: grid; gap: 8px; }
-.piedra-fila { display: grid; grid-template-columns: 6.5rem minmax(10rem, 1.6fr) 6.5rem 6.5rem auto; gap: 8px; align-items: end; }
+.piedra-fila { display: grid; grid-template-columns: 6.5rem minmax(10rem, 1.6fr) minmax(7.5rem, 1fr) 6.5rem 6.5rem auto; gap: 8px; align-items: end; }
 .piedra-fila .pos { font-size: .875rem; font-weight: 600; padding-bottom: 9px; }
 .piedra-fila .cert { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; padding-bottom: 8px; white-space: nowrap; }
 @media (max-width: 640px) { .piedra-fila { grid-template-columns: 1fr 1fr; } .piedra-fila .pos { grid-column: 1 / -1; padding-bottom: 0; } }
@@ -749,6 +749,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <div class="fields">
           <label class="field">Movimiento<select id="pi-tipo"></select></label>
           <label class="field">Tipo de piedra<select id="pi-piedra"></select></label>
+          <label class="field">Corte de piedra<select id="pi-corte"></select></label>
           <label class="field">Quilates <span class="unit">(ct)</span><input id="pi-ct" type="number" step="0.01" min="0" inputmode="decimal"></label>
           <label class="field">Cantidad<input id="pi-cant" type="number" step="1" min="1" inputmode="numeric"></label>
           <label class="field solo-admin">Costo c/u <span class="unit">($)</span><input id="pi-costo" type="number" step="1" min="0" inputmode="numeric"></label>
@@ -977,6 +978,8 @@ const TONOS = () => activos(S.param.tonos);
 const TIPOS = () => activos(S.param.tipos);
 const CATS = () => activos(S.param.categorias);
 const PIEDRAS = () => activos(S.param.piedras);
+const CORTES = ['Redondo', 'Pera', 'Cushion', 'Marquise', 'Ovalado', 'Princess', 'Esmeralda'];
+const opcionesCorte = () => [new Option('—', ''), ...CORTES.map((c) => new Option(c, c))];
 const GRUPOS_BASE = [
   { id: 'tonos', nombre: 'Tonos de oro', sigla: true, nota: 'La sigla arma los códigos de producto (ej. MI para Miel).', minimo: true },
   { id: 'piedras', nombre: 'Piedras', sigla: true, nota: 'La sigla arma los códigos de producto (ej. MO para Moissanita).' },
@@ -1530,7 +1533,7 @@ const metalPorTono = (tono) => (S.inv.metales.find((m) => m.grupo === 'oro_18k' 
 const metalesEntregables = () => S.inv.metales.filter((m) => m.activo !== false && ['oro_18k', 'oro_fino', 'platino', 'plata', 'otro'].includes(m.grupo));
 const fCt = (ct) => fDec2.format(ct).replace(/,?0+$/, '').replace(/,$/, '') + ' ct';
 function resumenPiedras(rows) {
-  return (rows || []).map((r) => `${fNum.format(r.cantidad)} × ${r.piedra} ${fCt(r.ct)}${r.certificado ? ' (cert.)' : ''}`).join(' · ');
+  return (rows || []).map((r) => `${fNum.format(r.cantidad)} × ${r.piedra}${r.corte ? ' ' + r.corte : ''} ${fCt(r.ct)}${r.certificado ? ' (cert.)' : ''}`).join(' · ');
 }
 function piedrasDe(piezaId) { return S.piezaPiedras.get(piezaId) || []; }
 function renderMaterialesForm() {
@@ -1541,11 +1544,12 @@ function renderMaterialesForm() {
   const previas = leerPiedrasForm(true);
   box.replaceChildren(...POSICIONES.map(([pos, etq]) => {
     const tipo = h('select', { id: `pp-${pos}-tipo`, 'aria-label': `Tipo de piedra ${etq}` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)));
+    const corte = h('select', { id: `pp-${pos}-corte`, 'aria-label': `Corte de piedra ${etq}` }, ...opcionesCorte());
     const ct = h('input', { id: `pp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal', 'aria-label': `Quilates ${etq}`, placeholder: 'ct' });
     const cant = h('input', { id: `pp-${pos}-cant`, type: 'number', step: '1', min: '1', inputmode: 'numeric', 'aria-label': `Cantidad ${etq}`, placeholder: 'Cantidad' });
     const cert = h('input', { id: `pp-${pos}-cert`, type: 'checkbox' });
     return h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
-      h('label', { class: 'field' }, 'Tipo de piedra', tipo), h('label', { class: 'field' }, 'Quilates (ct)', ct), h('label', { class: 'field' }, 'Cantidad', cant),
+      h('label', { class: 'field' }, 'Tipo de piedra', tipo), h('label', { class: 'field' }, 'Corte de piedra', corte), h('label', { class: 'field' }, 'Quilates (ct)', ct), h('label', { class: 'field' }, 'Cantidad', cant),
       h('label', { class: 'cert' }, cert, 'Con certificado'));
   }));
   llenarPiedrasForm(previas);
@@ -1555,7 +1559,7 @@ function leerPiedrasForm(crudo = false) {
   const out = [];
   for (const [pos] of POSICIONES) {
     const t = $(`pp-${pos}-tipo`); if (!t) continue;
-    const r = { posicion: pos, piedra: t.value, ct: num($(`pp-${pos}-ct`).value), cantidad: num($(`pp-${pos}-cant`).value), certificado: $(`pp-${pos}-cert`).checked };
+    const r = { posicion: pos, piedra: t.value, corte: $(`pp-${pos}-corte`)?.value || null, ct: num($(`pp-${pos}-ct`).value), cantidad: num($(`pp-${pos}-cant`).value), certificado: $(`pp-${pos}-cert`).checked };
     if (crudo || r.piedra) out.push(r);
   }
   return out;
@@ -1566,7 +1570,7 @@ function llenarPiedrasForm(rows) {
     if (!$(`pp-${pos}-tipo`)) continue;
     const t = $(`pp-${pos}-tipo`);
     if (r.piedra && ![...t.options].some((o) => o.value === r.piedra)) t.append(new Option(r.piedra, r.piedra));
-    t.value = r.piedra || ''; $(`pp-${pos}-ct`).value = r.ct ?? ''; $(`pp-${pos}-cant`).value = r.cantidad ?? ''; $(`pp-${pos}-cert`).checked = !!r.certificado;
+    t.value = r.piedra || ''; if ($(`pp-${pos}-corte`)) $(`pp-${pos}-corte`).value = r.corte || ''; $(`pp-${pos}-ct`).value = r.ct ?? ''; $(`pp-${pos}-cant`).value = r.cantidad ?? ''; $(`pp-${pos}-cert`).checked = !!r.certificado;
   }
 }
 function hintMetal() {
@@ -1618,7 +1622,7 @@ async function cargarPagos() {
 async function guardarPiedrasPieza(piezaId, rows, habia) {
   if (habia) { const d = await sb.from('pieza_piedras').delete().eq('pieza_id', piezaId); if (d.error) throw d.error; }
   if (rows.length) {
-    const r = await sb.from('pieza_piedras').insert(rows.map((x) => ({ pieza_id: piezaId, posicion: x.posicion, piedra: x.piedra, ct: x.ct, certificado: x.certificado, cantidad: x.cantidad })));
+    const r = await sb.from('pieza_piedras').insert(rows.map((x) => ({ pieza_id: piezaId, posicion: x.posicion, piedra: x.piedra, corte: x.corte || null, ct: x.ct, certificado: x.certificado, cantidad: x.cantidad })));
     if (r.error) throw r.error;
   }
 }
@@ -1791,7 +1795,7 @@ function tarjetaTrabajo(p) {
     p.peso_obj ? h('span', {}, 'Peso objetivo ', h('b', {}, g2(p.peso_obj) + ' g')) : null,
     p.soldadura_entregada ? h('span', {}, 'Soldadura entregada ', h('b', {}, g2(p.soldadura_entregada) + ' g')) : null));
   if (piedrasP.length) el.append(h('div', { class: 'kv' }, ...piedrasP.map((r) =>
-    h('span', {}, `${(POSICIONES.find(([k]) => k === r.posicion) || [, ''])[1]}: `, h('b', {}, `${fNum.format(r.cantidad)} × ${r.piedra} ${fCt(r.ct)}`), r.certificado ? ' con certificado' : ''))));
+    h('span', {}, `${(POSICIONES.find(([k]) => k === r.posicion) || [, ''])[1]}: `, h('b', {}, `${fNum.format(r.cantidad)} × ${r.piedra}${r.corte ? ' ' + r.corte : ''} ${fCt(r.ct)}`), r.certificado ? ' con certificado' : ''))));
   else if (p.cantidad_piedras) el.append(h('div', { class: 'kv' }, h('span', {}, 'Piedras a engastar ', h('b', {}, fNum.format(p.cantidad_piedras)))));
   if (p.estado === 'rechazada' && p.comentario) el.append(h('div', { class: 'banner warn' }, h('b', {}, 'Devuelta por el supervisor: '), p.comentario));
   const inp = (label, k, extra = {}) => { const i = h('input', { type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: p[k] ?? '', ...extra }); i.dataset.k = k; return [h('label', { class: 'field' }, label, i), i]; };
@@ -2849,11 +2853,16 @@ function costoGramo(id) {
   for (const l of lineasMetal()) if (l.metal_id === id && l.gramos > 0 && S.inv.mcost.has(l.id)) { c += S.inv.mcost.get(l.id); g += l.gramos; }
   return g ? c / g : null;
 }
-const clavePiedra = (p, ct, cert) => `${p}|${Number(ct)}|${cert ? 1 : 0}`;
-function costoPiedra(p, ct, cert) {
-  let c = 0, n = 0;
-  for (const l of lineasPiedra()) if (clavePiedra(l.piedra, l.ct, l.certificado) === clavePiedra(p, ct, cert) && l.cantidad > 0 && S.inv.pcost.has(l.id)) { c += S.inv.pcost.get(l.id) * l.cantidad; n += l.cantidad; }
-  return n ? c / n : null;
+const clavePiedra = (p, ct, cert, corte) => `${p}|${Number(ct)}|${cert ? 1 : 0}|${corte || ''}`;
+// Costo promedio de compra; si no hay compras con ese corte, usa el promedio sin distinguir corte.
+function costoPiedra(p, ct, cert, corte) {
+  const prom = (conCorte) => {
+    let c = 0, n = 0;
+    for (const l of lineasPiedra()) if (l.piedra === p && Number(l.ct) === Number(ct) && !!l.certificado === !!cert && (!conCorte || (l.corte || '') === (corte || ''))
+      && l.cantidad > 0 && S.inv.pcost.has(l.id)) { c += S.inv.pcost.get(l.id) * l.cantidad; n += l.cantidad; }
+    return n ? c / n : null;
+  };
+  return prom(true) ?? prom(false);
 }
 // Cuenta de metal por orfebre y por metal: entregado − devuelto − en piezas terminadas − merma.
 function cuentasTaller() {
@@ -2887,6 +2896,7 @@ function llenarSelectsInv() {
   set('mv-metal', ms.map((m) => new Option(m.nombre, m.id)));
   set('mv-orf', [new Option('—', ''), ...S.orfItems.filter((o) => o.activo !== false).map((o) => new Option(o.nombre, String(o.id)))]);
   set('pi-piedra', PIEDRAS().map((p) => new Option(p, p)));
+  set('pi-corte', opcionesCorte(), '');
   set('pi-tipo', (verCostos() ? [['compra', 'Entrada (compra)']] : []).concat([['salida', 'Salida o ajuste (sale de stock)'], ['ajuste+', 'Ajuste (entra a stock)']]).map(([v, t]) => new Option(t, v)));
   set('ct-metal', metalesEntregables().map((m) => new Option(m.nombre, m.id)), 'oro18_amarillo');
   set('ct-tipo', TIPOS().map((t) => new Option(t, t)));
@@ -2921,18 +2931,18 @@ function renderInventario() {
   }));
   // Piedras en stock
   const stock = new Map();
-  for (const l of lineasPiedra()) { const k = clavePiedra(l.piedra, l.ct, l.certificado); stock.set(k, (stock.get(k) || 0) + l.cantidad); }
-  for (const m of S.inv.minimos) { const k = clavePiedra(m.piedra, m.ct, m.certificado); if (!stock.has(k)) stock.set(k, 0); }
-  $('th-piedras').replaceChildren(...['Tipo de piedra', 'Quilates', 'Certificado', 'En stock', 'Mínimo', ...(admin ? ['Costo c/u', 'Valor'] : [])].map((t, i) => h('th', { class: i >= 3 ? 'n' : null }, t)));
-  const filasP = [...stock].map(([k, n]) => { const [p, ct, cert] = k.split('|'); return { p, ct: Number(ct), cert: cert === '1', n }; })
-    .sort((a, b) => a.p.localeCompare(b.p, 'es') || a.ct - b.ct || Number(a.cert) - Number(b.cert));
+  for (const l of lineasPiedra()) { const k = clavePiedra(l.piedra, l.ct, l.certificado, l.corte); stock.set(k, (stock.get(k) || 0) + l.cantidad); }
+  for (const m of S.inv.minimos) { const k = clavePiedra(m.piedra, m.ct, m.certificado, m.corte); if (!stock.has(k)) stock.set(k, 0); }
+  $('th-piedras').replaceChildren(...['Tipo de piedra', 'Corte', 'Quilates', 'Certificado', 'En stock', 'Mínimo', ...(admin ? ['Costo c/u', 'Valor'] : [])].map((t, i) => h('th', { class: i >= 4 ? 'n' : null }, t)));
+  const filasP = [...stock].map(([k, n]) => { const [p, ct, cert, corte] = k.split('|'); return { p, ct: Number(ct), cert: cert === '1', corte, n }; })
+    .sort((a, b) => a.p.localeCompare(b.p, 'es') || a.corte.localeCompare(b.corte, 'es') || a.ct - b.ct || Number(a.cert) - Number(b.cert));
   $('tb-piedras').tBodies[0].replaceChildren(...(filasP.length ? filasP.map((r) => {
-    const min = S.inv.minimos.find((m) => clavePiedra(m.piedra, m.ct, m.certificado) === clavePiedra(r.p, r.ct, r.cert));
-    const cu = admin ? costoPiedra(r.p, r.ct, r.cert) : null, bajo = min && r.n < min.minimo;
-    return h('tr', {}, h('td', {}, r.p), h('td', {}, fCt(r.ct)), h('td', {}, r.cert ? 'Sí' : 'No'),
+    const min = S.inv.minimos.find((m) => clavePiedra(m.piedra, m.ct, m.certificado, m.corte) === clavePiedra(r.p, r.ct, r.cert, r.corte));
+    const cu = admin ? costoPiedra(r.p, r.ct, r.cert, r.corte) : null, bajo = min && r.n < min.minimo;
+    return h('tr', {}, h('td', {}, r.p), h('td', {}, r.corte || '—'), h('td', {}, fCt(r.ct)), h('td', {}, r.cert ? 'Sí' : 'No'),
       h('td', { class: 'n' + (bajo || r.n < 0 ? ' bajo' : '') }, fNum.format(r.n), bajo ? ' · bajo el mínimo' : ''), h('td', { class: 'n' }, min ? fNum.format(min.minimo) : '—'),
       ...(admin ? [h('td', { class: 'n' }, cu != null ? fPeso(cu) : '—'), h('td', { class: 'n' }, cu != null ? fPeso(cu * r.n) : '—')] : []));
-  }) : [h('tr', {}, h('td', { colspan: admin ? 7 : 5, class: 'note' }, 'Aún no hay piedras registradas. Usa "Entrada o salida de piedras".'))]));
+  }) : [h('tr', {}, h('td', { colspan: admin ? 8 : 6, class: 'note' }, 'Aún no hay piedras registradas. Usa "Entrada o salida de piedras".'))]));
   // Movimientos
   $('th-movs').replaceChildren(...['Fecha', 'Material', 'Movimiento', 'Detalle', 'Cantidad', ...(admin ? ['Valor'] : []), 'Pieza', 'Registró'].map((t) => h('th', { class: t === 'Cantidad' || t === 'Valor' ? 'n' : null }, t)));
   const filas = [];
@@ -2941,7 +2951,7 @@ function renderInventario() {
     const detalle = [o.orfebre_id ? nombreOrfebre(o.orfebre_id) : '', o.proveedor || '', o.nota && o.nota !== o.proveedor ? o.nota : ''].filter(Boolean).join(' · ');
     const pieza = pz ? `${pz.modelo}${pz.cotizacion ? ' · cot. ' + pz.cotizacion : ''}` : (o.pieza_id ? `Pieza ${o.pieza_id}` : '');
     for (const m of o.metal_movimientos || []) filas.push([o, nombreMetal(m.metal_id), `${Number(m.gramos) > 0 ? '+' : '−'}${g2(Math.abs(m.gramos))} g`, S.inv.mcost.get(m.id), detalle, pieza]);
-    for (const m of o.piedra_movimientos || []) filas.push([o, `${m.piedra} ${fCt(m.ct)}${m.certificado ? ' (cert.)' : ''}`, `${m.cantidad > 0 ? '+' : '−'}${fNum.format(Math.abs(m.cantidad))} u`, S.inv.pcost.has(m.id) ? S.inv.pcost.get(m.id) * Math.abs(m.cantidad) : undefined, detalle, pieza]);
+    for (const m of o.piedra_movimientos || []) filas.push([o, `${m.piedra}${m.corte ? ' ' + m.corte : ''} ${fCt(m.ct)}${m.certificado ? ' (cert.)' : ''}`, `${m.cantidad > 0 ? '+' : '−'}${fNum.format(Math.abs(m.cantidad))} u`, S.inv.pcost.has(m.id) ? S.inv.pcost.get(m.id) * Math.abs(m.cantidad) : undefined, detalle, pieza]);
   }
   const shown = filas.slice(0, 400);
   $('tb-movs').tBodies[0].replaceChildren(...(shown.length ? shown.map(([o, mat, cant, valor, det, pieza]) => h('tr', {},
@@ -2962,7 +2972,7 @@ async function crearOperacion(op, metales = [], piedras = []) {
     if (costos.length) { const c = await sb.from('metal_costos').insert(costos); if (c.error) throw c.error; }
   }
   if (piedras.length) {
-    const { data, error: e } = await sb.from('piedra_movimientos').insert(piedras.map((p) => ({ operacion_id: o.id, piedra: p.piedra, ct: p.ct, certificado: p.certificado, cantidad: p.cantidad }))).select('id');
+    const { data, error: e } = await sb.from('piedra_movimientos').insert(piedras.map((p) => ({ operacion_id: o.id, piedra: p.piedra, ct: p.ct, certificado: p.certificado, corte: p.corte || null, cantidad: p.cantidad }))).select('id');
     if (e) throw e;
     const costos = data.map((r, i) => ({ movimiento_id: r.id, costo_unit: piedras[i].costo_unit })).filter((x) => x.costo_unit != null);
     if (costos.length) { const c = await sb.from('piedra_costos').insert(costos); if (c.error) throw c.error; }
@@ -3058,16 +3068,16 @@ function wireInventario() {
   });
   $('f-piedra').addEventListener('submit', (ev) => {
     ev.preventDefault();
-    const t = $('pi-tipo').value, piedra = $('pi-piedra').value, ct = num($('pi-ct').value), n = num($('pi-cant').value), cert = $('pi-cert').checked;
+    const t = $('pi-tipo').value, piedra = $('pi-piedra').value, corte = $('pi-corte').value || null, ct = num($('pi-ct').value), n = num($('pi-cant').value), cert = $('pi-cert').checked;
     const costo = num($('pi-costo').value), min = num($('pi-min').value), nota = $('pi-nota').value.trim() || null;
     if (!(ct > 0)) return msg('m-pi', 'Indica los quilates.', 'bad');
     if (!(Number.isInteger(n) && n > 0)) return msg('m-pi', 'Indica una cantidad entera mayor que 0.', 'bad');
     if (t === 'compra' && (costo == null || costo < 0)) return msg('m-pi', 'Indica el costo de cada piedra.', 'bad');
     if (t !== 'compra' && !nota) return msg('m-pi', 'Explica la salida o el ajuste en la nota.', 'bad');
     ejecutar('m-pi', async () => {
-      await crearOperacion({ tipo: t === 'compra' ? 'compra' : 'ajuste', nota }, [], [{ piedra, ct, certificado: cert, cantidad: t === 'salida' ? -n : n, costo_unit: t === 'compra' ? costo : null }]);
-      if (min != null) { const r = await sb.from('piedras_minimos').upsert({ piedra, ct, certificado: cert, minimo: min }); if (r.error) throw r.error; }
-    }, `${t === 'compra' ? 'Entrada' : t === 'salida' ? 'Salida' : 'Ajuste'} registrada: ${fNum.format(n)} × ${piedra} ${fCt(ct)}.`, ev.target);
+      await crearOperacion({ tipo: t === 'compra' ? 'compra' : 'ajuste', nota }, [], [{ piedra, ct, certificado: cert, corte, cantidad: t === 'salida' ? -n : n, costo_unit: t === 'compra' ? costo : null }]);
+      if (min != null) { const r = await sb.from('piedras_minimos').upsert({ piedra, ct, certificado: cert, corte: corte || '', minimo: min }); if (r.error) throw r.error; }
+    }, `${t === 'compra' ? 'Entrada registrada' : t === 'salida' ? 'Salida registrada' : 'Ajuste registrado'}: ${fNum.format(n)} × ${piedra}${corte ? ' ' + corte : ''} ${fCt(ct)}.`, ev.target);
   });
 
   // Costos
@@ -3144,7 +3154,7 @@ function detalleCosto(c, p) {
   const filas = [
     ['Metal', `${g2(d.peso_final)} g × ${fPeso(d.costo_gramo)}/g`, c.costo_metal],
     ['Merma', `${g2(d.merma_g)} g × ${fPeso(d.costo_gramo)}/g`, c.costo_merma],
-    ['Piedras', (d.piedras || []).map((x) => `${x.cantidad} × ${x.piedra} ${fCt(Number(x.ct))} a ${fPeso(x.costo_unit)}`).join(' · ') || 'Sin piedras', c.costo_piedras],
+    ['Piedras', (d.piedras || []).map((x) => `${x.cantidad} × ${x.piedra}${x.corte ? ' ' + x.corte : ''} ${fCt(Number(x.ct))} a ${fPeso(x.costo_unit)}`).join(' · ') || 'Sin piedras', c.costo_piedras],
     ['Mano de obra', `${fDec2.format(d.puntos || 0)} puntos × ${fPeso(d.costo_punto)}`, c.costo_mano_obra],
     ['Otros', [d.soldadura_g ? `soldadura ${g2(d.soldadura_g)} g` : '', d.rodio ? `rodio ${fPeso(d.tarifa_rodio)}` : '', d.estuche ? `estuche ${fPeso(d.tarifa_estuche)}` : ''].filter(Boolean).join(' · ') || '—', c.costo_otros],
   ];
@@ -3174,6 +3184,7 @@ function renderPiedrasCot() {
   const box = $('ct-piedras'); if (box.children.length) return;
   box.replaceChildren(...POSICIONES.map(([pos, etq]) => h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
     h('label', { class: 'field' }, 'Tipo de piedra', h('select', { id: `ctp-${pos}-tipo` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)))),
+    h('label', { class: 'field' }, 'Corte de piedra', h('select', { id: `ctp-${pos}-corte` }, ...opcionesCorte())),
     h('label', { class: 'field' }, 'Quilates (ct)', h('input', { id: `ctp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal' })),
     h('label', { class: 'field' }, 'Cantidad', h('input', { id: `ctp-${pos}-cant`, type: 'number', step: '1', min: '0', inputmode: 'numeric' })),
     h('label', { class: 'cert' }, h('input', { id: `ctp-${pos}-cert`, type: 'checkbox' }), 'Con certificado'))));
@@ -3187,8 +3198,8 @@ function calcCotizador() {
   let piedras = 0; const sinCosto = [];
   for (const [pos] of POSICIONES) {
     const p = $(`ctp-${pos}-tipo`)?.value; if (!p) continue;
-    const ct = num($(`ctp-${pos}-ct`).value), n = num($(`ctp-${pos}-cant`).value) || 0, cert = $(`ctp-${pos}-cert`).checked;
-    const cu = costoPiedra(p, ct, cert); if (cu == null) sinCosto.push(`${p} ${ct ? fCt(ct) : ''}`); piedras += n * (cu || 0);
+    const ct = num($(`ctp-${pos}-ct`).value), n = num($(`ctp-${pos}-cant`).value) || 0, cert = $(`ctp-${pos}-cert`).checked, corte = $(`ctp-${pos}-corte`).value;
+    const cu = costoPiedra(p, ct, cert, corte); if (cu == null) sinCosto.push(`${p} ${ct ? fCt(ct) : ''}`); piedras += n * (cu || 0);
   }
   const conPunto = S.inv.costosOrf.map(costoPunto).filter((x) => x != null);
   const cpProm = conPunto.length ? conPunto.reduce((s, x) => s + x, 0) / conPunto.length : 0;
