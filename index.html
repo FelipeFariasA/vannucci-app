@@ -662,7 +662,8 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
 
     <div class="card">
       <h2>Metales en bodega</h2>
-      <p class="note">En taller: entregado a orfebres y todavía no devuelto ni convertido en pieza.</p>
+      <p class="note">En taller: entregado a orfebres y todavía no devuelto ni convertido en pieza. Editar o eliminar cambia solo lo que hay en bodega y queda registrado como ajuste en los movimientos.</p>
+      <span class="msg" id="m-mst" role="status"></span>
       <div class="tbl free"><table id="tb-metales"><thead><tr id="th-metales"></tr></thead><tbody></tbody></table></div>
     </div>
 
@@ -2913,15 +2914,20 @@ function renderInventario() {
   msg('m-inv-g', '');
   const { porOrf, porMetal, saldo } = cuentasTaller();
   // Metales en bodega
-  $('th-metales').replaceChildren(...['Metal', 'En bodega (g)', 'En taller (g)', ...(admin ? ['Costo por g', 'Valor en bodega'] : [])].map((t, i) => h('th', { class: i ? 'n' : null }, t)));
+  $('th-metales').replaceChildren(...['Metal', 'En bodega (g)', 'En taller (g)', ...(admin ? ['Costo por g', 'Valor en bodega'] : []), ''].map((t, i) => h('th', { class: i && t ? 'n' : null }, t)));
   let total = 0;
-  const filasM = S.inv.metales.filter((m) => m.activo !== false).map((m) => {
-    const b = stockMetal(m.id), t = porMetal.has(m.id) ? saldo(porMetal.get(m.id)) : 0, cg = admin ? costoGramo(m.id) : null;
+  // Un metal sin nada en bodega ni en taller no se muestra (por ejemplo, después de eliminarlo); vuelve a aparecer con la próxima entrada.
+  const filasM = S.inv.metales.filter((m) => m.activo !== false).map((m) => ({ m, b: stockMetal(m.id), t: porMetal.has(m.id) ? saldo(porMetal.get(m.id)) : 0 }))
+    .filter(({ b, t }) => Math.abs(b) >= 0.005 || Math.abs(t) >= 0.005).map(({ m, b, t }) => {
+    const cg = admin ? costoGramo(m.id) : null;
     const valor = cg != null ? b * cg : null; if (valor) total += valor;
     return h('tr', {}, h('td', {}, m.nombre), h('td', { class: 'n' + (b < -0.001 ? ' bajo' : '') }, g2(b)), h('td', { class: 'n' }, g2(t)),
-      ...(admin ? [h('td', { class: 'n' }, cg != null ? fPeso(cg) : '—'), h('td', { class: 'n' }, valor != null ? fPeso(valor) : '—')] : []));
+      ...(admin ? [h('td', { class: 'n' }, cg != null ? fPeso(cg) : '—'), h('td', { class: 'n' }, valor != null ? fPeso(valor) : '—')] : []),
+      h('td', { class: 'acciones' }, h('button', { type: 'button', class: 'btn link', onclick: () => editarMetalStock(m, b) }, 'Editar'),
+        h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarMetalStock(m, b, t) }, 'Eliminar')));
   });
-  if (admin) filasM.push(h('tr', { class: 'total' }, h('td', {}, 'Total'), h('td', {}), h('td', {}), h('td', {}), h('td', { class: 'n' }, fPeso(total))));
+  if (!filasM.length) filasM.push(h('tr', {}, h('td', { colspan: admin ? 6 : 4, class: 'note' }, 'Aún no hay metales en bodega. Registra una compra para empezar.')));
+  if (admin) filasM.push(h('tr', { class: 'total' }, h('td', {}, 'Total'), h('td', {}), h('td', {}), h('td', {}), h('td', { class: 'n' }, fPeso(total)), h('td', {})));
   $('tb-metales').tBodies[0].replaceChildren(...filasM);
   // Oro por orfebre
   const ids = [...new Set([...S.orfItems.filter((o) => o.activo !== false).map((o) => o.id), ...porOrf.keys()])];
@@ -2982,6 +2988,63 @@ async function crearOperacion(op, metales = [], piedras = []) {
     const costos = data.map((r, i) => ({ movimiento_id: r.id, costo_unit: piedras[i].costo_unit })).filter((x) => x.costo_unit != null);
     if (costos.length) { const c = await sb.from('piedra_costos').insert(costos); if (c.error) throw c.error; }
   }
+}
+// --- editar o eliminar un metal en bodega ---
+// Solo cambia lo que hay en bodega (lo que está en taller sigue en la cuenta de cada orfebre). Cada cambio es un ajuste.
+function editarMetalStock(m, b) {
+  const metales = S.inv.metales.filter((x) => x.activo !== false);
+  const f = {
+    metal: h('select', { id: 'me-metal' }, ...metales.map((x) => new Option(x.nombre, x.id))),
+    g: h('input', { id: 'me-g', type: 'number', step: '0.01', min: '0', inputmode: 'decimal' }),
+    nota: h('input', { id: 'me-nota', autocomplete: 'off', placeholder: 'Ej.: pesaje de bodega, se registró con otro metal' }),
+  };
+  f.metal.value = m.id; f.g.value = Math.round(b * 100) / 100;
+  const guardar = h('button', { type: 'button', class: 'btn primary' }, 'Guardar cambios');
+  const cancelar = h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
+  const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-me', style: 'width:min(32rem, calc(100vw - 32px))' },
+    h('div', { class: 'cuerpo' },
+      h('h2', { id: 'dlg-me' }, 'Editar metal en bodega'),
+      h('p', { class: 'aviso' }, `${m.nombre} · hoy hay ${g2(b)} g en bodega.`),
+      h('div', { class: 'fields' }, h('label', { class: 'field' }, 'Metal', f.metal), h('label', { class: 'field' }, 'En bodega (g)', f.g),
+        h('label', { class: 'field full' }, 'Motivo del cambio', f.nota)),
+      h('p', { class: 'aviso' }, 'Se registra un ajuste con este motivo. Si cambias el metal, los gramos pasan a ese metal (se suman a lo que ya tenga) con el costo por gramo actual.'),
+      h('span', { class: 'msg', id: 'm-me', role: 'status' })),
+    h('div', { class: 'pie' }, cancelar, guardar));
+  const fin = () => { dlg.close(); dlg.remove(); };
+  cancelar.addEventListener('click', fin);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); fin(); });
+  guardar.addEventListener('click', async () => {
+    const destino = f.metal.value, g = num(f.g.value), nota = f.nota.value.trim();
+    if (!(g != null && g >= 0)) return msg('m-me', 'Indica los gramos en bodega (0 o más).', 'bad');
+    const r2 = (x) => Math.round(x * 100) / 100, movs = [];
+    if (destino !== m.id) {
+      if (Math.abs(b) >= 0.005) movs.push({ metal_id: m.id, gramos: r2(-b) });
+      const cg = verCostos() ? costoGramo(m.id) : null;
+      if (g >= 0.005) movs.push({ metal_id: destino, gramos: r2(g), costo: cg != null ? Math.round(cg * g) : null });
+    } else if (Math.abs(g - b) >= 0.005) movs.push({ metal_id: m.id, gramos: r2(g - b) });
+    if (!movs.length) { fin(); return; }
+    if (!nota) return msg('m-me', 'Escribe el motivo del cambio.', 'bad');
+    guardar.disabled = true;
+    try {
+      await crearOperacion({ tipo: 'ajuste', nota }, movs);
+      fin(); msg('m-mst', destino !== m.id ? `${g2(g)} g pasaron a ${nombreMetal(destino)}.` : `${m.nombre}: bodega ajustada a ${g2(g)} g.`, 'ok'); await cargarInventario();
+    } catch (e) {
+      guardar.disabled = false;
+      msg('m-me', e.code === '42501' ? 'No tienes permiso para este ajuste.' : 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad');
+    }
+  });
+  document.body.append(dlg); dlg.showModal();
+}
+async function eliminarMetalStock(m, b, t) {
+  if (Math.abs(b) < 0.005) { msg('m-mst', `${m.nombre} no tiene gramos en bodega; lo que está en taller se cierra cuando el orfebre devuelve o termina sus piezas.`, 'bad'); return; }
+  const ok = await confirmar({ titulo: 'Eliminar metal de la bodega',
+    datos: [['Metal', m.nombre], ['En bodega', g2(b) + ' g'], ['En taller', g2(t) + ' g']],
+    aviso: `Se registra un ajuste que deja la bodega en 0 g. ${Math.abs(t) >= 0.005 ? 'Lo que está en taller no cambia. ' : ''}El historial de movimientos se conserva.`, aceptar: 'Eliminar de la bodega' });
+  if (!ok) return;
+  try {
+    await crearOperacion({ tipo: 'ajuste', nota: 'Metal eliminado de la bodega' }, [{ metal_id: m.id, gramos: Math.round(-b * 100) / 100 }]);
+    msg('m-mst', `${m.nombre} eliminado de la bodega.`, 'ok'); await cargarInventario();
+  } catch (e) { msg('m-mst', e.code === '42501' ? 'No tienes permiso para este ajuste.' : 'No se pudo eliminar (' + (e.message || e.code) + ').', 'bad'); }
 }
 // --- editar o eliminar una línea de piedras en stock ---
 // El stock no se edita a mano: cada cambio se registra como un ajuste en los movimientos.
