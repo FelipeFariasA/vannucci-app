@@ -739,7 +739,8 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
 
     <div class="card">
       <h2>Piedras en stock</h2>
-      <p class="note">Las piedras se cuentan por tipo y quilates. Los diamantes con certificado van aparte de los que no lo tienen.</p>
+      <p class="note">Las piedras se cuentan por tipo, corte y quilates. Los diamantes con certificado van aparte de los que no lo tienen. Editar o eliminar una línea queda registrado como ajuste en los movimientos.</p>
+      <span class="msg" id="m-pst" role="status"></span>
       <div class="tbl free"><table id="tb-piedras"><thead><tr id="th-piedras"></tr></thead><tbody></tbody></table></div>
     </div>
 
@@ -2933,16 +2934,20 @@ function renderInventario() {
   const stock = new Map();
   for (const l of lineasPiedra()) { const k = clavePiedra(l.piedra, l.ct, l.certificado, l.corte); stock.set(k, (stock.get(k) || 0) + l.cantidad); }
   for (const m of S.inv.minimos) { const k = clavePiedra(m.piedra, m.ct, m.certificado, m.corte); if (!stock.has(k)) stock.set(k, 0); }
-  $('th-piedras').replaceChildren(...['Tipo de piedra', 'Corte', 'Quilates', 'Certificado', 'En stock', 'Mínimo', ...(admin ? ['Costo c/u', 'Valor'] : [])].map((t, i) => h('th', { class: i >= 4 ? 'n' : null }, t)));
+  $('th-piedras').replaceChildren(...['Tipo de piedra', 'Corte', 'Quilates', 'Certificado', 'En stock', 'Mínimo', ...(admin ? ['Costo c/u', 'Valor'] : []), ''].map((t, i) => h('th', { class: i >= 4 && t ? 'n' : null }, t)));
+  // Una línea en 0 sin mínimo ya no tiene nada que mostrar (por ejemplo, después de eliminarla).
   const filasP = [...stock].map(([k, n]) => { const [p, ct, cert, corte] = k.split('|'); return { p, ct: Number(ct), cert: cert === '1', corte, n }; })
+    .filter((r) => r.n !== 0 || S.inv.minimos.some((m) => clavePiedra(m.piedra, m.ct, m.certificado, m.corte) === clavePiedra(r.p, r.ct, r.cert, r.corte)))
     .sort((a, b) => a.p.localeCompare(b.p, 'es') || a.corte.localeCompare(b.corte, 'es') || a.ct - b.ct || Number(a.cert) - Number(b.cert));
   $('tb-piedras').tBodies[0].replaceChildren(...(filasP.length ? filasP.map((r) => {
     const min = S.inv.minimos.find((m) => clavePiedra(m.piedra, m.ct, m.certificado, m.corte) === clavePiedra(r.p, r.ct, r.cert, r.corte));
     const cu = admin ? costoPiedra(r.p, r.ct, r.cert, r.corte) : null, bajo = min && r.n < min.minimo;
     return h('tr', {}, h('td', {}, r.p), h('td', {}, r.corte || '—'), h('td', {}, fCt(r.ct)), h('td', {}, r.cert ? 'Sí' : 'No'),
       h('td', { class: 'n' + (bajo || r.n < 0 ? ' bajo' : '') }, fNum.format(r.n), bajo ? ' · bajo el mínimo' : ''), h('td', { class: 'n' }, min ? fNum.format(min.minimo) : '—'),
-      ...(admin ? [h('td', { class: 'n' }, cu != null ? fPeso(cu) : '—'), h('td', { class: 'n' }, cu != null ? fPeso(cu * r.n) : '—')] : []));
-  }) : [h('tr', {}, h('td', { colspan: admin ? 8 : 6, class: 'note' }, 'Aún no hay piedras registradas. Usa "Entrada o salida de piedras".'))]));
+      ...(admin ? [h('td', { class: 'n' }, cu != null ? fPeso(cu) : '—'), h('td', { class: 'n' }, cu != null ? fPeso(cu * r.n) : '—')] : []),
+      h('td', { class: 'acciones' }, h('button', { type: 'button', class: 'btn link', onclick: () => editarPiedraStock(r, min) }, 'Editar'),
+        h('button', { type: 'button', class: 'btn link danger', onclick: () => eliminarPiedraStock(r, min) }, 'Eliminar')));
+  }) : [h('tr', {}, h('td', { colspan: admin ? 9 : 7, class: 'note' }, 'Aún no hay piedras registradas. Usa "Entrada o salida de piedras".'))]));
   // Movimientos
   $('th-movs').replaceChildren(...['Fecha', 'Material', 'Movimiento', 'Detalle', 'Cantidad', ...(admin ? ['Valor'] : []), 'Pieza', 'Registró'].map((t) => h('th', { class: t === 'Cantidad' || t === 'Valor' ? 'n' : null }, t)));
   const filas = [];
@@ -2977,6 +2982,84 @@ async function crearOperacion(op, metales = [], piedras = []) {
     const costos = data.map((r, i) => ({ movimiento_id: r.id, costo_unit: piedras[i].costo_unit })).filter((x) => x.costo_unit != null);
     if (costos.length) { const c = await sb.from('piedra_costos').insert(costos); if (c.error) throw c.error; }
   }
+}
+// --- editar o eliminar una línea de piedras en stock ---
+// El stock no se edita a mano: cada cambio se registra como un ajuste en los movimientos.
+const nombrePiedra = (r) => `${r.p}${r.corte ? ' ' + r.corte : ''} ${fCt(r.ct)}${r.cert ? ' (cert.)' : ''}`;
+async function borrarMinimoPiedra(r) {
+  const { error } = await sb.from('piedras_minimos').delete().eq('piedra', r.p).eq('ct', r.ct).eq('certificado', r.cert).eq('corte', r.corte || '');
+  if (error) throw error;
+}
+function editarPiedraStock(r, min) {
+  const tipos = PIEDRAS().includes(r.p) ? PIEDRAS() : [r.p, ...PIEDRAS()];
+  const f = {
+    tipo: h('select', { id: 'pe-tipo' }, ...tipos.map((p) => new Option(p, p))),
+    corte: h('select', { id: 'pe-corte' }, ...opcionesCorte()),
+    ct: h('input', { id: 'pe-ct', type: 'number', step: '0.01', min: '0', inputmode: 'decimal' }),
+    cert: h('input', { id: 'pe-cert', type: 'checkbox', style: 'width:auto' }),
+    stock: h('input', { id: 'pe-stock', type: 'number', step: '1', min: '0', inputmode: 'numeric' }),
+    min: h('input', { id: 'pe-min', type: 'number', step: '1', min: '0', inputmode: 'numeric', placeholder: 'Sin mínimo' }),
+    nota: h('input', { id: 'pe-nota', autocomplete: 'off', placeholder: 'Ej.: conteo físico, se corrigió el corte' }),
+  };
+  f.tipo.value = r.p; f.corte.value = r.corte || ''; f.ct.value = r.ct; f.cert.checked = r.cert; f.stock.value = r.n; f.min.value = min ? min.minimo : '';
+  const guardar = h('button', { type: 'button', class: 'btn primary' }, 'Guardar cambios');
+  const cancelar = h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
+  const campo = (t, el, extra) => h('label', { class: 'field' + (extra ? ' ' + extra : '') }, t, el);
+  const dlg = h('dialog', { class: 'confirmar', 'aria-labelledby': 'dlg-pe', style: 'width:min(36rem, calc(100vw - 32px))' },
+    h('div', { class: 'cuerpo' },
+      h('h2', { id: 'dlg-pe' }, 'Editar piedras en stock'),
+      h('p', { class: 'aviso' }, `${nombrePiedra(r)} · hoy hay ${fNum.format(r.n)} en stock.`),
+      h('div', { class: 'fields' }, campo('Tipo de piedra', f.tipo), campo('Corte de piedra', f.corte), campo('Quilates (ct)', f.ct), campo('En stock', f.stock),
+        campo('Avisar si quedan menos de', f.min),
+        h('label', { class: 'field', style: 'display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end' }, f.cert, 'Con certificado'),
+        campo('Motivo del cambio', f.nota, 'full')),
+      h('p', { class: 'aviso' }, 'Si cambias el stock o los datos de la piedra se registra un ajuste con este motivo. Si la piedra nueva ya existe en stock, las cantidades se suman.'),
+      h('span', { class: 'msg', id: 'm-pe', role: 'status' })),
+    h('div', { class: 'pie' }, cancelar, guardar));
+  const fin = () => { dlg.close(); dlg.remove(); };
+  cancelar.addEventListener('click', fin);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); fin(); });
+  guardar.addEventListener('click', async () => {
+    const nu = { p: f.tipo.value, corte: f.corte.value, ct: num(f.ct.value), cert: f.cert.checked, n: num(f.stock.value) };
+    const nuevoMin = f.min.value.trim() === '' ? null : num(f.min.value), nota = f.nota.value.trim();
+    if (!(nu.ct > 0)) return msg('m-pe', 'Indica los quilates.', 'bad');
+    if (!(Number.isInteger(nu.n) && nu.n >= 0)) return msg('m-pe', 'El stock debe ser un número entero de 0 o más.', 'bad');
+    if (nuevoMin != null && !(Number.isInteger(nuevoMin) && nuevoMin >= 0)) return msg('m-pe', 'El mínimo debe ser un número entero de 0 o más.', 'bad');
+    const cambiaClave = clavePiedra(nu.p, nu.ct, nu.cert, nu.corte) !== clavePiedra(r.p, r.ct, r.cert, r.corte);
+    const movs = [];
+    if (cambiaClave) {
+      // Sale todo de la línea anterior y entra la cantidad indicada en la nueva, con el costo promedio de la anterior.
+      if (r.n !== 0) movs.push({ piedra: r.p, ct: r.ct, certificado: r.cert, corte: r.corte || null, cantidad: -r.n });
+      if (nu.n > 0) movs.push({ piedra: nu.p, ct: nu.ct, certificado: nu.cert, corte: nu.corte || null, cantidad: nu.n, costo_unit: verCostos() ? costoPiedra(r.p, r.ct, r.cert, r.corte) : null });
+    } else if (nu.n !== r.n) movs.push({ piedra: r.p, ct: r.ct, certificado: r.cert, corte: r.corte || null, cantidad: nu.n - r.n });
+    const cambiaMin = cambiaClave || (min ? min.minimo : null) !== nuevoMin;
+    if (!movs.length && !cambiaMin) { fin(); return; }
+    if (movs.length && !nota) return msg('m-pe', 'Escribe el motivo del cambio.', 'bad');
+    guardar.disabled = true;
+    try {
+      if (movs.length) await crearOperacion({ tipo: 'ajuste', nota }, [], movs);
+      if (cambiaMin) {
+        if (min && (cambiaClave || nuevoMin == null)) await borrarMinimoPiedra(r);
+        if (nuevoMin != null) { const u = await sb.from('piedras_minimos').upsert({ piedra: nu.p, ct: nu.ct, certificado: nu.cert, corte: nu.corte || '', minimo: nuevoMin }); if (u.error) throw u.error; }
+      }
+      fin(); msg('m-pst', `${nombrePiedra(nu)} actualizada.`, 'ok'); await cargarInventario();
+    } catch (e) {
+      guardar.disabled = false;
+      msg('m-pe', e.code === '42501' ? 'No tienes permiso para este ajuste.' : 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad');
+    }
+  });
+  document.body.append(dlg); dlg.showModal();
+}
+async function eliminarPiedraStock(r, min) {
+  const ok = await confirmar({ titulo: 'Eliminar piedras del stock',
+    datos: [['Piedra', nombrePiedra(r)], ['En stock', fNum.format(r.n)], ['Mínimo', min ? fNum.format(min.minimo) : '—']],
+    aviso: `Se registra un ajuste que deja esta línea en 0${min ? ' y se quita el aviso de mínimo' : ''}. El historial de movimientos se conserva.`, aceptar: 'Eliminar del stock' });
+  if (!ok) return;
+  try {
+    if (r.n !== 0) await crearOperacion({ tipo: 'ajuste', nota: 'Línea eliminada del stock' }, [], [{ piedra: r.p, ct: r.ct, certificado: r.cert, corte: r.corte || null, cantidad: -r.n }]);
+    if (min) await borrarMinimoPiedra(r);
+    msg('m-pst', `${nombrePiedra(r)} eliminada del stock.`, 'ok'); await cargarInventario();
+  } catch (e) { msg('m-pst', e.code === '42501' ? 'No tienes permiso para este ajuste.' : 'No se pudo eliminar (' + (e.message || e.code) + ').', 'bad'); }
 }
 async function ejecutar(msgId, fn, ok, form) {
   try { await fn(); msg(msgId, ok, 'ok'); if (form) form.reset(); await cargarInventario(); }
