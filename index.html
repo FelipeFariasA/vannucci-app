@@ -3141,7 +3141,10 @@ function editarPiedraStock(r, min) {
     stock: h('input', { id: 'pe-stock', type: 'number', step: '1', min: '0', inputmode: 'numeric' }),
     min: h('input', { id: 'pe-min', type: 'number', step: '1', min: '0', inputmode: 'numeric', placeholder: 'Sin mínimo' }),
     nota: h('input', { id: 'pe-nota', autocomplete: 'off', placeholder: 'Ej.: conteo físico, se corrigió el corte' }),
+    costo: h('input', { id: 'pe-costo', type: 'number', step: '1', min: '0', inputmode: 'numeric', placeholder: 'Sin costo' }),
   };
+  const admin = verCostos(), costoActual = admin ? costoPiedra(r.p, r.ct, r.cert, r.corte) : null;
+  f.costo.value = costoActual != null ? Math.round(costoActual) : '';
   f.tipo.value = r.p; f.corte.value = r.corte || ''; f.ct.value = r.ct; f.cert.checked = r.cert; f.stock.value = r.n; f.min.value = min ? min.minimo : '';
   const guardar = h('button', { type: 'button', class: 'btn primary' }, 'Guardar cambios');
   const cancelar = h('button', { type: 'button', class: 'btn', autofocus: true }, 'Cancelar');
@@ -3151,10 +3154,11 @@ function editarPiedraStock(r, min) {
       h('h2', { id: 'dlg-pe' }, 'Editar piedras en stock'),
       h('p', { class: 'aviso' }, `${nombrePiedra(r)} · hoy hay ${fNum.format(r.n)} en stock.`),
       h('div', { class: 'fields' }, campo('Tipo de piedra', f.tipo), campo('Corte de piedra', f.corte), campo('Quilates (ct)', f.ct), campo('En stock', f.stock),
-        campo('Avisar si quedan menos de', f.min),
+        campo('Avisar si quedan menos de', f.min), ...(admin ? [campo('Costo c/u ($)', f.costo)] : []),
         h('label', { class: 'field', style: 'display:flex;gap:8px;align-items:center;color:var(--ink);align-self:end' }, f.cert, 'Con certificado'),
         campo('Motivo del cambio', f.nota, 'full')),
-      h('p', { class: 'aviso' }, 'Si cambias el stock o los datos de la piedra se registra un ajuste con este motivo. Si la piedra nueva ya existe en stock, las cantidades se suman.'),
+      h('p', { class: 'aviso' }, 'Si cambias el stock o los datos de la piedra se registra un ajuste con este motivo. Si la piedra nueva ya existe en stock, las cantidades se suman.'
+        + (admin ? ' El costo c/u nuevo se aplica a las entradas de esta piedra; las piezas ya aprobadas conservan su costo.' : '')),
       h('span', { class: 'msg', id: 'm-pe', role: 'status' })),
     h('div', { class: 'pie' }, cancelar, guardar));
   const fin = () => { dlg.close(); dlg.remove(); };
@@ -3166,15 +3170,18 @@ function editarPiedraStock(r, min) {
     if (!(nu.ct > 0)) return msg('m-pe', 'Indica los quilates.', 'bad');
     if (!(Number.isInteger(nu.n) && nu.n >= 0)) return msg('m-pe', 'El stock debe ser un número entero de 0 o más.', 'bad');
     if (nuevoMin != null && !(Number.isInteger(nuevoMin) && nuevoMin >= 0)) return msg('m-pe', 'El mínimo debe ser un número entero de 0 o más.', 'bad');
+    const nuevoCosto = admin && f.costo.value.trim() !== '' ? num(f.costo.value) : null;
+    if (nuevoCosto != null && !(nuevoCosto >= 0)) return msg('m-pe', 'El costo c/u debe ser 0 o más.', 'bad');
+    const cambiaCosto = nuevoCosto != null && Math.round(nuevoCosto) !== (costoActual != null ? Math.round(costoActual) : null);
     const cambiaClave = clavePiedra(nu.p, nu.ct, nu.cert, nu.corte) !== clavePiedra(r.p, r.ct, r.cert, r.corte);
     const movs = [];
     if (cambiaClave) {
       // Sale todo de la línea anterior y entra la cantidad indicada en la nueva, con el costo promedio de la anterior.
       if (r.n !== 0) movs.push({ piedra: r.p, ct: r.ct, certificado: r.cert, corte: r.corte || null, cantidad: -r.n });
-      if (nu.n > 0) movs.push({ piedra: nu.p, ct: nu.ct, certificado: nu.cert, corte: nu.corte || null, cantidad: nu.n, costo_unit: verCostos() ? costoPiedra(r.p, r.ct, r.cert, r.corte) : null });
+      if (nu.n > 0) movs.push({ piedra: nu.p, ct: nu.ct, certificado: nu.cert, corte: nu.corte || null, cantidad: nu.n, costo_unit: admin ? (nuevoCosto ?? costoActual) : null });
     } else if (nu.n !== r.n) movs.push({ piedra: r.p, ct: r.ct, certificado: r.cert, corte: r.corte || null, cantidad: nu.n - r.n });
     const cambiaMin = cambiaClave || (min ? min.minimo : null) !== nuevoMin;
-    if (!movs.length && !cambiaMin) { fin(); return; }
+    if (!movs.length && !cambiaMin && !cambiaCosto) { fin(); return; }
     if (movs.length && !nota) return msg('m-pe', 'Escribe el motivo del cambio.', 'bad');
     guardar.disabled = true;
     try {
@@ -3183,7 +3190,18 @@ function editarPiedraStock(r, min) {
         if (min && (cambiaClave || nuevoMin == null)) await borrarMinimoPiedra(r);
         if (nuevoMin != null) { const u = await sb.from('piedras_minimos').upsert({ piedra: nu.p, ct: nu.ct, certificado: nu.cert, corte: nu.corte || '', minimo: nuevoMin }); if (u.error) throw u.error; }
       }
-      fin(); msg('m-pst', `${nombrePiedra(nu)} actualizada.`, 'ok'); await cargarInventario();
+      let aviso = '';
+      if (cambiaCosto) {
+        // El costo c/u es el promedio de las entradas: se fija el mismo precio en todas las entradas de esta piedra.
+        if (movs.length) await cargarInventario();
+        const k = clavePiedra(nu.p, nu.ct, nu.cert, nu.corte);
+        const entradas = lineasPiedra().filter((l) => l.cantidad > 0 && clavePiedra(l.piedra, l.ct, l.certificado, l.corte) === k);
+        if (entradas.length) {
+          const u = await sb.from('piedra_costos').upsert(entradas.map((l) => ({ movimiento_id: l.id, costo_unit: Math.round(nuevoCosto) })));
+          if (u.error) throw u.error;
+        } else aviso = ' El costo no se cambió: esta piedra no tiene entradas a las que asignarlo (registra una entrada o ajuste que entre a stock).';
+      }
+      fin(); msg('m-pst', `${nombrePiedra(nu)} actualizada.${aviso}`, aviso ? 'bad' : 'ok'); await cargarInventario();
     } catch (e) {
       guardar.disabled = false;
       msg('m-pe', e.code === '42501' ? 'No tienes permiso para este ajuste.' : 'No se pudo guardar (' + (e.message || e.code) + ').', 'bad');
