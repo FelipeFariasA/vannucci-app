@@ -668,7 +668,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
     </div>
 
     <div class="inv-forms">
-      <div class="card solo-admin" id="c-comprar">
+      <div class="card" id="c-comprar">
         <h2>Comprar</h2>
         <form id="f-comprar" novalidate>
           <div class="fields">
@@ -681,7 +681,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <div class="actions"><button type="submit" class="btn primary">Registrar compra</button><span class="msg" id="m-co" role="status"></span></div>
         </form>
       </div>
-      <div class="card solo-admin" id="c-refinar">
+      <div class="card" id="c-refinar">
         <h2>Refinar</h2>
         <form id="f-refinar" novalidate>
           <div class="fields">
@@ -695,7 +695,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <div class="actions"><button type="submit" class="btn primary">Registrar refinación</button><span class="msg" id="m-re" role="status"></span></div>
         </form>
       </div>
-      <div class="card solo-admin" id="c-alear">
+      <div class="card" id="c-alear">
         <h2>Alear</h2>
         <form id="f-alear" novalidate>
           <div class="fields">
@@ -915,7 +915,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <h2>Qué ve cada rol</h2>
       <ul class="defs">
         <li><b>Administrador</b>: Indicadores (productividad y ventas), Registrar pieza, Aprobaciones, Inventario con valores en pesos, Costos, Maestros y esta pestaña para invitar usuarios y asignar roles. Puede ver el portal como Supervisor u Orfebre.</li>
-        <li><b>Supervisor de Taller</b>: Registrar pieza (la asigna a un orfebre con el metal y las piedras), Aprobaciones (entra directo ahí, da el visto bueno final) e Inventario en gramos y piedras, sin costos ni valores en pesos. No registra compras.</li>
+        <li><b>Supervisor de Taller</b>: Registrar pieza (la asigna a un orfebre con el metal y las piedras), Aprobaciones (entra directo ahí, da el visto bueno final) e Inventario: registra compras, refinaciones, aleaciones y movimientos (con el monto de cada compra y refinación), pero no ve costos promedio, valores en bodega ni la pestaña Costos.</li>
         <li><b>Orfebre</b>: Mis trabajos, con el metal y las piedras que recibió. Completa oro trabajado, peso final, oro devuelto y observaciones y lo envía a revisión. No ve costos, precios, inventario ni los trabajos de otros.</li>
         <li><b>Lector</b>: sin acceso a datos; solo ve "Cómo funciona". Úsalo para quien todavía no tiene rol.</li>
       </ul>
@@ -3196,9 +3196,9 @@ function wireInventario() {
     if (!(a.fino > 0)) return msg('m-al', 'Ingresa el oro fino.', 'bad');
     if (!(a.pct >= 74.5 && a.pct <= 75.5)) return msg('m-al', `El oro fino es el ${fDec.format(a.pct)}% del total; para 18k debe ser 75%. Ajusta la liga.`, 'bad');
     const entradas = [['oro_fino', a.fino], ['cobre', a.cobre], ['plata', a.plata], ['paladio', a.paladio]].filter(([, g]) => g > 0);
-    const costo = entradas.reduce((s, [m, g]) => s + g * (costoGramo(m) || 0), 0);
+    // El costo del metal que sale lo calcula la base de datos con el costo promedio del fino y la liga.
     ejecutar('m-al', () => crearOperacion({ tipo: 'aleacion', nota: `${fDec.format(a.pct)}% de oro fino` },
-      [...entradas.map(([m, g]) => ({ metal_id: m, gramos: -g })), { metal_id: destino, gramos: a.total, costo: Math.round(costo) }]),
+      [...entradas.map(([m, g]) => ({ metal_id: m, gramos: -g })), { metal_id: destino, gramos: a.total }]),
       `Aleación registrada: ${g2(a.total)} g de ${nombreMetal(destino)}.`, ev.target);
   });
   $('f-mov').addEventListener('submit', (ev) => {
