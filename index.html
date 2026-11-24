@@ -554,6 +554,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
       <button type="button" data-sub="parametros">Parámetros</button>
       <button type="button" data-sub="modelos">Modelos</button>
       <button type="button" data-sub="productos">Productos y precios</button>
+      <button type="button" data-sub="aleaciones">Aleaciones</button>
     </div>
 
     <div id="sub-parametros" class="msub" style="display:grid;gap:14px">
@@ -595,6 +596,28 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <div class="tbl"><table id="tb-mo"><thead><tr>
           <th>Modelo</th><th>Categoría</th><th>Código base</th><th class="n">Peso objetivo (g)</th><th class="n">Productos</th><th class="n">Precio desde</th><th class="n">Piezas en taller</th><th>Estado</th><th></th>
         </tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="sub-aleaciones" class="msub" hidden style="display:grid;gap:14px">
+      <div class="card">
+        <h2>Recetas de aleación</h2>
+        <p class="note">Gramos de cada liga por cada 1 g de oro fino 24k. Al alear en Inventario la liga se calcula sola con esta receta y todo lo usado se descuenta de bodega. Para que dé exactamente 18k (75% de oro fino) la liga debe sumar 0,3333 g por gramo de fino.</p>
+        <span class="msg" id="m-alr" role="status"></span>
+        <div class="tbl free"><table id="tb-alr"><thead><tr><th>Tono (metal)</th><th class="n">Cobre (g)</th><th class="n">Plata (g)</th><th class="n">Paladio (g)</th><th class="n">Sale por 1 g de fino</th><th class="n">Oro fino</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>Nuevo tono de oro 18k</h2>
+        <form id="f-alr" novalidate>
+          <div class="fields">
+            <label class="field">Tono<input id="alr-tono" autocomplete="off" placeholder="Ej. Verde"></label>
+            <label class="field">Cobre <span class="unit">(g por 1 g de fino)</span><input id="alr-cobre" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Plata <span class="unit">(g por 1 g de fino)</span><input id="alr-plata" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Paladio <span class="unit">(g por 1 g de fino)</span><input id="alr-paladio" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
+          </div>
+          <p class="note">Se crea el metal "Oro 18k &lt;tono&gt;" para el inventario y, si no existe, el tono en Parámetros para registrar piezas.</p>
+          <div class="actions"><button type="submit" class="btn primary">Agregar tono</button><span class="msg" id="m-alr-nuevo" role="status"></span></div>
+        </form>
       </div>
     </div>
 
@@ -700,7 +723,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <form id="f-alear" novalidate>
           <div class="fields">
             <label class="field">Tono que sale<select id="al-metal"></select></label>
-            <label class="field">Oro fino <span class="unit">(g)</span><input id="al-fino" type="number" step="0.01" min="0" inputmode="decimal"></label>
+            <label class="field">Oro fino 24k <span class="unit">(g)</span><input id="al-fino" type="number" step="0.01" min="0" inputmode="decimal"></label>
             <label class="field">Cobre <span class="unit">(g)</span><input id="al-cobre" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Plata <span class="unit">(g)</span><input id="al-plata" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Paladio <span class="unit">(g)</span><input id="al-paladio" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
@@ -2042,10 +2065,11 @@ function modeloDe(nombre) {
 function renderMaestros() {
   if (!S.isAdmin) return;
   document.querySelectorAll('#m-sub button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sub === S.msub)));
-  for (const s of ['parametros', 'modelos', 'productos']) $('sub-' + s).hidden = S.msub !== s;
+  for (const s of ['parametros', 'modelos', 'productos', 'aleaciones']) $('sub-' + s).hidden = S.msub !== s;
   if (S.msub === 'parametros') renderParam();
   if (S.msub === 'modelos') renderModelos();
   if (S.msub === 'productos') renderProductos();
+  if (S.msub === 'aleaciones') renderAleaciones();
 }
 // --- usuarios (administrador): invitar, rol y orfebre vinculado ---
 const ROLES = [['administrador', 'Administrador'], ['supervisor', 'Supervisor de Taller'], ['orfebre', 'Orfebre'], ['lector', 'Lector']];
@@ -2775,7 +2799,7 @@ function wire() {
     i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
   }));
   $('f-inv').addEventListener('submit', invitarUsuario);
-  wireInventario(); wirePT();
+  wireInventario(); wirePT(); $('f-alr').addEventListener('submit', nuevoTono18k);
   $('h-orf').addEventListener('change', (e) => { S.hf.orf = e.target.value; renderRevision(); });
   $('h-anio').addEventListener('change', (e) => { S.hf.anio = e.target.value; S.hf.mes = ''; renderRevision(); });
   $('h-mes').addEventListener('change', (e) => { S.hf.mes = e.target.value; renderRevision(); });
@@ -2989,6 +3013,60 @@ async function crearOperacion(op, metales = [], piedras = []) {
     if (costos.length) { const c = await sb.from('piedra_costos').insert(costos); if (c.error) throw c.error; }
   }
 }
+// --- Maestros → Aleaciones: recetas por tono de oro 18k ---
+function renderAleaciones() {
+  const ms = S.inv.metales.filter((m) => m.grupo === 'oro_18k');
+  const input = (m, c) => h('input', { type: 'number', step: '0.0001', min: '0', inputmode: 'decimal', style: 'max-width:7rem;text-align:right', value: m[c] ?? '', 'data-col': c, 'aria-label': `${c.replace('liga_', '')} ${m.nombre}` });
+  $('tb-alr').tBodies[0].replaceChildren(...(ms.length ? ms.map((m) => {
+    const ins = LIGAS.map(([, c]) => input(m, c));
+    const sale = h('td', { class: 'n' }), pct = h('td', { class: 'n' });
+    const calc = () => {
+      if (ins.every((i) => i.value.trim() === '')) { sale.textContent = '—'; pct.replaceChildren(h('span', { class: 'pill neutral' }, 'Sin receta')); return; }
+      const t = ins.reduce((s, i) => s + (num(i.value) || 0), 0);
+      sale.textContent = `${fDec2.format(1 + t)} g`;
+      const p = 100 / (1 + t); pct.replaceChildren(`${fDec.format(p)}% `, h('span', { class: 'pill ' + (p >= 74.5 && p <= 75.5 ? 'ok' : 'neutral') }, p >= 74.5 && p <= 75.5 ? '18k' : 'distinto de 75%'));
+    };
+    ins.forEach((i) => i.addEventListener('input', calc)); calc();
+    const guardar = async () => {
+      const cambios = Object.fromEntries(ins.map((i) => [i.dataset.col, i.value.trim() === '' ? null : num(i.value)]));
+      if (Object.values(cambios).some((v) => v != null && !(v >= 0))) return msg('m-alr', 'Los gramos de liga deben ser 0 o más.', 'bad');
+      const { error } = await sb.from('metales').update(cambios).eq('id', m.id);
+      if (error) return msg('m-alr', 'No se pudo guardar (' + (error.message || error.code) + ').', 'bad');
+      Object.assign(m, cambios); msg('m-alr', `Receta de ${m.nombre} guardada.`, 'ok'); calcAlear();
+    };
+    const activo = async () => {
+      const { error } = await sb.from('metales').update({ activo: m.activo === false }).eq('id', m.id);
+      if (error) return msg('m-alr', 'No se pudo cambiar (' + (error.message || error.code) + ').', 'bad');
+      m.activo = m.activo === false; msg('m-alr', `${m.nombre} ${m.activo ? 'activado' : 'desactivado'}.`, 'ok'); renderAleaciones(); llenarSelectsInv(); renderMaterialesForm();
+    };
+    return h('tr', { class: m.activo === false ? 'inactivo' : null }, h('td', {}, m.nombre, m.activo === false ? ' (inactivo)' : ''), ...ins.map((i) => h('td', { class: 'n' }, i)), sale, pct,
+      h('td', { class: 'acciones' }, h('button', { type: 'button', class: 'btn link', onclick: guardar }, 'Guardar'),
+        h('button', { type: 'button', class: 'btn link', onclick: activo }, m.activo === false ? 'Activar' : 'Desactivar')));
+  }) : [h('tr', {}, h('td', { colspan: 7, class: 'note' }, 'Cargando metales…'))]));
+}
+async function nuevoTono18k(ev) {
+  ev.preventDefault();
+  const tono = $('alr-tono').value.trim().replace(/\s+/g, ' ');
+  if (!tono) return msg('m-alr-nuevo', 'Escribe el tono.', 'bad');
+  const tonoCap = tono.charAt(0).toUpperCase() + tono.slice(1);
+  const id = 'oro18_' + sinTildes(tono);
+  if (S.inv.metales.some((m) => m.id === id || (m.grupo === 'oro_18k' && sinTildes(m.tono) === sinTildes(tono) && !/casting/i.test(m.nombre))))
+    return msg('m-alr-nuevo', `Ya existe oro 18k ${tono.toLowerCase()}; edita su receta en la tabla.`, 'bad');
+  const liga = Object.fromEntries(LIGAS.map(([k, c]) => [c, $('alr-' + k).value.trim() === '' ? 0 : num($('alr-' + k).value)]));
+  if (Object.values(liga).some((v) => !(v >= 0))) return msg('m-alr-nuevo', 'Los gramos de liga deben ser 0 o más.', 'bad');
+  const orden = Math.max(0, ...S.inv.metales.filter((m) => m.grupo === 'oro_18k').map((m) => m.orden || 0)) + 1;
+  const { error } = await sb.from('metales').insert({ id, nombre: `Oro 18k ${tono.toLowerCase()}`, grupo: 'oro_18k', tono: tonoCap, orden, activo: true, ...liga });
+  if (error) return msg('m-alr-nuevo', 'No se pudo agregar (' + (error.message || error.code) + ').', 'bad');
+  // El tono también queda en Parámetros para poder registrar piezas de ese tono.
+  let extra = '';
+  if (!S.param.tonos.some((t) => sinTildes(t.nombre) === sinTildes(tono))) {
+    const r = await sb.from('parametros').insert({ grupo_id: 'tonos', nombre: tonoCap, activo: true, orden: S.param.tonos.length + 1 });
+    extra = r.error ? ' (no se pudo agregar el tono en Parámetros: hazlo a mano)' : ' y agregado a Tonos en Parámetros';
+  }
+  ev.target.reset(); msg('m-alr-nuevo', `Oro 18k ${tono.toLowerCase()} creado${extra}.`, extra.startsWith(' (') ? 'bad' : 'ok');
+  await cargarMetales(); if (typeof cargarParametros === 'function') await cargarParametros(); renderAleaciones();
+}
+
 // --- editar o eliminar un metal en bodega ---
 // Solo cambia lo que hay en bodega (lo que está en taller sigue en la cuenta de cada orfebre). Cada cambio es un ajuste.
 function editarMetalStock(m, b) {
@@ -3151,12 +3229,35 @@ function leerAleacion() {
   const total = fino + cobre + plata + paladio;
   return { fino, cobre, plata, paladio, total, pct: total ? fino / total * 100 : null };
 }
+// Receta de aleación del tono (g de liga por 1 g de oro fino), definida en Maestros → Aleaciones.
+const LIGAS = [['cobre', 'liga_cobre', 'Cobre'], ['plata', 'liga_plata', 'Plata'], ['paladio', 'liga_paladio', 'Paladio']];
+function recetaDe(metalId) {
+  const m = S.inv.metales.find((x) => x.id === metalId);
+  if (!m || LIGAS.every(([, c]) => m[c] == null)) return null;
+  const r = Object.fromEntries(LIGAS.map(([k, c]) => [k, Number(m[c]) || 0]));
+  r.pct = 100 / (1 + r.cobre + r.plata + r.paladio);
+  return r;
+}
+// Con la receta del tono, la liga se calcula sola a partir del oro fino (los campos se pueden corregir a mano).
+function aplicarReceta() {
+  const r = recetaDe($('al-metal').value), fino = num($('al-fino').value);
+  if (r && fino > 0) for (const [k] of LIGAS) $('al-' + k).value = r[k] ? Math.round(fino * r[k] * 100) / 100 : '';
+  calcAlear();
+}
+const pctAleacionOk = (a, r) => (a.pct >= 74.5 && a.pct <= 75.5) || (r && Math.abs(a.pct - r.pct) <= 0.5);
 function calcAlear() {
-  const a = leerAleacion(), el = $('al-calc');
-  if (!a.total) { el.textContent = 'El oro fino debe ser el 75% del total para que salga 18k.'; return; }
-  const ok = a.pct >= 74.5 && a.pct <= 75.5;
-  el.replaceChildren(`Sale ${g2(a.total)} g · oro fino ${fDec.format(a.pct)}% `, h('span', { class: 'pill ' + (ok ? 'ok' : 'bad') }, ok ? 'Da 18k' : 'No da 75%'),
-    a.fino && !ok ? ` Para 18k con ${g2(a.fino)} g de fino, la liga debe sumar ${g2(a.fino / 3)} g.` : '');
+  const a = leerAleacion(), el = $('al-calc'), r = recetaDe($('al-metal').value);
+  const receta = r ? `Receta ${nombreMetal($('al-metal').value)}: por 1 g de oro fino, ${LIGAS.filter(([k]) => r[k]).map(([k, , t]) => `${fDec2.format(r[k])} g de ${t.toLowerCase()}`).join(' y ') || 'sin liga'} (${fDec.format(r.pct)}% de oro fino).`
+    : 'Este tono no tiene receta: ingresa la liga a mano o defínela en Maestros → Aleaciones.';
+  if (!a.total) { el.textContent = receta; return; }
+  const ok = pctAleacionOk(a, r), es18 = a.pct >= 74.5 && a.pct <= 75.5;
+  // Lo que se usa sale de bodega: avisa si no alcanza.
+  const falta = [['oro_fino', a.fino], ...LIGAS.map(([k]) => [k, a[k]])].filter(([m, g]) => g > 0 && g > stockMetal(m) + 0.001)
+    .map(([m, g]) => `${nombreMetal(m)} (hay ${g2(stockMetal(m))} g, se usan ${g2(g)} g)`);
+  el.replaceChildren(`Sale ${g2(a.total)} g · oro fino ${fDec.format(a.pct)}% `,
+    h('span', { class: 'pill ' + (ok ? 'ok' : 'bad') }, es18 ? 'Da 18k' : ok ? 'Según receta' : 'No cuadra'), ' ', receta,
+    !ok ? ` Para 18k con ${g2(a.fino)} g de fino, la liga debe sumar ${g2(a.fino / 3)} g.` : '',
+    falta.length ? h('span', { class: 'bajo' }, ` No alcanza en bodega: ${falta.join('; ')}. El stock quedará negativo.`) : '');
 }
 function alCambiarMov() {
   const t = $('mv-tipo').value, conOrf = t === 'entrega' || t === 'devolucion' || t === 'recuperacion';
@@ -3168,7 +3269,9 @@ function wireInventario() {
   for (const id of ['co-g', 'co-precio']) $(id).addEventListener('input', calcComprar);
   for (const id of ['re-g', 're-fino', 're-costo']) $(id).addEventListener('input', calcRefinar);
   $('re-valor').addEventListener('input', (e) => { e.target.dataset.manual = e.target.value ? '1' : ''; calcRefinar(); });
-  for (const id of ['al-fino', 'al-cobre', 'al-plata', 'al-paladio']) $(id).addEventListener('input', calcAlear);
+  $('al-fino').addEventListener('input', aplicarReceta);
+  $('al-metal').addEventListener('change', aplicarReceta);
+  for (const id of ['al-cobre', 'al-plata', 'al-paladio']) $(id).addEventListener('input', calcAlear);
   $('mv-tipo').addEventListener('change', alCambiarMov);
 
   $('f-comprar').addEventListener('submit', (ev) => {
@@ -3194,7 +3297,7 @@ function wireInventario() {
     ev.preventDefault();
     const a = leerAleacion(), destino = $('al-metal').value;
     if (!(a.fino > 0)) return msg('m-al', 'Ingresa el oro fino.', 'bad');
-    if (!(a.pct >= 74.5 && a.pct <= 75.5)) return msg('m-al', `El oro fino es el ${fDec.format(a.pct)}% del total; para 18k debe ser 75%. Ajusta la liga.`, 'bad');
+    if (!pctAleacionOk(a, recetaDe(destino))) return msg('m-al', `El oro fino es el ${fDec.format(a.pct)}% del total; no cuadra con 18k (75%) ni con la receta del tono. Ajusta la liga.`, 'bad');
     const entradas = [['oro_fino', a.fino], ['cobre', a.cobre], ['plata', a.plata], ['paladio', a.paladio]].filter(([, g]) => g > 0);
     // El costo del metal que sale lo calcula la base de datos con el costo promedio del fino y la liga.
     ejecutar('m-al', () => crearOperacion({ tipo: 'aleacion', nota: `${fDec.format(a.pct)}% de oro fino` },
