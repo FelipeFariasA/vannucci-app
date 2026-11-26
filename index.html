@@ -604,7 +604,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
         <h2>Recetas de aleación</h2>
         <p class="note">Gramos de cada liga por cada 1 g de oro fino 24k. Al alear en Inventario la liga se calcula sola con esta receta y todo lo usado se descuenta de bodega. Para que dé exactamente 18k (75% de oro fino) la liga debe sumar 0,3333 g por gramo de fino.</p>
         <span class="msg" id="m-alr" role="status"></span>
-        <div class="tbl free"><table id="tb-alr"><thead><tr><th>Tono (metal)</th><th class="n">Cobre (g)</th><th class="n">Plata (g)</th><th class="n">Paladio (g)</th><th class="n">Sale por 1 g de fino</th><th class="n">Oro fino</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tbl free"><table id="tb-alr"><thead><tr><th>Tono (metal)</th><th class="n">Cobre (g)</th><th class="n">Plata (g)</th><th class="n">Paladio (g)</th><th class="n">Liga (g)</th><th class="n">Sale por 1 g de fino</th><th class="n">Oro fino</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="card">
         <h2>Nuevo tono de oro 18k</h2>
@@ -614,6 +614,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
             <label class="field">Cobre <span class="unit">(g por 1 g de fino)</span><input id="alr-cobre" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Plata <span class="unit">(g por 1 g de fino)</span><input id="alr-plata" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Paladio <span class="unit">(g por 1 g de fino)</span><input id="alr-paladio" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Liga <span class="unit">(g por 1 g de fino)</span><input id="alr-liga" type="number" step="0.0001" min="0" inputmode="decimal" placeholder="0"></label>
           </div>
           <p class="note">Se crea el metal "Oro 18k &lt;tono&gt;" para el inventario y, si no existe, el tono en Parámetros para registrar piezas.</p>
           <div class="actions"><button type="submit" class="btn primary">Agregar tono</button><span class="msg" id="m-alr-nuevo" role="status"></span></div>
@@ -727,6 +728,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
             <label class="field">Cobre <span class="unit">(g)</span><input id="al-cobre" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Plata <span class="unit">(g)</span><input id="al-plata" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
             <label class="field">Paladio <span class="unit">(g)</span><input id="al-paladio" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
+            <label class="field">Liga <span class="unit">(g)</span><input id="al-liga" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"></label>
           </div>
           <p class="note check-75" id="al-calc"></p>
           <div class="actions"><button type="submit" class="btn primary">Registrar aleación</button><span class="msg" id="m-al" role="status"></span></div>
@@ -3243,17 +3245,18 @@ function calcRefinar() {
 }
 function leerAleacion() {
   const v = (id) => num($(id).value) || 0;
-  const fino = v('al-fino'), cobre = v('al-cobre'), plata = v('al-plata'), paladio = v('al-paladio');
-  const total = fino + cobre + plata + paladio;
-  return { fino, cobre, plata, paladio, total, pct: total ? fino / total * 100 : null };
+  const fino = v('al-fino'), cobre = v('al-cobre'), plata = v('al-plata'), paladio = v('al-paladio'), liga = v('al-liga');
+  const total = fino + cobre + plata + paladio + liga;
+  return { fino, cobre, plata, paladio, liga, total, pct: total ? fino / total * 100 : null };
 }
 // Receta de aleación del tono (g de liga por 1 g de oro fino), definida en Maestros → Aleaciones.
-const LIGAS = [['cobre', 'liga_cobre', 'Cobre'], ['plata', 'liga_plata', 'Plata'], ['paladio', 'liga_paladio', 'Paladio']];
+// Clave = id del metal en bodega, columna de la receta en metales, etiqueta.
+const LIGAS = [['cobre', 'liga_cobre', 'Cobre'], ['plata', 'liga_plata', 'Plata'], ['paladio', 'liga_paladio', 'Paladio'], ['liga', 'liga_liga', 'Liga']];
 function recetaDe(metalId) {
   const m = S.inv.metales.find((x) => x.id === metalId);
   if (!m || LIGAS.every(([, c]) => m[c] == null)) return null;
   const r = Object.fromEntries(LIGAS.map(([k, c]) => [k, Number(m[c]) || 0]));
-  r.pct = 100 / (1 + r.cobre + r.plata + r.paladio);
+  r.pct = 100 / (1 + LIGAS.reduce((s, [k]) => s + r[k], 0));
   return r;
 }
 // Con la receta del tono, la liga se calcula sola a partir del oro fino (los campos se pueden corregir a mano).
@@ -3289,7 +3292,7 @@ function wireInventario() {
   $('re-valor').addEventListener('input', (e) => { e.target.dataset.manual = e.target.value ? '1' : ''; calcRefinar(); });
   $('al-fino').addEventListener('input', aplicarReceta);
   $('al-metal').addEventListener('change', aplicarReceta);
-  for (const id of ['al-cobre', 'al-plata', 'al-paladio']) $(id).addEventListener('input', calcAlear);
+  for (const id of ['al-cobre', 'al-plata', 'al-paladio', 'al-liga']) $(id).addEventListener('input', calcAlear);
   $('mv-tipo').addEventListener('change', alCambiarMov);
 
   $('f-comprar').addEventListener('submit', (ev) => {
@@ -3316,7 +3319,7 @@ function wireInventario() {
     const a = leerAleacion(), destino = $('al-metal').value;
     if (!(a.fino > 0)) return msg('m-al', 'Ingresa el oro fino.', 'bad');
     if (!pctAleacionOk(a, recetaDe(destino))) return msg('m-al', `El oro fino es el ${fDec.format(a.pct)}% del total; no cuadra con 18k (75%) ni con la receta del tono. Ajusta la liga.`, 'bad');
-    const entradas = [['oro_fino', a.fino], ['cobre', a.cobre], ['plata', a.plata], ['paladio', a.paladio]].filter(([, g]) => g > 0);
+    const entradas = [['oro_fino', a.fino], ...LIGAS.map(([k]) => [k, a[k]])].filter(([, g]) => g > 0);
     // El costo del metal que sale lo calcula la base de datos con el costo promedio del fino y la liga.
     ejecutar('m-al', () => crearOperacion({ tipo: 'aleacion', nota: `${fDec.format(a.pct)}% de oro fino` },
       [...entradas.map(([m, g]) => ({ metal_id: m, gramos: -g })), { metal_id: destino, gramos: a.total }]),
