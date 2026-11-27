@@ -777,7 +777,7 @@ dialog.confirmar[open]::backdrop { opacity: 1; transition: opacity 200ms ease; }
           <label class="field">Movimiento<select id="pi-tipo"></select></label>
           <label class="field">Tipo de piedra<select id="pi-piedra"></select></label>
           <label class="field">Corte de piedra<select id="pi-corte"></select></label>
-          <label class="field">Quilates <span class="unit">(ct)</span><input id="pi-ct" type="number" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="field">Quilates <span class="unit">(ct)</span><input id="pi-ct" type="number" step="0.001" min="0" inputmode="decimal"></label>
           <label class="field">Cantidad<input id="pi-cant" type="number" step="1" min="1" inputmode="numeric"></label>
           <label class="field solo-admin">Costo c/u <span class="unit">($)</span><input id="pi-costo" type="number" step="1" min="0" inputmode="numeric"></label>
           <label class="field">Avisar si quedan menos de <span class="unit">(opcional)</span><input id="pi-min" type="number" step="1" min="0" inputmode="numeric"></label>
@@ -1558,7 +1558,9 @@ const nombreMetal = (id) => (S.inv.metales.find((m) => m.id === id) || {}).nombr
 const metalPorTono = (tono) => (S.inv.metales.find((m) => m.grupo === 'oro_18k' && m.tono === tono) || S.inv.metales.find((m) => m.tono === tono) || {}).id || '';
 // Metales que se entregan a un orfebre: oro 18k por tono, oro fino, platino y plata (no la liga ni el oro por refinar).
 const metalesEntregables = () => S.inv.metales.filter((m) => m.activo !== false && ['oro_18k', 'oro_fino', 'platino', 'plata', 'otro'].includes(m.grupo));
-const fCt = (ct) => fDec2.format(ct).replace(/,?0+$/, '').replace(/,$/, '') + ' ct';
+// Quilates con hasta 3 decimales (0,005 ct no debe verse como 0,01 ct).
+const fCt3 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+const fCt = (ct) => fCt3.format(ct) + ' ct';
 function resumenPiedras(rows) {
   return (rows || []).map((r) => `${fNum.format(r.cantidad)} × ${r.piedra}${r.corte ? ' ' + r.corte : ''} ${fCt(r.ct)}${r.certificado ? ' (cert.)' : ''}`).join(' · ');
 }
@@ -1572,7 +1574,7 @@ function renderMaterialesForm() {
   box.replaceChildren(...POSICIONES.map(([pos, etq]) => {
     const tipo = h('select', { id: `pp-${pos}-tipo`, 'aria-label': `Tipo de piedra ${etq}` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)));
     const corte = h('select', { id: `pp-${pos}-corte`, 'aria-label': `Corte de piedra ${etq}` }, ...opcionesCorte());
-    const ct = h('input', { id: `pp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal', 'aria-label': `Quilates ${etq}`, placeholder: 'ct' });
+    const ct = h('input', { id: `pp-${pos}-ct`, type: 'number', step: '0.001', min: '0', inputmode: 'decimal', 'aria-label': `Quilates ${etq}`, placeholder: 'ct' });
     const cant = h('input', { id: `pp-${pos}-cant`, type: 'number', step: '1', min: '1', inputmode: 'numeric', 'aria-label': `Cantidad ${etq}`, placeholder: 'Cantidad' });
     const cert = h('input', { id: `pp-${pos}-cert`, type: 'checkbox' });
     return h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
@@ -3138,7 +3140,7 @@ function editarPiedraStock(r, min) {
   const f = {
     tipo: h('select', { id: 'pe-tipo' }, ...tipos.map((p) => new Option(p, p))),
     corte: h('select', { id: 'pe-corte' }, ...opcionesCorte()),
-    ct: h('input', { id: 'pe-ct', type: 'number', step: '0.01', min: '0', inputmode: 'decimal' }),
+    ct: h('input', { id: 'pe-ct', type: 'number', step: '0.001', min: '0', inputmode: 'decimal' }),
     cert: h('input', { id: 'pe-cert', type: 'checkbox', style: 'width:auto' }),
     stock: h('input', { id: 'pe-stock', type: 'number', step: '1', min: '0', inputmode: 'numeric' }),
     min: h('input', { id: 'pe-min', type: 'number', step: '1', min: '0', inputmode: 'numeric', placeholder: 'Sin mínimo' }),
@@ -3455,7 +3457,7 @@ function renderPiedrasCot() {
   box.replaceChildren(...POSICIONES.map(([pos, etq]) => h('div', { class: 'piedra-fila' }, h('span', { class: 'pos' }, etq),
     h('label', { class: 'field' }, 'Tipo de piedra', h('select', { id: `ctp-${pos}-tipo` }, new Option('—', ''), ...PIEDRAS().map((p) => new Option(p, p)))),
     h('label', { class: 'field' }, 'Corte de piedra', h('select', { id: `ctp-${pos}-corte` }, ...opcionesCorte())),
-    h('label', { class: 'field' }, 'Quilates (ct)', h('input', { id: `ctp-${pos}-ct`, type: 'number', step: '0.01', min: '0', inputmode: 'decimal' })),
+    h('label', { class: 'field' }, 'Quilates (ct)', h('input', { id: `ctp-${pos}-ct`, type: 'number', step: '0.001', min: '0', inputmode: 'decimal' })),
     h('label', { class: 'field' }, 'Cantidad', h('input', { id: `ctp-${pos}-cant`, type: 'number', step: '1', min: '0', inputmode: 'numeric' })),
     h('label', { class: 'cert' }, h('input', { id: `ctp-${pos}-cert`, type: 'checkbox' }), 'Con certificado'))));
 }
